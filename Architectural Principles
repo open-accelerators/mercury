@@ -1,0 +1,18 @@
+
+-Service Domain in Kubernetes
+  - A Service Doimain (SD) maps into a kubernetes namespace (OpenShift project). 
+    It a composition of (banking) functional code which run on any type of runtime and non functional capabilities (technical), eg. a rule engine or a event broker for event propagation.
+    
+    
+-  Standards and API for business modules
+A business component contract is described and made operational via API, which are managed by an API management system
+ - Modeling
+ - Versioning 
+ - APIs to Service Domain mapping and rounting
+ 
+ - Choreograpy amond Service Domains
+    - Event Driven Architecture approah to choreography
+    - API,  Message passing, Streaming, Shared Data
+    
+    
+
