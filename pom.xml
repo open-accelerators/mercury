@@ -25,6 +25,7 @@
     </properties>
 
     <modules>
+        <module>clients-parent</module>
         <module>service-parent</module>
     </modules>
     <packaging>pom</packaging>
