@@ -1,0 +1,156 @@
+package com.redhat.mercury.service.currentaccount.model;
+
+import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import org.openapitools.jackson.nullable.JsonNullable;
+import javax.validation.Valid;
+import javax.validation.constraints.*;
+
+/**
+ * BQPaymentsExchangeOutputModel
+ */
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2020-05-08T15:20:08.092-04:00[America/New_York]")
+
+public class BQPaymentsExchangeOutputModel   {
+  @JsonProperty("paymentsExchangeActionTaskReference")
+  private String paymentsExchangeActionTaskReference;
+
+  @JsonProperty("paymentsExchangeActionTaskRecord")
+  private Object paymentsExchangeActionTaskRecord;
+
+  @JsonProperty("paymentsExchangeActionResponse")
+  private String paymentsExchangeActionResponse;
+
+  @JsonProperty("paymentsInstanceStatus")
+  private String paymentsInstanceStatus;
+
+  public BQPaymentsExchangeOutputModel paymentsExchangeActionTaskReference(String paymentsExchangeActionTaskReference) {
+    this.paymentsExchangeActionTaskReference = paymentsExchangeActionTaskReference;
+    return this;
+  }
+
+  /**
+   * `status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::ISO20022andUNCEFACT::Identifier  general-info: Reference to a Payments instance exchange service call 
+   * @return paymentsExchangeActionTaskReference
+  */
+  @ApiModelProperty(example = "PEATR733989", value = "`status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::ISO20022andUNCEFACT::Identifier  general-info: Reference to a Payments instance exchange service call ")
+
+
+  public String getPaymentsExchangeActionTaskReference() {
+    return paymentsExchangeActionTaskReference;
+  }
+
+  public void setPaymentsExchangeActionTaskReference(String paymentsExchangeActionTaskReference) {
+    this.paymentsExchangeActionTaskReference = paymentsExchangeActionTaskReference;
+  }
+
+  public BQPaymentsExchangeOutputModel paymentsExchangeActionTaskRecord(Object paymentsExchangeActionTaskRecord) {
+    this.paymentsExchangeActionTaskRecord = paymentsExchangeActionTaskRecord;
+    return this;
+  }
+
+  /**
+   * `status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::UNCEFACT::Binary  general-info: The exchange service call consolidated processing record 
+   * @return paymentsExchangeActionTaskRecord
+  */
+  @ApiModelProperty(value = "`status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::UNCEFACT::Binary  general-info: The exchange service call consolidated processing record ")
+
+  @Valid
+
+  public Object getPaymentsExchangeActionTaskRecord() {
+    return paymentsExchangeActionTaskRecord;
+  }
+
+  public void setPaymentsExchangeActionTaskRecord(Object paymentsExchangeActionTaskRecord) {
+    this.paymentsExchangeActionTaskRecord = paymentsExchangeActionTaskRecord;
+  }
+
+  public BQPaymentsExchangeOutputModel paymentsExchangeActionResponse(String paymentsExchangeActionResponse) {
+    this.paymentsExchangeActionResponse = paymentsExchangeActionResponse;
+    return this;
+  }
+
+  /**
+   * `status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::UNCEFACT::Text  general-info: Details of the exchange action service response 
+   * @return paymentsExchangeActionResponse
+  */
+  @ApiModelProperty(value = "`status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::UNCEFACT::Text  general-info: Details of the exchange action service response ")
+
+
+  public String getPaymentsExchangeActionResponse() {
+    return paymentsExchangeActionResponse;
+  }
+
+  public void setPaymentsExchangeActionResponse(String paymentsExchangeActionResponse) {
+    this.paymentsExchangeActionResponse = paymentsExchangeActionResponse;
+  }
+
+  public BQPaymentsExchangeOutputModel paymentsInstanceStatus(String paymentsInstanceStatus) {
+    this.paymentsInstanceStatus = paymentsInstanceStatus;
+    return this;
+  }
+
+  /**
+   * `status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::UNCEFACT::Text  general-info: The status of the Payments instance (e.g. accepted, rejected, verified) 
+   * @return paymentsInstanceStatus
+  */
+  @ApiModelProperty(value = "`status: Not Mapped`  core-data-type-reference: BIAN::DataTypesLibrary::CoreDataTypes::UNCEFACT::Text  general-info: The status of the Payments instance (e.g. accepted, rejected, verified) ")
+
+
+  public String getPaymentsInstanceStatus() {
+    return paymentsInstanceStatus;
+  }
+
+  public void setPaymentsInstanceStatus(String paymentsInstanceStatus) {
+    this.paymentsInstanceStatus = paymentsInstanceStatus;
+  }
+
+
+  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BQPaymentsExchangeOutputModel bqPaymentsExchangeOutputModel = (BQPaymentsExchangeOutputModel) o;
+    return Objects.equals(this.paymentsExchangeActionTaskReference, bqPaymentsExchangeOutputModel.paymentsExchangeActionTaskReference) &&
+        Objects.equals(this.paymentsExchangeActionTaskRecord, bqPaymentsExchangeOutputModel.paymentsExchangeActionTaskRecord) &&
+        Objects.equals(this.paymentsExchangeActionResponse, bqPaymentsExchangeOutputModel.paymentsExchangeActionResponse) &&
+        Objects.equals(this.paymentsInstanceStatus, bqPaymentsExchangeOutputModel.paymentsInstanceStatus);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(paymentsExchangeActionTaskReference, paymentsExchangeActionTaskRecord, paymentsExchangeActionResponse, paymentsInstanceStatus);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class BQPaymentsExchangeOutputModel {\n");
+    
+    sb.append("    paymentsExchangeActionTaskReference: ").append(toIndentedString(paymentsExchangeActionTaskReference)).append("\n");
+    sb.append("    paymentsExchangeActionTaskRecord: ").append(toIndentedString(paymentsExchangeActionTaskRecord)).append("\n");
+    sb.append("    paymentsExchangeActionResponse: ").append(toIndentedString(paymentsExchangeActionResponse)).append("\n");
+    sb.append("    paymentsInstanceStatus: ").append(toIndentedString(paymentsInstanceStatus)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces
+   * (except the first line).
+   */
+  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace("\n", "\n    ");
+  }
+}
+

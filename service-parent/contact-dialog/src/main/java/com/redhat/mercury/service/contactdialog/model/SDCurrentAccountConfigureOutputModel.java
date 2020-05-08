@@ -13,7 +13,7 @@ import javax.validation.constraints.*;
 /**
  * SDCurrentAccountConfigureOutputModel
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2020-05-08T13:28:59.780-04:00[America/New_York]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2020-05-08T15:19:49.536-04:00[America/New_York]")
 
 public class SDCurrentAccountConfigureOutputModel   {
   @JsonProperty("serviceDomainConfigurationActionTaskReference")
