@@ -1,0 +1,276 @@
+openapi: 3.0.2
+info:
+    title: Bill Payment
+    version: 0.1.2
+    description: >-
+        This Bill Payment API intented for external consumption and access as part of the Project Mercury
+        reference implementation.
+    license:
+        name: Apache 2.0
+        url: 'https://www.apache.org/licenses/LICENSE-2.0'
+paths:
+    /bill-payments:
+        summary: Path used to manage the list of billpaymentinitiations.
+        description: >-
+            The REST endpoint/path used to list and create zero or more `BillPaymentInitiation` entities. 
+            This path contains a `GET` and `POST` operation to perform the list and create tasks,
+            respectively.
+        post:
+            parameters:
+                -
+                    name: X-Request-ID
+                    description: ID of the request, unique to the call, as determined by the initiating party.
+                    schema:
+                        type: string
+                    in: header
+                    required: true
+            requestBody:
+                description: A new `BillPaymentInitiation` to be created.
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BillPaymentInitiation'
+                required: true
+            responses:
+                '201':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BillPaymentInitiationRespose'
+                    description: Successful response.
+            operationId: createBillPaymentInitiation
+            summary: Create a BillPaymentInitiation
+            description: Creates a new instance of a `BillPaymentInitiation`.
+    '/bill-payments/{billpaymentinitiationId}':
+        summary: Path used to manage a single BillPaymentInitiation.
+        description: >-
+            The REST endpoint/path used to get, update, and delete single instances of an
+            `BillPaymentInitiationResponse`.  This path contains only `GET` operation used to retrieve it.
+        get:
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BillPaymentInitiationRespose'
+                    description: Successful response - returns a single `BillPaymentInitiation`.
+            operationId: getBillPaymentInitiation
+            summary: Get a BillPaymentInitiation
+            description: Gets the details of a single instance of a `BillPaymentInitiation`.
+        parameters:
+            -
+                name: billpaymentinitiationId
+                description: A unique identifier for a `BillPaymentInitiation`.
+                schema:
+                    type: string
+                in: path
+                required: true
+components:
+    schemas:
+        AmountType:
+            title: Root Type for AmountDefinition
+            description: ''
+            required:
+                - Amount
+                - Currency
+            type: object
+            properties:
+                Amount:
+                    type: string
+                Currency:
+                    type: string
+            example:
+                Amount: '200.00'
+                Currency: GBP
+        AccountType:
+            title: Root Type for AccountDefinition
+            description: ''
+            required:
+                - Identification
+                - Name
+            type: object
+            properties:
+                Identification:
+                    type: string
+                Name:
+                    type: string
+            example:
+                Identification: '605176544031443507'
+                Name: Company Name
+        InitiationData:
+            title: Root Type for InitiationDataDefinition
+            description: ''
+            required:
+                - DebtorAccount
+                - CreditorAccount
+                - InstructedAmount
+                - InstructionIdentification
+                - RequestedExecutionDateTime
+            type: object
+            properties:
+                InstructionIdentification:
+                    type: string
+                RequestedExecutionDateTime:
+                    format: date-time
+                    type: string
+                InstructedAmount:
+                    $ref: '#/components/schemas/AmountType'
+                    properties:
+                        Amount:
+                            type: string
+                        Currency:
+                            type: string
+                DebtorAccount:
+                    $ref: '#/components/schemas/AccountType'
+                    properties:
+                        Identification:
+                            type: string
+                        Name:
+                            type: string
+                CreditorAccount:
+                    $ref: '#/components/schemas/AccountType'
+                    properties:
+                        Identification:
+                            type: string
+                        Name:
+                            type: string
+            example:
+                InstructionIdentification: 89f0a53a91ee47f6a383536f851d6b5a
+                RequestedExecutionDateTime: '2020-09-03T00:00:00+00:00'
+                InstructedAmount:
+                    Amount: '3500.00'
+                    Currency: EUR
+                DebtorAccount:
+                    Identification: 087226156620636481
+                    Name: Natalie Smith
+                CreditorAccount:
+                    Identification: '605176544031443507'
+                    Name: Company Name
+        BillPaymentInitiationRespose:
+            title: Root Type for BillPaymentInitiationRespose
+            description: ''
+            required:
+                - UniqueId
+                - BillPayInitiation
+                - BillPaymentId
+                - CreationDateTime
+                - Status
+                - StatusUpdateDateTime
+            type: object
+            properties:
+                UniqueId:
+                    type: string
+                BillPaymentId:
+                    type: string
+                Status:
+                    enum:
+                        - InitiationPending
+                        - InitiationCompleted
+                        - InitiationFailed
+                    type: string
+                CreationDateTime:
+                    format: date-time
+                    type: string
+                StatusUpdateDateTime:
+                    format: date-time
+                    type: string
+                BillPayInitiation:
+                    $ref: '#/components/schemas/InitiationData'
+                    properties:
+                        InstructionIdentification:
+                            type: string
+                        RequestedExecutionDateTime:
+                            format: date-time
+                            type: string
+                        InstructedAmount:
+                            type: object
+                            properties:
+                                Amount:
+                                    type: string
+                                Currency:
+                                    type: string
+                        DebtorAccount:
+                            type: object
+                            properties:
+                                Identification:
+                                    type: string
+                                Name:
+                                    type: string
+                        CreditorAccount:
+                            type: object
+                            properties:
+                                Identification:
+                                    type: string
+                                Name:
+                                    type: string
+            example:
+                UniqueId: b2f896f8c72d1f15206ba8149bdea492045a1c85
+                BillPaymentId: 200803-29482834765
+                Status: InitiationPending
+                CreationDateTime: '2020-08-03T10:00:00+00:00'
+                StatusUpdateDateTime: '2020-08-03T10:00:00+00:00'
+                BillPayInitiation:
+                    InstructionIdentification: 89f0a53a91ee47f6a383536f851d6b5a
+                    RequestedExecutionDateTime: '2020-09-03T00:00:00+00:00'
+                    InstructedAmount:
+                        Amount: '3500.00'
+                        Currency: EUR
+                    DebtorAccount:
+                        Identification: 087226156620636481
+                        Name: Natalie Smith
+                    CreditorAccount:
+                        Identification: '605176544031443507'
+                        Name: Company Name
+        BillPaymentInitiation:
+            title: Root Type for BillPaymentInitiation
+            description: ''
+            required:
+                - BillPayInitiation
+                - UniqueId
+            type: object
+            properties:
+                UniqueId:
+                    type: string
+                BillPayInitiation:
+                    $ref: '#/components/schemas/InitiationData'
+                    properties:
+                        InstructionIdentification:
+                            type: string
+                        RequestedExecutionDateTime:
+                            format: date-time
+                            type: string
+                        InstructedAmount:
+                            type: object
+                            properties:
+                                Amount:
+                                    type: string
+                                Currency:
+                                    type: string
+                        DebtorAccount:
+                            type: object
+                            properties:
+                                Identification:
+                                    type: string
+                                Name:
+                                    type: string
+                        CreditorAccount:
+                            type: object
+                            properties:
+                                Identification:
+                                    type: string
+                                Name:
+                                    type: string
+            example:
+                UniqueId: 6d399dfcf12c4cc6a3bf9dd2c1c0788871aca892
+                BillPayInitiation:
+                    InstructionIdentification: 89f0a53a91ee47f6a383536f851d6b5a
+                    RequestedExecutionDateTime: '2020-09-03T00:00:00+00:00'
+                    InstructedAmount:
+                        Amount: '3500.00'
+                        Currency: EUR
+                    DebtorAccount:
+                        Identification: 087226156620636481
+                        Name: Natalie Smith
+                    CreditorAccount:
+                        Identification: '605176544031443507'
+                        Name: Company Name

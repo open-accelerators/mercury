@@ -1,0 +1,117 @@
+openapi: 3.0.2
+info:
+    title: Bank Disaster Relief Campaign API
+    version: 0.1.2
+    description: >-
+        It's an API the Bank has quickly made available after the disaster to recruit developers, and because
+        of this purpose, it's named Disaster Relief Campaign API.
+    license:
+        name: Apache 2.0
+        url: 'https://www.apache.org/licenses/LICENSE-2.0'
+paths:
+    '/disaster-relief/{registrationCode}':
+        put:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserOnboardingMessage'
+                required: true
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OnboardingCompleteMessage'
+                            examples:
+                                UserOnboardingAuthorized:
+                                    value:
+                                        uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                                        status: Authorized
+                    description: |-
+                        Bank has verified the customer profile has the product/service added and reply
+                        with Onboarding was completed successfully
+                '401':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OnboardingCompleteMessage'
+                            examples:
+                                UserOnboardingRejected:
+                                    value:
+                                        uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                                        status: Rejected
+                    description: Product or service not included as part of this customer profile.
+        parameters:
+            -
+                name: X-Request-ID
+                description: 'ID of the request, unique to the call, as determined by the initiating party.'
+                schema:
+                    type: string
+                in: header
+                required: true
+            -
+                name: registrationCode
+                description: The customer registration code.
+                schema:
+                    type: string
+                in: path
+                required: true
+components:
+    schemas:
+        UserOnboardingMessage:
+            title: Root Type for UserOnboardingMessage
+            description: ''
+            required:
+                - firstName
+                - lastName
+                - uniqueId
+                - registrationCode
+            type: object
+            properties:
+                uniqueId:
+                    type: string
+                registrationCode:
+                    type: string
+                firstName:
+                    type: string
+                lastName:
+                    type: string
+                phone:
+                    type: string
+                email:
+                    type: string
+                city:
+                    type: string
+                address:
+                    type: string
+                state:
+                    type: string
+            example:
+                uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                registrationCode: dbc359ccc5ac4d9203fc273f8fab3416bc1daab6
+                firstName: Sara
+                lastName: Smith
+                phone: 0984
+                email: sara.smith@pm.com
+                city: Somewhere
+                address: Somewhere
+                state: Somewhere
+        OnboardingCompleteMessage:
+            title: Root Type for OnboardingCompleteMessage
+            description: ''
+            required:
+                - uniqueId
+                - status
+            type: object
+            properties:
+                uniqueId:
+                    type: string
+                status:
+                    enum:
+                        - Authorized
+                        - Rejected
+                    type: string
+            example:
+                uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                status: Authorized

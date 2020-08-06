@@ -1,0 +1,132 @@
+openapi: 3.0.2
+info:
+    title: TPP Event Notification API
+    version: 0.1.2
+    description: |-
+        Provider Event Notification API is a general callback interface used to convey
+        standard and pre-defined event types, according to the Business Partner Agreement
+        with the Bank.
+    license:
+        name: Apache 2.0
+        url: 'https://www.apache.org/licenses/LICENSE-2.0'
+paths:
+    /event-notifications:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EventNotificationList'
+                        examples:
+                            SarahSmithOnboarding:
+                                value:
+                                    Data:
+                                        -
+                                            RegistrationCode: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                                            FirstName: Sarah
+                                            LastName: Smith
+                                            Email: unhousedsmith@outrageousbox.com
+                                            Phone: 555-2121
+                                            City: Somewhere
+                                            Address: 65 Spark St
+                                            State: RH
+                required: true
+            responses:
+                '200':
+                    content:
+                        application/json: {}
+                    description: Successfully processed.
+components:
+    schemas:
+        EnableHomeRepairInitiative:
+            allOf:
+                - $ref: '#/components/schemas/EventNotification'
+            title: Root Type for EnableHomeRepairInitiative
+            description: |-
+                Event notification the Bank uses to inform the Builders Network provider when a
+                customer registered to its service.
+            required:
+                - registrationCode
+            type: object
+            properties:
+                registrationCode:
+                    type: string
+                customerName:
+                    type: string
+                customerSurname:
+                    type: string
+                phoneNumber:
+                    type: string
+                email:
+                    type: string
+                registrationDate:
+                    type: string
+                city:
+                    type: string
+                address:
+                    type: string
+                state:
+                    type: string
+            example:
+                uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                kind: CustomerRegistration
+                registrationCode: dbc359ccc5ac4d9203fc273f8fab3416bc1daab6
+                customerName: Sarah
+                customerSurname: Smith
+                phoneNumber: 0984
+                email: sarah.smith@pm.com
+                registrationDate: java ISO DateTime Format
+                city: Somewhere
+                address: Somewhere
+                state: Somewhere
+        BillPaymentStatus:
+            allOf:
+                - $ref: '#/components/schemas/EventNotification'
+            title: Root Type for BillPaymentStatus
+            type: object
+            required:
+                - status
+            properties:
+                status:
+                    enum:
+                        - Authorized
+                        - Rejected
+                    type: string
+            example:
+                uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                kind: PaymentInitiation
+                status: Authorized
+        EventNotificationList:
+            title: Root Type for EventNotificationList
+            description: ''
+            required:
+                - events
+            type: object
+            properties:
+                events:
+                    type: array
+                    items:
+                        oneOf:
+                            - $ref: '#/components/schemas/EnableHomeRepairInitiative'
+                            - $ref: '#/components/schemas/BillPaymentStatus'
+                        discriminator:
+                            propertyName: kind
+            example:
+                events:
+                    - {}
+                    - {}
+        EventNotification:
+            title: Root Type for EventNotification
+            description: ''
+            required:
+                - kind
+                - uniqueId
+            type: object
+            properties:
+                uniqueId:
+                    type: string
+                kind:
+                    type: string
+            example:
+                uniqueId: 0d9dd6e7c9a5a78475bfc2a836ff26945a3ef147
+                kind: eventType
