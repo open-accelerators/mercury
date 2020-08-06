@@ -1,0 +1,121 @@
+openapi: 3.0.2
+info:
+    title: Mercury Demo Product API
+    version: 1.0.4
+    description: A brand new API with no content.  Go nuts!
+servers:
+    -
+        url: >-
+            https://mercury-servicing-api-3scale-apicast-production.apps.cluster-2d0b.green.osp.opentlc.com/service
+        description: ''
+paths:
+    /initiateOffer:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/InitiateOfferRequest'
+                        examples:
+                            E-Wallet Request Sample:
+                                value:
+                                    customerReference: CUST7897
+                                    productType: e-Wallet
+                required: true
+            responses:
+                '200':
+                    content:
+                        text/xml:
+                            examples:
+                                Request processed succesfully:
+                                    value: SUCCESS
+            operationId: product_api_initiate_offer
+            summary: Initiate Offer
+        parameters:
+            -
+                name: user_key
+                description: ''
+                schema:
+                    type: string
+                in: query
+                required: true
+    /eligibility-check:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EligibilityCheckRequest'
+                        examples:
+                            E-Wallet Request Sample:
+                                value:
+                                    customerReference: CUST7897
+                                    productType: e-Wallet
+                required: true
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EligibilityCheckResponse'
+                            examples:
+                                Sample:
+                                    value:
+                                        dueDiligence: true
+                                        creditRatingCheck: true
+                                        riskCheck: true
+                                        productEligibility: true
+                    description: Request successfully processed.
+            operationId: product_api_eligibility_check
+        parameters:
+            -
+                name: user_key
+                description: ''
+                schema:
+                    type: string
+                in: query
+                required: true
+components:
+    schemas:
+        InitiateOfferRequest:
+            title: Root Type for InitiateOfferRequest
+            description: ''
+            type: object
+            properties:
+                customerReference:
+                    type: string
+                productType:
+                    type: string
+            example:
+                customerReference: CUST7897
+                productType: e-Wallet
+        EligibilityCheckRequest:
+            title: Root Type for EligibilityCheckRequest
+            description: ''
+            type: object
+            properties:
+                customerReference:
+                    type: string
+                productType:
+                    type: string
+            example:
+                customerReference: CUST7897
+                productType: e-Wallet
+        EligibilityCheckResponse:
+            title: Root Type for EligibilityCheckResponse
+            description: ''
+            type: object
+            properties:
+                creditRatingCheck:
+                    type: boolean
+                dueDiligence:
+                    type: boolean
+                productEligibility:
+                    type: boolean
+                riskCheck:
+                    type: boolean
+            example:
+                dueDiligence: true
+                creditRatingCheck: true
+                riskCheck: true
+                productEligibility: true
