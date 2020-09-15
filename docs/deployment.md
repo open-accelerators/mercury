@@ -28,7 +28,13 @@ You can create a fork of the projects you have accessed and keep them separate. 
 
 Some customization will be required in these resource definition files for deployment from the source code in your fork.
 
-# 2. Project setup and configurations
+# 2. Clonning rh-mercury/mercury-core
+
+Check out into your filesystem the [rh-mercury/mercury-core](https://github.com/rh-mercury/mercury-core) codebase. Either using the upstream GitHub repository or your fork.
+
+NOTE: Change the working directory to the clonned folder.
+
+# 3. Project setup and configurations
 
 First, create the project namespace where the demo will be deployed.
 
@@ -39,10 +45,8 @@ The business object model definitions used on the demo are imported from the Git
 
 In order to use the GitHub Packages we're setting up a custom Maven `settings.xml` used when building the container images from the source code (S2I). Create the `configmap` that holds the Maven settings file available on this current directory:
 
-    $ curl -o build-mvn-settings.xml https://raw.githubusercontent.com/rmarins/agnosticd/development/ansible/roles/ocp4-workload-mercury/files/deployment/build-mvn-settings.xml
-
     $ oc create configmap "settings-mvn" -n mercury \
-        --from-file settings.xml=build-mvn-settings.xml
+        --from-file settings.xml=./support/build-mvn-settings.xml
 
     configmap/settings-mvn created
 
@@ -56,11 +60,11 @@ Create the `github-token-secret` as below, replacing with your GitHub _username_
 
     secret/github-token-secret created
 
-# 3. Deploy demo artifacts
+# 4. Deploy demo artifacts
 
 ## Product Deployment SD
 
-    $ oc create -f https://raw.githubusercontent.com/rmarins/agnosticd/development/ansible/roles/ocp4-workload-mercury/files/deployment/app-product-deployment.yaml -n mercury
+    $ oc create -f ./support/app-product-deployment.yaml -n mercury
 
     imagestream.image.openshift.io/product-deployment created
     buildconfig.build.openshift.io/product-deployment created
@@ -70,7 +74,7 @@ Create the `github-token-secret` as below, replacing with your GitHub _username_
 
 ## Product Directory SD
 
-    $ oc create -f https://raw.githubusercontent.com/rmarins/agnosticd/development/ansible/roles/ocp4-workload-mercury/files/deployment/app-product-directory.yaml -n mercury
+    $ oc create -f ./support/app-product-directory.yaml -n mercury
 
     imagestream.image.openshift.io/product-directory created
     buildconfig.build.openshift.io/product-directory created
@@ -80,7 +84,7 @@ Create the `github-token-secret` as below, replacing with your GitHub _username_
 
 ## Customer Offer SD
 
-    $ oc create -f https://raw.githubusercontent.com/rmarins/agnosticd/development/ansible/roles/ocp4-workload-mercury/files/deployment/app-customer-offer.yaml -n mercury
+    $ oc create -f ./support/app-customer-offer.yaml -n mercury
 
     imagestream.image.openshift.io/customer-offer created
     buildconfig.build.openshift.io/customer-offer created
@@ -90,7 +94,7 @@ Create the `github-token-secret` as below, replacing with your GitHub _username_
 
 ## Customer Product and Service Eligibility SD
 
-    $ oc create -f https://raw.githubusercontent.com/rmarins/agnosticd/development/ansible/roles/ocp4-workload-mercury/files/deployment/app-customer-eligibility.yaml -n mercury
+    $ oc create -f ./support/app-customer-eligibility.yaml -n mercury
 
     imagestream.image.openshift.io/customer-eligibility created
     buildconfig.build.openshift.io/customer-eligibility created
@@ -100,7 +104,7 @@ Create the `github-token-secret` as below, replacing with your GitHub _username_
 
 ## Servicing Order UI
 
-    $ oc create -f https://raw.githubusercontent.com/rmarins/agnosticd/development/ansible/roles/ocp4-workload-mercury/files/deployment/app-servicing-order-ui.yaml -n mercury
+    $ oc create -f ./support/app-servicing-order-ui.yaml -n mercury
 
     imagestream.image.openshift.io/openjdk-11 created
     imagestream.image.openshift.io/servicing-order-ui created
@@ -109,7 +113,7 @@ Create the `github-token-secret` as below, replacing with your GitHub _username_
     service/servicing-order-ui created
     route.route.openshift.io/servicing-order-ui created
 
-# 4. Access the demo UI and components
+# 5. Access the demo UI and components
 
 Get service domains' URL to access the Swagger UI typing the following:
 
