@@ -32,7 +32,7 @@ Some customization will be required in these resource definition files for deplo
 
 Check out into your filesystem the [rh-mercury/mercury-core](https://github.com/rh-mercury/mercury-core) codebase. Either using the upstream GitHub repository or your fork.
 
-NOTE: Change the working directory to the clonned folder.
+NOTE: Before continuing with the instructions, change the working directory into this clonned folder.
 
 # 3. Project setup and configurations
 
