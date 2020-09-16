@@ -1,0 +1,15 @@
+# Reads a file from a predefined path in the workspace git PipelineResource
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: echo-git-commit-comment
+spec:
+  params:
+  - name: comment
+    type: string
+    default: Comment String not provided
+  steps:
+  - name: read
+    image: ubuntu
+    command: ["/bin/bash"]
+    args: ['-c', echo "$(params.comment)"]  
