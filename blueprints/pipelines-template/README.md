@@ -1,4 +1,4 @@
-#Pipeline templates for Gitops 
+# Pipeline templates for Gitops 
 
 The Service domains are implemented as microservices. These pipeline templates will allow
 us to configure GitHooks so that we can push changes in a continous fashion.
