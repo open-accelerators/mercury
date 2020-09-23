@@ -35,12 +35,3 @@ For example on github, navigate to service domain repository->Settings->Webhooks
 Add the Webhook Url as the listener url and choose the content type as application/json.
 
 + Now do a commit on the repository and push the changes, the changes should kick off the tekton build on openshift.
-
-
-
-
-
-
-
-
-
