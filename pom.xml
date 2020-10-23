@@ -25,11 +25,8 @@
     </properties>
 
     <modules>
-        <module>apps</module>
-        <module>service-domain-clients</module>
-        <module>service-domain-implementations</module>
-
     </modules>
+
     <packaging>pom</packaging>
 
 
