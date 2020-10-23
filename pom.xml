@@ -6,7 +6,7 @@
 
     <groupId>com.redhat.mercury</groupId>
     <artifactId>mercury-core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -29,5 +29,49 @@
 
     <packaging>pom</packaging>
 
+    <repositories>
+        <repository>
+            <id>jboss-ga-repository</id>
+            <url>http://maven.repository.redhat.com/ga/</url>
+            <releases>
+              <enabled>true</enabled>
+            </releases>
+            <snapshots>
+              <enabled>false</enabled>
+            </snapshots>
+        </repository>  
+        <repository>
+            <id>jboss-earlyaccess-repository</id>
+            <url>http://maven.repository.redhat.com/earlyaccess/all/</url>
+            <releases>
+              <enabled>true</enabled>
+            </releases>
+            <snapshots>
+              <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jboss-ga-plugin-repository</id>
+            <url>http://maven.repository.redhat.com/ga/</url>
+            <releases>
+              <enabled>true</enabled>
+            </releases>
+            <snapshots>
+              <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+            <id>jboss-earlyaccess-plugin-repository</id>
+            <url>http://maven.repository.redhat.com/earlyaccess/all/</url>
+            <releases>
+              <enabled>true</enabled>
+            </releases>
+            <snapshots>
+              <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>  
+    </pluginRepositories>
 
 </project>
