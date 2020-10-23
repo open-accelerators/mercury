@@ -26,7 +26,7 @@ spec:
         - name: TLSVERIFY
           value: 'false'
         - name: MAVEN_ARGS_APPEND
-          value: '-DNEXUSREPO=http://nexus-nexus-system.apps.cluster-2d0b.green.osp.opentlc.com/repository/releases/'
+          value: '-DNEXUSREPO=http://nexus-nexus-system.apps.cluster-90e5.green.osp.opentlc.com/repository/releases/'
       resources:
         inputs:
           - name: source
