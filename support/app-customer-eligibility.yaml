@@ -36,10 +36,6 @@ items:
     postCommit: {}
     resources: {}
     source:
-      configMaps:
-      - configMap:
-          name: settings-mvn
-        destinationDir: .
       contextDir: sd-customer-eligibility
       git:
         ref: external-mvn-repo
@@ -52,18 +48,8 @@ items:
         env:
         - name: AB_JOLOKIA_OFF
           value: "true"
-        - name: MAVEN_ARGS
-          value: -DskipTests -s /opt/app-root/src/settings.xml
-        - name: GITHUBUSER
-          valueFrom:
-            secretKeyRef:
-              key: user
-              name: github-token-secret
-        - name: GITHUBTOKEN
-          valueFrom:
-            secretKeyRef:
-              key: token
-              name: github-token-secret
+        - name: NEXUSREPO
+          value: http://nexus-nexus-system.apps.cluster-90e5.green.osp.opentlc.com/repository/maven-all-public/
         from:
           kind: ImageStreamTag
           name: java:8

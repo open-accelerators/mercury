@@ -3,23 +3,16 @@ items:
 - apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
-    labels:
-      app: servicing-order-ui
-      app.kubernetes.io/component: servicing-order-ui
-      app.kubernetes.io/instance: servicing-order-ui
-    name: openjdk-11
+    name: openjdk-11-rhel7
   spec:
     lookupPolicy:
       local: false
     tags:
-    - annotations:
-        openshift.io/imported-from: registry.access.redhat.com/ubi8/openjdk-11:latest
+    - annotations: null
       from:
         kind: DockerImage
-        name: registry.access.redhat.com/ubi8/openjdk-11:latest
+        name: registry.access.redhat.com/openjdk/openjdk-11-rhel7:latest
       generation: null
       importPolicy: {}
       name: latest
@@ -64,23 +57,28 @@ items:
     resources: {}
     source:
       git:
-        ref: no_precompile
+        ref: native
         uri: https://github.com/rh-mercury/servicing-order-ui.git
       sourceSecret:
         name: github-token-secret
       type: Git
     strategy:
       sourceStrategy:
+        env:
+        - name: AB_JOLOKIA_OFF
+          value: "true"
+        - name: MAVEN_MIRROR_URL
+          value: http://nexus-nexus-system.apps.cluster-90e5.green.osp.opentlc.com/repository/maven-all-public/
         from:
           kind: ImageStreamTag
-          name: openjdk-11:latest
+          name: openjdk-11-rhel7:latest
       type: Source
     triggers:
     - github:
-        secret: AXXplCrokiRE0_lcWBlC
+        secret: tNEFUrkLzDwkn-YfTnGH
       type: GitHub
     - generic:
-        secret: yNMEnil9zXe-MZCgdUQQ
+        secret: jH2bIALJ0bIr1sZ8Zv_J
       type: Generic
     - type: ConfigChange
     - imageChange: {}
