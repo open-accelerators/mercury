@@ -42,7 +42,7 @@ The diagram below shows the BIAN Business Scenarios diagram of the Demo Use Case
 
 .BIAN Business Scenario
 image::image5.png[Business Scenario 3]
-
+{nbsp}
 
 The first step in the workflow is to check the customer’s eligibility with the call to Customer Product/Service Eligibility(Service Domain). This call causes the service domain to evaluate whether the customer is eligible for the proposed product/service and return any specific eligibility terms.
 
@@ -102,7 +102,7 @@ Let us now look at how the logical design for the implementation of the above us
 
 .Demo architecture logical view
 image::image2.png[Demo Architecture Logical View]
-
+{nbsp}
 
 The Customer Service Representative selects “New Product Application Processing” from the Servicing Order Menu. As we saw earlier, the first step is to get the Customer’s eligibility for the product (e-Wallet). The Servicing Order UI invokes an external API as governed by the API gateway. This invokes the call to Evaluate Eligibility. The Service Domain invokes the corresponding rules for the eligibility criteria and returns back the results to the caller.
 
@@ -119,7 +119,7 @@ Now let us look at the Tech Stack for the implementation. Each of the involved S
 
 .Demo architecture with technology stack
 image::image7.png[Demo Architecture Tech Stack]
-
+{nbsp}
 
 **Quarkus**: Showcases a sample UI application for Servicing Order. The application is developed using Quarkus. Quarkus provides an effective solution for running Java in this new world of serverless, microservices, containers, Kubernetes, FaaS, and the cloud because it has been designed with these technologies in mind[b].
 
@@ -426,34 +426,37 @@ Let us now look at the demo walkthrough. As described in the Scenario abstract a
 
 .Servicing Order web application user interface
 image::image4.png[Servicing Order Web UI]
-
-
+{nbsp}
 
 As you can see the Customer has been qualified as a good prospect for the ‘Disaster Campaign’ class . The CSR now chooses the product type (e-Wallet) and Checks for Eligibility. The eligibility results show that the following checks have been completed for the customer and the eligibility came back  as shown below.
 
 .Eligibility Check operation in the Servicing Order application
 image::image9.png[Eligibility Check operation]
+{nbsp}
 
 The Eligibility check here is a complex decisioning logic which uses historical, profile and predictive data from the customer to determine the eligibility. The following representation shows the Decision Logic as expressed in the standard link:https://www.omg.org/dmn/[Decision Model Notation (DMN)^] format.
 
 .Eligibility Check decision model
 image::image3.png[Eligibility Check decision model]
+{nbsp}
 
 Since the eligibility criteria came back true, the CSR now chooses a disclosure for the product and proceeds with adding it to the Customer’s profile.
 
 .Add Product to customer profile
 image::image8.png[Add Product operation]
+{nbsp}
 
 Now initiates a call which retrieves the Product terms, initiates the download of the product on the customer’s device and updates the Product Usage Status for the customer.
 
 .Add Product result
 image::image1.png[Add Product result]
+{nbsp}
 
 The following view shows a monitoring insight into what happened with this call.
 
-[%hardbreaks]
 .Fuse Console route details
 image::image6.png[Fuse Route]
+{nbsp}
 
 The visual representation shows a graphical understanding of the path that this specific call took. Among other things, the tooling also supports real time debugging into the routes and metrics on the number of times a route was invoked.
 
