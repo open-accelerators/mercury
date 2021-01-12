@@ -5,8 +5,11 @@
 
 # An open platform for a modular, digital bank
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+The Project Mercury aims at developing a solution approach for the modernization of core banking systems, exploring new technologies and ways of operating in an open hybrid cloud. Creating and enabling the foundation of an open platform for a modular, digital banking. Using  open-source software and open standards currently available, combined with industry best practices.
 
+The provided reference implementation can serve as an example. While some resulting artifacts leverages the expertise of developing this solution approach can become reusable templates, repeatable processes and building blocks of cloud-native components and applications.
+
+We invite the collaboration of technology experts and experienced business practitioners in the financial services industry to join in this co-creation.
 
 ## Contributing
 
