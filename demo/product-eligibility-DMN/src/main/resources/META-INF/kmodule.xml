@@ -1,0 +1,5 @@
+<kmodule xmlns="http://www.drools.org/xsd/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <kbase name="rules" packages="com.myspace.producteligibilitydmn" default="true">
+        <ksession name="default-stateless-ksession"  default="true" clockType="realtime"/>
+    </kbase>
+</kmodule>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML xmlns="http://www.dmg.org/PMML-4_3" version="4.3">
+    <Header copyright="Copyright (c) 2018 Software AG" description="Default Description">
+        <Application name="Nyoka" version="3.1.0"/>
+        <Timestamp>2019-06-04 21:20:07.221259</Timestamp>
+    </Header>
+    <MiningBuildTask>
+        <Extension value="Pipeline(memory=None,
+    steps=[('regressor',LinearRegression(copy_X=True, fit_intercept=True, n_jobs=None, normalize=False))])"/>
+    </MiningBuildTask>
+    <DataDictionary numberOfFields="4">
+        <DataField name="age" optype="continuous" dataType="double"/>
+        <DataField name="holder_index" optype="continuous" dataType="double"/>
+        <DataField name="incidents" optype="continuous" dataType="double"/>
+        <DataField name="holder_risk" optype="continuous" dataType="double"/>
+    </DataDictionary>
+    <RegressionModel modelName="LinearRegression" functionName="regression">
+        <MiningSchema>
+            <MiningField name="age" usageType="active" optype="continuous"/>
+            <MiningField name="holder_index" usageType="active" optype="continuous"/>
+            <MiningField name="incidents" usageType="active" optype="continuous"/>
+            <MiningField name="holder_risk" usageType="target" optype="continuous"/>
+        </MiningSchema>
+        <Output>
+            <OutputField name="predicted_holder_risk" optype="continuous" dataType="double" feature="predictedValue"/>
+        </Output>
+        <RegressionTable intercept="1.1081464548491253">
+            <NumericPredictor name="age" exponent="1" coefficient="-0.0068395774531517"/>
+            <NumericPredictor name="holder_index" exponent="1" coefficient="-0.4168823860999863"/>
+            <NumericPredictor name="incidents" exponent="1" coefficient="0.4148619648372319"/>
+        </RegressionTable>
+    </RegressionModel>
+</PMML>

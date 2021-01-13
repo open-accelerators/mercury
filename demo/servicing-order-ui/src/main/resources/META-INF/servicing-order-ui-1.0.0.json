@@ -1,0 +1,117 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "New API",
+        "version": "1.0.0",
+        "description": "A brand new API with no content.  Go nuts!",
+        "contact": {
+            "name": "Sadhana Nandakumar",
+            "url": "http://servicing-order-ui-mercury.apps.cluster-2d0b.green.osp.opentlc.com/service",
+            "email": "snandaku@redhat.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+    },
+    "paths": {
+        "/initiateOffer": {
+            "summary": "Add a given Product or Service offering into the customer profile (product directory).",
+            "post": {
+                "requestBody": {
+                    "description": "InitiateOfferRequest",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InitiateOfferRequest"
+                            },
+                            "examples": {
+                                "Initiate Offer request example": {
+                                    "value": {
+                                        "customerReference": "CUST7897",
+                                        "productType": "e-Wallet"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "Product or Service offering succesfuly added."
+                    }
+                },
+                "summary": "POST initiate offer operation."
+            }
+        },
+        "/eligibility-check": {
+            "summary": "Check if the customer whether eligible for a given Product or Service offering.",
+            "post": {
+                "requestBody": {
+                    "description": "EligibilityCheckRequest",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EligibilityCheckRequest"
+                            },
+                            "examples": {
+                                "Eligibility Check example": {
+                                    "value": {
+                                        "customerReference": "CUST7897",
+                                        "productType": "e-Wallet"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "Customer is eligible for that offering specified on the request."
+                    }
+                },
+                "summary": "POST operation for checking eligibility."
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "EligibilityCheckRequest": {
+                "title": "Root Type for EligibilityCheckRequest",
+                "description": "",
+                "type": "object",
+                "properties": {
+                    "customerReference": {
+                        "type": "string"
+                    },
+                    "productType": {
+                        "type": "string"
+                    }
+                },
+                "example": {
+                    "customerReference": "CUST7897",
+                    "productType": "e-Wallet"
+                }
+            },
+            "InitiateOfferRequest": {
+                "title": "Root Type for InitiateOfferRequest",
+                "description": "",
+                "type": "object",
+                "properties": {
+                    "customerReference": {
+                        "type": "string"
+                    },
+                    "productType": {
+                        "type": "string"
+                    }
+                },
+                "example": {
+                    "customerReference": "CUST7897",
+                    "productType": "e-Wallet"
+                }
+            }
+        }
+    }
+}
