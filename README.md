@@ -13,17 +13,21 @@ We invite the collaboration of technology experts and experienced business pract
 
 ## Contributing
 
-1. Fork it (<https://github.com/rh-mercury/mercury-core>)
-2. Create your feature branch (`git checkout -b feature/fooBar`)
-3. Read our [contribution guidelines](CONTRIBUTING.md) and [Community Code of Conduct](https://developers.redhat.com/)
-4. Commit your changes (`git commit -am 'Add some fooBar'`)
-5. Push to the branch (`git push origin feature/fooBar`)
-6. Create a new Pull Request
+We welcome contributions! Here's how you can contribute:
 
+* _Browse issues_ or _file an issue_
+* Chat with us _zulipchat_
+* Contribute:
+   * Read the _contributing guide_ before starting work on an issue
+   * Try to fix _good first issues_
+   * Help out on _issues that need help_
+   * Join in on _discussion issues_
+
+_Make sure to follow the **Code of Conduct** when contributing so we can foster an open and welcoming community._
 
 ## License
 
-Copyright 2020 Red Hat, Inc.
+Copyright 2020-2021 Red Hat, Inc.
 
 Distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
