@@ -1,5 +1,8 @@
-
 # Demo Overview
+
+This is a reference implementation of the BIAN service domains in the scope of Project Mercury's disaster relief demo scenario. The primary use case is a new product offering activation in the Customer Profile. 
+
+# Scenario Brief Description
 
 The customer goes through the necessary basic identification, authentication, and authorization checks. They are already flagged as a disaster victim and this detail is used in the contact routing decision. An assisted servicing session is initiated and the contact routed to a CSR trained in disaster relief. The Customer Service Representative (CSR) gets the details of their active case as background. 
 
