@@ -11,12 +11,13 @@ The provided reference implementation can serve as an example. While some result
 
 We invite the collaboration of technology experts and experienced business practitioners across the financial services industry to join and participate in co-creation.
 
-## Contributing
+## Get involved with the community
+__(Under construction)__
 
 We welcome contributions! Here's how you can contribute:
 
 * _Browse issues_ or _file an issue_
-* Chat with us _zulipchat_
+* Chat with us on [ZulipChat](https://mercury.zulipchat.com/)
 * Contribute:
    * Read the _contributing guide_ before starting work on an issue
    * Try to fix _good first issues_
