@@ -20,14 +20,14 @@
   </modules>
 
   <properties>
-    <!-- <java.version>1.8</java.version> -->
     <maven-compiler-version>3.8.1</maven-compiler-version>
-    <maven.compiler.release>8</maven.compiler.release>
-    <!-- <maven.compiler.parameters>true</maven.compiler.parameters> -->
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <fuse-springboot-version>7.4.0.fuse-740036-redhat-00002</fuse-springboot-version>
+    <springboot-version>2.1.4.RELEASE-redhat-00001</springboot-version>
   </properties>
 
   <dependencyManagement>
@@ -35,7 +35,7 @@
       <dependency>
         <groupId>org.jboss.redhat-fuse</groupId>
         <artifactId>fuse-springboot-bom</artifactId>
-        <version>7.4.0.fuse-740036-redhat-00002</version>
+        <version>${fuse-springboot-version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -56,7 +56,20 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-version}</version>
-        </plugin>        
+        </plugin>
+
+        <plugin>
+          <!-- Build an executable JAR -->
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${springboot-version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jboss.redhat-fuse</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${fuse-springboot-version}</version>
+        </plugin>
+  
       </plugins>
     </pluginManagement>
   </build>
@@ -82,17 +95,6 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
-		<repository>
-			<id>github</id>
-			<name>GitHub Packages for 'open-accelerators/mercury'</name>
-			<url>https://maven.pkg.github.com/open-accelerators/mercury</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
   </repositories>
 
   <pluginRepositories>
@@ -117,14 +119,5 @@
       </snapshots>
     </pluginRepository>  
   </pluginRepositories>
-
-
-  <distributionManagement>
-    <repository>
-      <id>github</id>
-      <name>GitHub Packages for 'open-accelerators/mercury'</name>
-      <url>https://maven.pkg.github.com/open-accelerators/mercury</url>
-    </repository>
- </distributionManagement>
  
 </project>
