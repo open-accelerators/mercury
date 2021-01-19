@@ -2,16 +2,15 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>open-accelerators.mercury.examples</groupId>
-  <artifactId>product-eligibility-dmn</artifactId>
-  <packaging>kjar</packaging>
-  <name>Product Service Eligibility Decision Model</name>
-
 	<parent>
 		<groupId>open-accelerators.mercury.examples</groupId>
 		<artifactId>mercury-demo</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
+
+  <groupId>open-accelerators.mercury.examples</groupId>
+  <artifactId>lib-eligibility-decisionmodel</artifactId>
+  <packaging>kjar</packaging>
 
   <build>
     <plugins>

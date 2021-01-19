@@ -10,9 +10,9 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>bianservicedomainmodels</module>
-    <module>product-eligibility-DMN</module>
-    <module>servicing-order-ui</module>
+    <module>lib-shared-datamodel</module>
+    <module>lib-eligibility-decisionmodel</module>
+    <module>app-servicing-order</module>
     <module>sd-customer-eligibility</module>
     <module>sd-product-deployment</module>
     <module>sd-product-directory</module>
@@ -60,6 +60,64 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <repositories>
+    <repository>
+      <id>jboss-ga-repository</id>
+      <url>http://maven.repository.redhat.com/ga/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>  
+    <repository>
+      <id>jboss-earlyaccess-repository</id>
+      <url>http://maven.repository.redhat.com/earlyaccess/all/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages for 'open-accelerators/mercury'</name>
+			<url>https://maven.pkg.github.com/open-accelerators/mercury</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jboss-ga-plugin-repository</id>
+      <url>http://maven.repository.redhat.com/ga/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>jboss-earlyaccess-plugin-repository</id>
+      <url>http://maven.repository.redhat.com/earlyaccess/all/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>  
+  </pluginRepositories>
+
 
   <distributionManagement>
     <repository>

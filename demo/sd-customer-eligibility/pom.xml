@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
-
-  <groupId>open-accelerators.mercury.examples</groupId>
-  <artifactId>sd-customer-product-service-eligibility</artifactId>
 
 	<parent>
 		<groupId>open-accelerators.mercury.examples</groupId>
@@ -12,21 +8,20 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-  <properties>
-    <bom.version>7.4.0.fuse-740036-redhat-00002</bom.version>
-  </properties>
+  <groupId>open-accelerators.mercury.examples</groupId>
+  <artifactId>sd-customer-product-service-eligibility</artifactId>
 
   <dependencies>
     <dependency>
-      <groupId>com.redhat.mercury.examples</groupId>
+      <groupId>open-accelerators.mercury.examples</groupId>
       <artifactId>product-eligibility-dmn</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.redhat.mercury.examples</groupId>
-      <artifactId>bianservicedomainmodels</artifactId>
-      <version>6.0.0</version>
+      <groupId>open-accelerators.mercury.examples</groupId>
+      <artifactId>lib-shared-datamodel</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -193,7 +188,6 @@
       <plugin>
         <groupId>org.jboss.redhat-fuse</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>7.4.0.fuse-740036-redhat-00002</version>
         <executions>
           <execution>
             <goals>
@@ -216,62 +210,5 @@
       </plugin>
     </plugins>
   </build>
-
-  <repositories>
-    <repository>
-      <id>jboss-ga-repository</id>
-      <url>http://maven.repository.redhat.com/ga/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>  
-    <repository>
-      <id>jboss-earlyaccess-repository</id>
-      <url>http://maven.repository.redhat.com/earlyaccess/all/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-		<repository>
-			<id>github</id>
-			<name>GitHub Packages for 'open-accelerators/mercury'</name>
-			<url>https://maven.pkg.github.com/open-accelerators/mercury</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>jboss-ga-plugin-repository</id>
-      <url>http://maven.repository.redhat.com/ga/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>jboss-earlyaccess-plugin-repository</id>
-      <url>http://maven.repository.redhat.com/earlyaccess/all/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>  
-  </pluginRepositories>
 
 </project>
