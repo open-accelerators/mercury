@@ -1,13 +1,26 @@
+# common IDE, java and maven generated resouces
 */.mvn/maven-wrapper.jar
-
 */target/**
-
-.DS_Store
 .settings
 .classpath
 .settings
 .factorypath
 .project
 .idea
-
 *.iml
+
+.DS_Store
+
+# Docusaurus generated folders
+website/translated_docs/
+website/build/
+website/i18n/
+
+# Yarn build
+website/node_modules/
+
+# Generated docs
+docs/contributing.md
+
+# We use YARN
+website/package-lock.json
