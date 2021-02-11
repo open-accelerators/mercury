@@ -14,7 +14,7 @@
   <dependencies>
     <dependency>
       <groupId>open-accelerators.mercury.examples</groupId>
-      <artifactId>product-eligibility-dmn</artifactId>
+      <artifactId>lib-eligibility-decisionmodel</artifactId>
       <version>${project.version}</version>
     </dependency>
 
