@@ -1,9 +1,0 @@
-target
-.mvn/maven-wrapper.jar
-.settings
-.classpath
-.settings
-.factorypath
-.project
-
-*.iml
