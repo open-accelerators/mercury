@@ -13,9 +13,6 @@ public final class CustomerCreditRatingRoute extends RouteBuilder {
      * Defines Apache Camel routes using REST DSL fluent API.
      */
     public void configure() {
-
-        restConfiguration().component("servlet");
-
         rest()
             .post("/customer-credit-rating/activation")
                 .id("activateSDCustomerCreditRating")

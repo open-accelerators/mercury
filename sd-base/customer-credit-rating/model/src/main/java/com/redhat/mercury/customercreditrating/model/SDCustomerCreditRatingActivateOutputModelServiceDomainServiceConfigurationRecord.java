@@ -25,7 +25,7 @@ import java.io.IOException;
  * SDCustomerCreditRatingActivateOutputModelServiceDomainServiceConfigurationRecord
  */
 
-@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-06-03T15:34:54.132884+02:00[Europe/Madrid]")
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-06-03T16:36:13.702891+02:00[Europe/Madrid]")
 public class SDCustomerCreditRatingActivateOutputModelServiceDomainServiceConfigurationRecord {
   @SerializedName("serviceDomainServiceConfigurationSettingReference")
   private String serviceDomainServiceConfigurationSettingReference = null;

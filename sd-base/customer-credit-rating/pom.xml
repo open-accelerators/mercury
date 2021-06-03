@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>open-accelerators.mercury</groupId>
+        <groupId>com.redhat.mercury</groupId>
         <artifactId>mercury-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -12,10 +12,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>camel-rest</module>
         <module>model</module>
+        <module>camel-rest</module>
     </modules>
-    
+
     <profiles>
         <profile>
             <id>openapi-dsl</id>
@@ -29,15 +29,16 @@
                     <plugin>
                         <groupId>org.apache.camel</groupId>
                         <artifactId>camel-restdsl-openapi-plugin</artifactId>
+                        <inherited>false</inherited>
                         <configuration>
-                            <specificationUri>${project.basedir}/api/CustomerCreditRating.json</specificationUri>
+                            <specificationUri>https://raw.githubusercontent.com/bian-official/public/main/release9.1/semantic-apis/swaggers/CustomerCreditRating.json</specificationUri>
                             <className>CustomerCreditRatingRoute</className>
                             <packageName>com.redhat.mercury.customercreditrating.camel</packageName>
                             <outputDirectory>${project.basedir}/camel-rest/src/main/java</outputDirectory>
                             <modelPackage>com.redhat.mercury.customercreditrating.model</modelPackage>
                             <modelOutput>${project.basedir}/model</modelOutput>
+                            <restConfiguration>false</restConfiguration>
                         </configuration>
-                        <inherited>false</inherited>
                         <executions>
                             <execution>
                                 <id>generate-dsl</id>
