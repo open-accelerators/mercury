@@ -1,4 +1,4 @@
-package com.redhat.mercury.customercreditrating;
+package com.redhat.mercury.customercreditrating.camel;
 
 import javax.annotation.Generated;
 import org.apache.camel.builder.RouteBuilder;

@@ -15,9 +15,7 @@
         <module>camel-rest</module>
         <module>model</module>
     </modules>
-
-    <dependencyManagement>
-    </dependencyManagement>
+    
     <profiles>
         <profile>
             <id>openapi-dsl</id>
@@ -34,8 +32,10 @@
                         <configuration>
                             <specificationUri>${project.basedir}/api/CustomerCreditRating.json</specificationUri>
                             <className>CustomerCreditRatingRoute</className>
-                            <packageName>com.redhat.mercury.customercreditrating</packageName>
+                            <packageName>com.redhat.mercury.customercreditrating.camel</packageName>
                             <outputDirectory>${project.basedir}/camel-rest/src/main/java</outputDirectory>
+                            <modelPackage>com.redhat.mercury.customercreditrating.model</modelPackage>
+                            <modelOutput>${project.basedir}/model</modelOutput>
                         </configuration>
                         <inherited>false</inherited>
                         <executions>
@@ -43,7 +43,7 @@
                                 <id>generate-dsl</id>
                                 <phase>generate-sources</phase>
                                 <goals>
-                                    <goal>generate</goal>
+                                    <goal>generate-with-dto</goal>
                                 </goals>
                             </execution>
                         </executions>
