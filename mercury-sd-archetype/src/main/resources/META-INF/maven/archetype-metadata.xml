@@ -1,0 +1,29 @@
+<archetype-descriptor xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 https://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd" 
+    name="mercury-sd-archetype">
+    <requiredProperties>
+        <requiredProperty key="serviceDomainName"/>
+    </requiredProperties>
+    <modules>
+        <module dir="camel-rest" id="${rootArtifactId}-camel-rest" name="${rootArtifactId}-camel-rest">
+            <fileSets>
+                <fileSet filtered="true" packaged="true">
+                    <directory>src/main/java</directory>
+                </fileSet>
+                <fileSet>
+                    <directory>src/test/java</directory>
+                </fileSet>
+            </fileSets>
+        </module>
+        <module dir="model" id="${rootArtifactId}-model" name="${rootArtifactId}-model">
+            <fileSets>
+                <fileSet filtered="true" packaged="true">
+                    <directory>src/main/java</directory>
+                </fileSet>
+                <fileSet>
+                    <directory>src/test/java</directory>
+                </fileSet>
+            </fileSets>
+        </module>
+    </modules>
+</archetype-descriptor>
