@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: my-cra-pipeline-run-
+spec:
+  pipelineRef:
+    name: default-quarkus-pipeline
+  params:
+    - name: application
+      value: my-credit-rating-agency
+    - name: source-repo-url
+      value: https://github.com/ruromero/mercury.git
+    - name: source-repo-revision
+      value: my-agency
+    - name: source-repo-subdirectory
+      value: 'examples/customer-credit-rating/my-credit-rating-agency'
+    - name: dockerfile
+      value: ./src/main/docker/Dockerfile.jvm
+    - name: image-registry
+      value: image-registry.openshift-image-registry.svc.cluster.local:5000
+    - name: image-repository
+      value: ruben-ccr
+  workspaces:
+    - name: source
+      persistentvolumeclaim:
+        claimName: source-pvc
+    - name: maven-cache
+      persistentvolumeclaim:
+        claimName: maven-cache-pvc

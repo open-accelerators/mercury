@@ -1,0 +1,60 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: default-quarkus-pipeline
+spec:
+  params:
+    - name: application
+      type: string
+    - name: source-repo-url
+      type: string
+    - name: source-repo-revision
+      type: string
+    - name: source-repo-subdirectory
+      type: string
+      default: ''
+    - name: image-registry
+      type: string
+    - name: image-repository
+      type: string
+    - name: dockerfile
+      type: string
+  workspaces:
+    - name: source
+    - name: maven-cache
+  tasks:
+    - name: fetch-source-repository
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: source
+      params:
+        - name: url
+          value: $(params.source-repo-url)
+        - name: revision
+          value: $(params.source-repo-revision)
+        - name: subdirectory
+          value: $(params.source-repo-subdirectory)
+        - name: deleteExisting
+          value: "true"
+    - name: maven-build-and-deploy
+      taskRef:
+        name: quarkus-native-build
+      runAfter:
+        - fetch-source-repository
+      workspaces:
+        - name: source
+          workspace: source
+        - name: maven-cache
+          workspace: maven-cache
+      params:
+        - name: SUBDIRECTORY
+          value: $(params.source-repo-subdirectory)
+        - name: IMAGE
+          value: $(params.image-registry)/$(params.image-repository)/$(params.application):$(params.source-repo-revision)
+        - name: DOCKERFILE
+          value: $(params.dockerfile)
+---
