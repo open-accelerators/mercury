@@ -18,6 +18,8 @@ paths:
           name: tin
           in: path
           required: true
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -43,6 +45,8 @@ paths:
           name: tin
           in: path
           required: true
+          schema:
+            type: string
       requestBody:
         description: Updated `CreditRating` information.
         content:
@@ -76,6 +80,8 @@ paths:
           name: tin
           in: path
           required: true
+          schema:
+            type: string
       responses:
         "204":
           description: Successful response
@@ -96,6 +102,8 @@ paths:
         name: tin
         in: path
         required: true
+        schema:
+          type: string
   /creditratings:
     summary: Path used to manage the list of credit ratings.
     description: "The REST endpoint/path used to list and create zero or more `CreditRating`\
