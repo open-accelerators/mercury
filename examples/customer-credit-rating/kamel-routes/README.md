@@ -12,9 +12,9 @@ kamel run -e INTERNAL_CRA_ENDPOINT=my-credit-rating-agency:8080 \
  --name internal-reporting-java
 ```
 
-### Examples
+### Examples Internal
 
-#### Retrieve
+#### Retrieve Internal
 
 ```shell script
 $ curl http://internal-reporting-java-ruben-ccr.bian-coreless-myorg-example.com/customer-credit-rating/ABC-123-X/customer-credit-rating-state/crRefId/internalreporting/bqRefId
@@ -24,7 +24,7 @@ $ curl http://internal-reporting-java-ruben-ccr.bian-coreless-myorg-example.com/
 }
 ```
 
-#### Capture
+#### Capture Internal
 
 ```shell script
 $ curl -XPUT -H "Content-Type: application/json" -v http://internal-reporting-java-ruben-ccr.bian-coreless-myorg-example.com/customer-credit-rating/ABC-123-X/customer-credit-rating-state/crRefId/internalreporting/bqRefId/capture -d '{"tin": "ABC-123-X", "score": 99}'
@@ -43,6 +43,10 @@ kamel run -e ACME_CRA_ENDPOINT=my-microcks-microcks.bian-coreless-myorg-example.
  --name external-reporting-java
 ```
 
+### Examples External
+
+#### Retrieve External
+
 ```shell script
 $ curl http://external-reporting-java-ruben-ccr.bian-coreless-myorg-example.com/customer-credit-rating/ABC-123-X/customer-credit-rating-state/crRefId/externalreporting/bqRefId
 {
@@ -51,7 +55,7 @@ $ curl http://external-reporting-java-ruben-ccr.bian-coreless-myorg-example.com/
 }
 ```
 
-#### Capture
+#### Capture External
 
 ```shell script
 $ curl -XPUT -H "Content-Type: application/json" -v http://external-reporting-java-ruben-ccr.bian-coreless-myorg-example.com/customer-credit-rating/ABC-123-X/customer-credit-rating-state/crRefId/externalreporting/bqRefId/capture -d '{"tin": "ABC-123-X", "score": 99}'

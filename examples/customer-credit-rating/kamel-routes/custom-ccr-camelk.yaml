@@ -1,0 +1,56 @@
+# camel-k: dependency=mvn:com.redhat.mercury:customer-credit-rating-model:1.0.0-SNAPSHOT
+- from:
+    uri: direct:captureCustomerCreditRatingStateExternalReportingUpdate
+    steps:
+      - set-header:
+          name: "CamelHttpUri"
+          simple: "{{env:SVC_ENDPOINT}}"
+      - set-header:
+          name: "CamelHttpPath"
+          simple: "${in.header.CamelHttpPath}"
+      - to:
+          uri: "http:replace.me?throwExceptionOnFailure=false"
+      - to:
+          uri: "log:response?level=INFO&showBody=true&showHeaders=true"       
+
+- from:
+    uri: direct:captureCustomerCreditRatingStateInternalReportingUpdate
+    steps:
+      - set-header:
+          name: "CamelHttpUri"
+          simple: "{{env:SVC_ENDPOINT}}"
+      - set-header:
+          name: "CamelHttpPath"
+          simple: "${in.header.CamelHttpPath}"
+      - to:
+          uri: "http:replace.me?throwExceptionOnFailure=false"
+      - to:
+          uri: "log:response?level=INFO&showBody=true&showHeaders=true"
+
+- from:
+    uri: direct:retrieveCustomerCreditRatingStateExternalReporting
+    steps:
+      - set-header:
+          name: "CamelHttpUri"
+          simple: "{{env:SVC_ENDPOINT}}"
+      - set-header:
+          name: "CamelHttpPath"
+          simple: "${in.header.CamelHttpPath}/"
+      - to:
+          uri: "http:replace.me?throwExceptionOnFailure=false"
+      - to:
+          uri: "log:response?level=INFO&showBody=true&showHeaders=true"   
+
+- from:
+    uri: direct:retrieveCustomerCreditRatingStateInternalReporting
+    steps:
+      - set-header:
+          name: "CamelHttpUri"
+          simple: "{{env:SVC_ENDPOINT}}"
+      - set-header:
+          name: "CamelHttpPath"
+          simple: "${in.header.CamelHttpPath}/"
+      - to:
+          uri: "http:replace.me?throwExceptionOnFailure=false"
+      - to:
+          uri: "log:response?level=INFO&showBody=true&showHeaders=true"

@@ -1,0 +1,83 @@
+apiVersion: camel.apache.org/v1alpha1
+kind: Kamelet
+metadata:
+  name: bian-rest-source
+  annotations:
+    camel.apache.org/kamelet.support.level: "PoC"
+    camel.apache.org/catalog.version: "bian-SNAPSHOT"
+    camel.apache.org/provider: "Red Hat Inc."
+    camel.apache.org/kamelet.group: "BIAN"
+  labels:
+    camel.apache.org/kamelet.type: "source"
+spec:
+  definition:
+    title: "BIAN REST Source"
+    description: |-
+      Receive BIAN REST requests
+    required:
+      - serviceDomain
+    type: object
+    properties:
+      serviceDomain:
+        title: Service Domain Name
+        description: The Service Domain name as specified in the BIAN Semantic APIs
+        type: string
+        enum:
+          - CustomerCreditRating
+          - CustomerOffer
+  types:
+    out:
+      mediaType: application/json
+  dependencies:
+    - "camel:http"
+    - "camel:kamelet"
+  flow:
+    rest:
+      binding-mode: json
+      consumes: application/json
+      produces: application/json    
+      verb:
+        - method: put
+          uri: "/customer-credit-rating/{sdReferenceId}/customer-credit-rating-state/{crReferenceId}/externalreporting/{bqReferenceId}/capture"
+          param:
+            - name: sdReferenceId
+              type: path
+              dataType: string
+              required: true
+            - name: crReferenceId
+              type: path
+              dataType: string
+              required: true
+            - name: bqReferenceId
+              type: path
+              dataType: string
+              required: true
+            - name: body
+              type: body
+              required: true
+          steps:
+            - to: "log:foo?level=INFO&showBody=true&showHeaders=true"
+            - to: "kamelet:sink"
+        - method: get
+          uri: "/customer-credit-rating/{sdReferenceId}/customer-credit-rating-state/{crReferenceId}/externalreporting/{bqReferenceId}/"
+          param:
+            - name: sdReferenceId
+              type: path
+              dataType: string
+              required: true
+            - name: crReferenceId
+              type: path
+              dataType: string
+              required: true
+            - name: bqReferenceId
+              type: path
+              dataType: string
+              required: true
+            - name: queryparams
+              type: query
+              dataType: string
+              required: false
+          steps:
+            - to: "log:foo?level=INFO&showBody=true&showHeaders=true"
+            - to: "kamelet:sink"
+          

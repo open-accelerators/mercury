@@ -1,0 +1,27 @@
+{
+  "specversion": "1.0",
+  "id": "O234-345-890",
+  "source": "https://reactive-coffee-shop.io/1234/order",
+  "type": "org.bian.customercreditrating.state.externalreporting.capture",
+  "time": "2020-11-25T09:05:00Z",
+  "datacontenttype": "application/json",
+  "bian-sdreferenceid": "sd-001",
+  "bian-crreferenceid": "cr-001",
+  "bian-bqreferenceid": "bq-001",
+  "data": {
+    "customerCreditRatingStateInstanceRecord": {
+      "customerReference": "some text"
+    },
+    "customerCreditRatingStateInstanceReference": "some text",
+    "externalReportingInstanceReference": "some text",
+    "externalReportingInstanceRecord": {
+      "ratingAgencyReportSchedule": "some text",
+      "ratingAgencyCreditReportType": "some text",
+      "ratingAgencyCreditReportDate": "some text"
+    },
+    "externalReportingCaptureActionTaskRecord": {},
+    "captureRecordType": {
+      "captureInputRecord": {}
+    }
+  }
+}

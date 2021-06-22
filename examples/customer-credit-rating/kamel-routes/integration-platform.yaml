@@ -1,0 +1,12 @@
+apiVersion: camel.apache.org/v1
+kind: IntegrationPlatform
+metadata:
+  name: default
+  namespace: ruben-ccr
+spec:
+  build:
+    maven:
+      settings:
+        configMapKeyRef:
+          key: settings.xml
+          name: maven-settings
