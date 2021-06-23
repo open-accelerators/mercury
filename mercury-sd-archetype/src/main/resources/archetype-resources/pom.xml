@@ -32,7 +32,7 @@
                         <artifactId>camel-restdsl-openapi-plugin</artifactId>
                         <inherited>false</inherited>
                         <configuration>
-                            <specificationUri>https://raw.githubusercontent.com/bian-official/public/main/release9.1/semantic-apis/swaggers/${serviceDomainName}.json</specificationUri>
+                            <specificationUri>https://raw.githubusercontent.com/ruromero/public/openapiv3/release9.1/semantic-apis/swaggers/${serviceDomainName}.json</specificationUri>
                             <className>${serviceDomainName}Route</className>
                             <packageName>com.redhat.mercury.${artifactId.replaceAll("-", "")}.camel</packageName>
                             <outputDirectory>${project.basedir}/camel-rest/src/main/java</outputDirectory>

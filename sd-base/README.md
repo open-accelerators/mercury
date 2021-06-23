@@ -7,6 +7,13 @@ Each project contains two modules:
 * Java DTO Model
 * Java Camel Rest DSL routes
 
+The content of these modules are generated using the `camel-restdsl-openapi-plugin` Maven Plugin. If you want to generate
+the contents again use the `openapi-dsl` profile.
+
+```shell script
+mvn clean install -Popenapi-dsl
+```
+
 If you want to generate a new project you can just use the [mercury-sd-archetype](../mercury-sd-archetype) as follows:
 
 ```{bash}

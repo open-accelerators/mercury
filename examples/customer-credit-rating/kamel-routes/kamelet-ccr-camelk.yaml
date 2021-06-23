@@ -1,0 +1,16 @@
+# camel-k: language=yaml
+- from:
+    uri: kamelet:bian-http-source?serviceDomain=CustomerCreditRating
+    steps:
+      - set-header:
+          name: "CamelHttpUri"
+          simple: "{{env:SVC_ENDPOINT}}"
+      - set-header:
+          name: "CamelHttpPath"
+          simple: "${in.header.CamelHttpPath}"
+      - to:
+          uri: "log:request?level=INFO&showBody=true&showHeaders=true"
+      - to:
+          uri: "http:replace.me?throwExceptionOnFailure=false"
+      - to:
+          uri: "log:response?level=INFO&showBody=true&showHeaders=true"
