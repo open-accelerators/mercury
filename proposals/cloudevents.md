@@ -137,7 +137,7 @@ And the result, when available, can be either returned immediately or asynchrono
 }
 ```
 
-## RESTFul API to CloudEvent Mapping
+## RESTful API to CloudEvent Mapping
 
 ### The `type` parameter
 
@@ -178,3 +178,11 @@ that are context specific, in this case, for BIAN the following attributes are p
 * `bianqueryfilter`: Filter to refine the result set. e.g. `Status = 'pending'`
 
 These context attributes are extracted from the path and query parameters.
+
+## Communication patterns
+
+Using a common and predictable message format communications will become simpler and it will be possible to just focus on the messaging patterns and transports to use rather than the message format, type conversions and marshalling.
+
+The following example shows a simplified representation of the New Card Application scenario where synchronous request-response, asynchronous and broadcast patterns are used but they all have in common the use of CloudEvents therefore developers and architects only have to focus on logical data transformation between domains and decide which exchange pattern to use in each case (e.g. Real-time, Delayed response, Broadcast notification on update, etc.)
+
+![new card application](./images/new-card-application.jpeg)
