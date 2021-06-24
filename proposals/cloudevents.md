@@ -183,6 +183,36 @@ These context attributes are extracted from the path and query parameters.
 
 Using a common and predictable message format communications will become simpler and it will be possible to just focus on the messaging patterns and transports to use rather than the message format, type conversions and marshalling.
 
-The following example shows a simplified representation of the New Card Application scenario where synchronous request-response, asynchronous and broadcast patterns are used but they all have in common the use of CloudEvents therefore developers and architects only have to focus on logical data transformation between domains and decide which exchange pattern to use in each case (e.g. Real-time, Delayed response, Broadcast notification on update, etc.)
+### Synchronous requests
 
-![new card application](./images/new-card-application.jpeg)
+This is the most common pattern in RESTful APIs where an operation is requested and an
+immediate response is expected. The response can be another operation or set of operations
+that are a consequence of the initial request.
+
+Examples are:
+
+* Create some resource --> Resource created
+* Update some resource --> Resource updated
+* Retrieve some resource --> Resource
+* Perform an action --> Acknowledge
+
+![messaging synchronous example](./images/messaging-sync.jpeg)
+
+The example shows a strict sequence of synchronous actions where each request is started
+after the previous one has been completed.
+
+### Event driven communication
+
+Event driven communication is commonly used for fire and forget, fan out or asynchronous interactions between systems.
+
+It allows detaching the caller from the callee (or callees) but it requires to define or
+agree on the response channel when needed.
+
+![messaging asynchronous example](./images/messaging-async.jpeg)
+
+The previous example shows the asynchronous processing or a Credit Card Request that is
+consumed by the Credit Card SD. After doing some internal operations decides to emit an Issue a Credit Card Event that is broadcasted.
+
+* Payment Order SD to order a payment for the annual fee
+* Correspondence SD to prepare and ship the Welcome Pack
+* Correspondence SD to mail the PIN to the customer
