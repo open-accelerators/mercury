@@ -1,8 +1,10 @@
 package com.redhat.mercury.util.schemavalidator.external;
 
+import com.redhat.mercury.util.schemavalidator.AbstructJsonSchemaValidator;
+import com.redhat.mercury.util.schemavalidator.api.SchemaValidator;
 import io.apicurio.registry.rest.client.RegistryClient;
 import io.apicurio.registry.rest.client.RegistryClientFactory;
-import org.everit.json.schema.Schema;
+import org.apache.commons.lang3.StringUtils;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -13,7 +15,7 @@ import java.io.InputStream;
  * A json schema validator that uses an external Apicurio registry that contains the schemas to validate against.
  * The actual validation is performed by everit json schema validator @see <a href="https://github.com/everit-org/json-schema">https://github.com/everit-org/json-schema</a>
  */
-public class ExternalJsonSchemaValidator {
+public class ExternalJsonSchemaValidator extends AbstructJsonSchemaValidator implements SchemaValidator {
 
     private RegistryClient client;
 
@@ -21,29 +23,25 @@ public class ExternalJsonSchemaValidator {
      * The constructor receives the Apicurio registry URL to work with.
      * The validator will use the regitry to fetch the appropriate schema to validate the json
      * @param apicurioRegistryUrl The Apicurio registry URL
-     */
-    public ExternalJsonSchemaValidator(String apicurioRegistryUrl) {
-        client = RegistryClientFactory.create(apicurioRegistryUrl);
-    }
-
-    /**
-     * When validating a schema the validator calls the Apicurio regitry to fetch the scheam.
-     * @param groupId The groupId of the schema in Apicurio, can be null, when null the default groupId is used.
+     * @param groupId The groupId of the schema in Apicurio, can be null.
      * @param artifactId The artifactId of the of the schema in Apicurio
-     * @param json The json to be validated against the schema
      */
-    public void validateSchema(String groupId, String artifactId, String json) {
-        if(groupId == null){
-            groupId = "default";
+    public ExternalJsonSchemaValidator(String apicurioRegistryUrl, String groupId, String artifactId) {
+        if(StringUtils.isBlank(apicurioRegistryUrl)){
+            throw new IllegalArgumentException("apicurioRegistryUrl is a mandatory parameter");
         }
+
+        if(StringUtils.isBlank(artifactId)){
+            throw new IllegalArgumentException("artifactId is a mandatory parameter");
+        }
+
+        client = RegistryClientFactory.create(apicurioRegistryUrl);
 
         //Get schema from Apicurio
         InputStream schemaData = client.getLatestArtifact(groupId, artifactId);
 
         JSONObject jsonSchemaObject = new JSONObject(new JSONTokener(schemaData));
-        JSONObject jsonSubject = new JSONObject(new JSONTokener(json));
 
-        Schema schema = SchemaLoader.load(jsonSchemaObject);
-        schema.validate(jsonSubject);
+        this.schema = SchemaLoader.load(jsonSchemaObject);
     }
 }

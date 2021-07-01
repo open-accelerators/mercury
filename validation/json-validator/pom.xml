@@ -15,9 +15,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-        <apicurio-registry.version>2.1.0-SNAPSHOT</apicurio-registry.version>
+        <apicurio-registry.version>2.0.1.Final</apicurio-registry.version>
         <org.everit.json.schema.version>1.12.3</org.everit.json.schema.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
+        <junit.version>5.7.2</junit.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
     </properties>
 
     <distributionManagement>
@@ -56,9 +58,14 @@
             <version>${microprofile-config-api.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.7.2</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
