@@ -9,29 +9,29 @@ Currently, we are supporting 2 types of schema validators:
 
 An example of using the InternalJsonSchemaValidator:
 ```
-InternalJsonSchemaValidator validator = new InternalJsonSchemaValidator();
+InternalJsonSchemaValidator validator = new InternalJsonSchemaValidator("{\n" +
+                "  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n" +
+                "  \"type\": \"object\",\n" +
+                "  \"properties\": {\n" +
+                "    \"itemId\": {\n" +
+                "      \"type\": \"string\"\n" +
+                "    },\n" +
+                "    \"quantity\": {\n" +
+                "      \"type\": \"integer\"\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"required\": [\n" +
+                "    \"itemId\",\n" +
+                "    \"quantity\"\n" +
+                "  ]\n" +
+                "}");
 
-validator.validateSchema("{" +
-        "  \"$schema\": \"http://json-schema.org/draft-04/schema#\"," +
-        "  \"type\": \"object\"," +
-        "  \"properties\": {" +
-        "    \"itemId\": {" +
-        "      \"type\": \"string\"" +
-        "    }," +
-        "    \"quantity\": {" +
-        "      \"type\": \"integer\"" +
-        "    }" +
-        "  }," +
-        "  \"required\": [" +
-        "    \"itemId\"," +
-        "    \"quantity\"" +
-        "  ]" +
-        "}","{\"itemId\":\"abcde\",\"quantity\":5}");
+validator.validateJson("{\"itemId\":\"abcde\",\"quantity\":5}");
 ```
 
 An example of using the ExternalJsonSchemaValidator:
 ```
-ExternalJsonSchemaValidator validator = new ExternalJsonSchemaValidator(registryUrl);
+ExternalJsonSchemaValidator validator = new ExternalJsonSchemaValidator(registryUrl, null, artifactId);
 
-validator.validateSchema("testGroup", "testArtifact","{\"itemId\":\"abcde\",\"quantity\":5}");
+validator.validateJson("{\"itemId\":\"abcde\",\"quantity\":5}");
 ```
