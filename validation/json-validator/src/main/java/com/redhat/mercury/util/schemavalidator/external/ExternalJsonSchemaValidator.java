@@ -1,10 +1,10 @@
 package com.redhat.mercury.util.schemavalidator.external;
 
-import com.redhat.mercury.util.schemavalidator.AbstructJsonSchemaValidator;
-import com.redhat.mercury.util.schemavalidator.api.SchemaValidator;
+import com.redhat.mercury.util.schemavalidator.AbstractJsonSchemaValidator;
+import com.redhat.mercury.util.schemavalidator.api.JsonSchemaValidator;
 import io.apicurio.registry.rest.client.RegistryClient;
 import io.apicurio.registry.rest.client.RegistryClientFactory;
-import org.apache.commons.lang3.StringUtils;
+import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -15,9 +15,11 @@ import java.io.InputStream;
  * A json schema validator that uses an external Apicurio registry that contains the schemas to validate against.
  * The actual validation is performed by everit json schema validator @see <a href="https://github.com/everit-org/json-schema">https://github.com/everit-org/json-schema</a>
  */
-public class ExternalJsonSchemaValidator extends AbstructJsonSchemaValidator implements SchemaValidator {
+public class ExternalJsonSchemaValidator extends AbstractJsonSchemaValidator implements JsonSchemaValidator {
 
-    private RegistryClient client;
+    private final RegistryClient client;
+
+    private Schema schema;
 
     /**
      * The constructor receives the Apicurio registry URL to work with.
@@ -27,11 +29,11 @@ public class ExternalJsonSchemaValidator extends AbstructJsonSchemaValidator imp
      * @param artifactId The artifactId of the of the schema in Apicurio
      */
     public ExternalJsonSchemaValidator(String apicurioRegistryUrl, String groupId, String artifactId) {
-        if(StringUtils.isBlank(apicurioRegistryUrl)){
+        if(apicurioRegistryUrl == null || apicurioRegistryUrl.trim().isEmpty()){
             throw new IllegalArgumentException("apicurioRegistryUrl is a mandatory parameter");
         }
 
-        if(StringUtils.isBlank(artifactId)){
+        if(artifactId == null || artifactId.trim().isEmpty()){
             throw new IllegalArgumentException("artifactId is a mandatory parameter");
         }
 
@@ -43,5 +45,14 @@ public class ExternalJsonSchemaValidator extends AbstructJsonSchemaValidator imp
         JSONObject jsonSchemaObject = new JSONObject(new JSONTokener(schemaData));
 
         this.schema = SchemaLoader.load(jsonSchemaObject);
+    }
+
+    /**
+     * Get the the schema this validator is validating against
+     * @return The schema this validator is validating against
+     */
+    @Override
+    public Schema getSchema() {
+        return schema;
     }
 }

@@ -19,7 +19,6 @@
         <org.everit.json.schema.version>1.12.3</org.everit.json.schema.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <junit.version>5.7.2</junit.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
     </properties>
 
     <distributionManagement>
@@ -56,11 +55,6 @@
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-api</artifactId>
             <version>${microprofile-config-api.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
