@@ -1,7 +1,5 @@
-package com.redhat.mercury.util.schemavalidator.internal;
+package com.redhat.mercury.util.validation.json;
 
-import com.redhat.mercury.util.schemavalidator.AbstractJsonSchemaValidator;
-import com.redhat.mercury.util.schemavalidator.api.JsonSchemaValidator;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
@@ -11,9 +9,9 @@ import org.json.JSONTokener;
  * A json schema validator.
  * The actual validation is performed internally by everit json schema validator @see <a href="https://github.com/everit-org/json-schema">https://github.com/everit-org/json-schema</a>
  */
-public class InternalJsonSchemaValidator extends AbstractJsonSchemaValidator implements JsonSchemaValidator {
+public class InternalJsonSchemaValidator extends JsonSchemaValidator {
 
-    private Schema schema;
+    private final Schema schema;
 
     /**
      * The constructor receives schema to validate against
@@ -23,9 +21,8 @@ public class InternalJsonSchemaValidator extends AbstractJsonSchemaValidator imp
         if(jsonSchema == null || jsonSchema.trim().isEmpty()){
             throw new IllegalArgumentException("jsonSchema is a mandatory parameter");
         }
-
         JSONObject jsonSchemaObject = new JSONObject(new JSONTokener(jsonSchema));
-        schema = SchemaLoader.load(jsonSchemaObject);
+        this.schema = SchemaLoader.load(jsonSchemaObject);
     }
 
     /**
@@ -33,7 +30,7 @@ public class InternalJsonSchemaValidator extends AbstractJsonSchemaValidator imp
      * @return The schema this validator is validating against
      */
     @Override
-    public Schema getSchema() {
+    protected final Schema getSchema() {
         return schema;
     }
 }

@@ -1,17 +1,16 @@
-package schemavalidator.internal;
+package com.redhat.mercury.util.validation.json;
 
-import com.redhat.mercury.util.schemavalidator.api.JsonSchemaValidator;
-import com.redhat.mercury.util.schemavalidator.internal.InternalJsonSchemaValidator;
 import org.everit.json.schema.SchemaException;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class InternalJsonSchemaValidatorTest {
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class InternalJsonSchemaValidatorTest {
 
     @Test
-    public void testJsonSchemaValidator(){
+    void testJsonSchemaValidator(){
         JsonSchemaValidator validator = new InternalJsonSchemaValidator("{\n" +
                 "  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n" +
                 "  \"type\": \"object\",\n" +
@@ -29,12 +28,12 @@ public class InternalJsonSchemaValidatorTest {
                 "  ]\n" +
                 "}");
 
-        validator.validateJson("{\"itemId\":\"abcde\",\"quantity\":5}");
-        validator.validateJson("{\"itemId\":\"abcde\",\"quantity\":5,\"price\":100}");
+        validator.validate("{\"itemId\":\"abcde\",\"quantity\":5}");
+        validator.validate("{\"itemId\":\"abcde\",\"quantity\":5,\"price\":100}");
     }
 
     @Test
-    public void testJsonSchemaValidatorWithInvalidJson(){
+    void testJsonSchemaValidatorWithInvalidJson(){
         JsonSchemaValidator validator = new InternalJsonSchemaValidator("{\n" +
                 "  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n" +
                 "  \"type\": \"object\",\n" +
@@ -52,17 +51,17 @@ public class InternalJsonSchemaValidatorTest {
                 "  ]\n" +
                 "}");
 
-        Assertions.assertThrows(ValidationException.class, () -> validator.validateJson("{\"itemId\":\"abcde\",\"quany\":5}"));
+        assertThrows(ValidationException.class, () -> validator.validate("{\"itemId\":\"abcde\",\"quany\":5}"));
     }
 
     @Test
-    public void testJsonSchemaValidatorWithInvalidJsonSchema(){
-        Assertions.assertThrows(JSONException.class, () -> new InternalJsonSchemaValidator("invalidSchema"));
+    void testJsonSchemaValidatorWithInvalidJsonSchema(){
+        assertThrows(JSONException.class, () -> new InternalJsonSchemaValidator("invalidSchema"));
     }
 
     @Test
-    public void testJsonSchemaValidatorWithInvalidSchemaURL(){
-        Assertions.assertThrows(SchemaException.class, () -> new InternalJsonSchemaValidator("{\n" +
+    void testJsonSchemaValidatorWithInvalidSchemaURL(){
+        assertThrows(SchemaException.class, () -> new InternalJsonSchemaValidator("{\n" +
                 "  \"$schema\": \"http://abcdefg.com\",\n" +
                 "  \"type\": \"object\",\n" +
                 "  \"properties\": {\n" +
@@ -81,8 +80,8 @@ public class InternalJsonSchemaValidatorTest {
     }
 
     @Test
-    public void testJsonSchemaValidatorWithInvalidTypeTag(){
-        Assertions.assertThrows(SchemaException.class, () -> new InternalJsonSchemaValidator("{\n" +
+    void testJsonSchemaValidatorWithInvalidTypeTag(){
+        assertThrows(SchemaException.class, () -> new InternalJsonSchemaValidator("{\n" +
                 "  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n" +
                 "  \"type\": \"monkey\",\n" +
                 "  \"properties\": {\n" +
