@@ -26,12 +26,12 @@ InternalJsonSchemaValidator validator = new InternalJsonSchemaValidator("{\n" +
                 "  ]\n" +
                 "}");
 
-validator.validateJson("{\"itemId\":\"abcde\",\"quantity\":5}");
+validator.validate("{\"itemId\":\"abcde\",\"quantity\":5}");
 ```
 
 An example of using the ExternalJsonSchemaValidator:
 ```
 ExternalJsonSchemaValidator validator = new ExternalJsonSchemaValidator(registryUrl, null, artifactId);
 
-validator.validateJson("{\"itemId\":\"abcde\",\"quantity\":5}");
+validator.validate("{\"itemId\":\"abcde\",\"quantity\":5}");
 ```
