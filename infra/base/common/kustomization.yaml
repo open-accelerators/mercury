@@ -1,0 +1,8 @@
+namespace: mercury-common
+commonLabels:
+  app: mercury
+  mercury: common
+resources:
+  - subscriptions
+  - crs
+  - topics
