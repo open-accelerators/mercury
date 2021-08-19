@@ -1,0 +1,9 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: customeroffer
+  labels:
+    strimzi.io/cluster: coreless-kafka
+spec:
+  partitions: 1
+  replicas: 1

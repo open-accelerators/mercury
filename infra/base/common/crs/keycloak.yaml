@@ -1,0 +1,22 @@
+apiVersion: keycloak.org/v1alpha1
+kind: Keycloak
+metadata:
+  name: mercury-keycloak
+spec:
+  externalAccess:
+    enabled: true
+  instances: 1
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakRealm
+metadata:
+  name: mercury-realm
+spec:
+  realm:
+    id: mercury
+    realm: mercury
+    enabled: True
+    displayName: Mercury Realm
+  instanceSelector:
+    matchLabels:
+      app: mercury

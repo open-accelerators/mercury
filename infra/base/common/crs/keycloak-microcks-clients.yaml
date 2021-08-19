@@ -1,0 +1,57 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakClient
+metadata:
+  name: microcks-app-js
+spec:
+  realmSelector:
+    matchLabels:
+      app: mercury
+  client:
+    clientId: microcks-app-js
+    publicClient: true
+    webOrigins: 
+      - "+"
+    redirectUris:
+      - "https://bm-mercury-common.apps.mw-ocp4.cloud.lab.eng.bos.redhat.com/*"
+    standardFlowEnabled: true
+    protocol: openid-connect
+    enabled: true
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakClient
+metadata:
+  name: microcks-app
+  labels:
+    app: mercury
+    mercury: common
+spec:
+  realmSelector:
+    matchLabels:
+      app: mercury
+  client:
+    clientId: microcks-app
+    bearerOnly: true
+    enabled: true
+    protocol: openid-connect
+    secret: super-secret
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakClient
+metadata:
+  name: microcks-serviceaccount
+  labels:
+    app: mercury
+    mercury: common
+spec:
+  realmSelector:
+    matchLabels:
+      app: mercury
+  client:
+    clientId: microcks-serviceaccount
+    name: microcks-serviceaccount
+    clientAuthenticatorType: client-secret
+    secret: super-secret
+    enabled: true
+    protocol: openid-connect  
+    serviceAccountsEnabled: true
+    directAccessGrantsEnabled: true  
