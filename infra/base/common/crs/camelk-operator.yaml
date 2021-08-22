@@ -4,7 +4,7 @@ metadata:
   name: red-hat-camel-k
   namespace: mercury-common
   labels:
-    operators.coreos.com/rhsso-operator.mercury-common: ""
+    operators.coreos.com/red-hat-camel-k-operator.mercury-common: ""
 spec:
   channel: 1.4.x
   installPlanApproval: Automatic
