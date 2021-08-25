@@ -1,0 +1,14 @@
+apiVersion: app.kiegroup.org/v2
+kind: KieApp
+metadata:
+  name: rhpam-mercury
+  namespace: mercury-common
+spec:
+  environment: rhdm-authoring
+  commonConfig:
+    adminUser: admin
+    adminPassword: admin
+  objects:
+    servers:
+      - database:
+          type: mysql
