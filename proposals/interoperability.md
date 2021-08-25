@@ -19,6 +19,9 @@ Response expected in sub-second time. Fast hand-shake message exchange queue/eve
 A synchronous request/response where the caller knows where the callee is located and how to interact with it.
 e.g. HTTP Restful request/response.
 
+An asynchronous request/response where the caller knows where the the request has to be
+sent and the calle knows where the response is expected.
+
 #### Best-time
 
 Response expected after source has time to process an automated request. Timely exchange queue/message mechanism, but caller may multi-thread activity.
@@ -51,28 +54,25 @@ We can assume 3 different type of communication patterns between different Servi
 When a given service domain requests information from a different domain. This is usually a
 synchronous request. The caller knows the coordinates of the callee and how to interact with it.
 
-Can be applied to transactional patterns:
-
-* Real-time
-* Polled delayed response
+Can be used to retrieve the current state of any record.
 
 ### Command
 
-When a SD commands another SD to take a specific action (e.g. update a record). This type
-of request can be either synchronous or asynchronous, depending on the system requirements.
-In a synchronous scenario the command would ideally receive the result of the command, if any.
-However when the result is not required or it can be polled or it will be received via an
-event, the command can be sent asynchronously.
+A SD commands another SD to take a specific action (e.g. update a record). This type
+of action is recommended to always be asynchronous with a synchronous acknowledgement
+(e.g. HTTP 202 Accepted).
+
+The result of the action will be received as an event notification or synchronously polled
+as a Query.
 
 Target transactional patterns:
 
-* Best-time: If the command is accepted by the target (message queue, kafka topic, http 201
-created or 202 accepted). The target SD will process the request as soon as possible and if
-needed emit an event with the new state of the affected record.
+* Real-time command operations. The target SD will process the request immediately.
+* Best-time: The target SD will process the request as soon as possible.
 * Delayed response: Similarly to the previous case but after the manual intervention has
 taken place.
 * Background Scheduled synchronization: The intend of synchronization can be considered
-a Command that is consumed periodically. The result can be emitted as an Event or Query-ed.
+a Command that is consumed periodically.
 
 ### Event
 
@@ -90,11 +90,11 @@ message broker where any other SD can subscribe to.
 A Service Domain entity must be defined in order to create bindings. Service Domain definitions focus
 on how their endpoints will be exposed in terms of protocols and security. Besides such definitions can
 be used by an application to deploy any infrastructure components required for a specific service domain.
-E.g. persistence, monitoring.
+E.g. persistence, monitoring, messaging.
 
-This is the `CustomerOffer` service domain definition where an HTTPS endpoint named `httpsEndpoint` will be
-exposed. This endpoint is might be used only for query. Besides notifications will be sent to the defined
-Kafka server and topic.
+This is the `CustomerOffer` service domain definition where an HTTPS endpoint named `queries` will be
+exposed. This endpoint is might be used only for query, either internal or external.
+Notifications will be sent to the defined Kafka server and topic.
 
 ```yaml
 type: ServiceDomain
@@ -102,17 +102,19 @@ name: customerOfferDomain
 spec:
   serviceDomain: CustomerOffer
   endpoints:
-    - name: httpsEndpoint
+    - name: queries
       http:
         allowHttps: only
   notifications: 
     kafka:
-      brokers: kafka.example.com:9092
-      topic: customer_offer
+      ref: my-kafka (1)
+      topic: customer_offer_notifications
 ```
 
+**(1)** In order to reuse and abstract Messaging definitions, the `kafka` endpoint will be described separatelly. Check the [Messaging definitions](#Messaging-definitions)
+
 In this case, the `ConsumerLoan` service domain exposes an `amqp` endpoint. That means that the Service Domain
-will receive requests through an external AMQP broker.
+will receive requests through an AMQP broker.
 
 ```yaml
 type: ServiceDomain
@@ -120,10 +122,14 @@ name: consumerLoanDomain
 spec:
   serviceDomain: ConsumerLoan
   endpoints:
-    - name: asynCommand
+    - name: commands
       amqp:
-        remoteUri: amqp://some.server.example.com:5672
+        ref: my-amqp
         topic: consumer_loan_commands
+  notifications:
+    kafka:
+      ref: my-kafka
+      topic: comsumer_loan_notifications
 ```
 
 Finally The `PartyRoutingProfile` does not require to expose any endpoint.
@@ -147,14 +153,14 @@ name: partyRoutingQueryBinding
 spec:
   source: partyRoutingProfileDomain
   target: customerOfferDomain
-  name: httpsEndpoint
+  endpoint: queries
 
 type: ServiceDomainBinding
 name: customerOfferCommandBinding
 spec:
   source: customerOfferDomain
   target: prodDirectoryDomain
-  name: asynCommand
+  endpoint: commands
 ```
 
 ### Event Subscription definition
@@ -174,3 +180,40 @@ spec:
       - org.bian.customeroffer.initiated
       - org.bian.customeroffer.completed
 ```
+
+### Messaging definitions
+
+In this section users can define different type of Message Brokers that can be just referencenced from the
+ServiceDomain definitions to isolate and reuse configuration.
+
+Example of a `KafkaMessageBroker`
+
+```yaml
+type: KafkaMessageBroker
+name: my-kafka
+spec:
+  bootstrapServers: my-kafka.example.com:9002
+  username: bian-user
+  password: bian-password
+```
+
+Example of an `AMQPMessageBroker`
+
+```yaml
+type: AMQPMessageBroker
+name: my-ampq
+spec:
+  remoteURI: amqp://my-ampq.example.com:5672
+  username: bian-user
+  password: bian-password
+```
+
+## Interoperability transports
+
+For synchronous `Query` requests the HTTP OpenAPI specification already available for BIAN is enough. It
+is also valid for `Commands` considering the synchronous response defined as an acknowledgement
+of the command reception.
+
+However for `Events` and other `Command` transports it is important to find a standardized way to define
+asynchronous payloads regarless of the transport and encoding. For that purpose the [CloudEvents](./cloudevents.md)
+specification is proposed.
