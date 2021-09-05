@@ -2,13 +2,25 @@ apiVersion: app.kiegroup.org/v2
 kind: KieApp
 metadata:
   name: rhpam-mercury
-  namespace: mercury-common
 spec:
-  environment: rhdm-authoring
+  auth:
+    sso:
+      adminPassword: RedHat1!
+      adminUser: admin
+      realm: mercury
+      disableSSLCertValidation: true
+      url: https://keycloak-theom.apps.mw-ocp4.cloud.lab.eng.bos.redhat.com/auth
+  environment: rhpam-authoring
   commonConfig:
     adminUser: admin
-    adminPassword: admin
+    adminPassword: RedHat1!
   objects:
+    console:
+      ssoClient:
+        name: rhpam-console
+        secret: somePwd
     servers:
-      - database:
-          type: mysql
+      - name: kieserver-1
+        ssoClient:
+          name: rhpam-kieserver-1
+          secret: someOtherPwd
