@@ -9,7 +9,7 @@ spec:
       adminUser: admin
       realm: mercury
       disableSSLCertValidation: true
-      url: https://keycloak-theom.apps.mw-ocp4.cloud.lab.eng.bos.redhat.com/auth
+      url: https://keycloak-mercury-common.apps.mw-ocp4.cloud.lab.eng.bos.redhat.com/auth
   environment: rhpam-authoring
   commonConfig:
     adminUser: admin
