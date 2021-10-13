@@ -14,6 +14,8 @@ import javax.inject.Inject;
 import org.bian.protobuf.ExternalRequest;
 import org.bian.protobuf.ExternalResponse;
 import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +65,8 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
             //TODO: Implement
     );
     private static final Map<String, Supplier<Message.Builder>> IN_TYPE_MAPPINGS = Map.of(
+            CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE, () -> CustomerOfferProcedure.newBuilder(),
+            CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE, () -> CustomerOfferProcedureUpdate.newBuilder()
             //TODO: Add mappings
     );
 
@@ -142,10 +146,10 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
     private Uni<ExternalResponse> processExternalRequest(ExternalRequest request) {
         Builder builder = CloudEvent.newBuilder().setId(UUID.randomUUID().toString());
         String uri = request.getPath();
-        Optional<Matcher> path = getMatchingPath(uri);
+        String action = GET_VERB.equals(request.getVerb()) ? CE_ACTION_QUERY : CE_ACTION_COMMAND;
+        Optional<Matcher> path = getMatchingPath(uri, action);
         if (!path.isEmpty()) {
             try {
-                String action = GET_VERB.equals(request.getVerb()) ? CE_ACTION_QUERY : CE_ACTION_COMMAND;
                 String type = getType(path.get().pattern(), action);
                 if (type == null) {
                     throw new IllegalStateException("Unable to retrieve the right CloudEvent type from " + path.get() + " and " + action);
@@ -158,7 +162,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                 if (CE_ACTION_COMMAND.equals(action)) {
                     if (IN_TYPE_MAPPINGS.containsKey(type)) {
                         Message.Builder messageBuilder = IN_TYPE_MAPPINGS.get(type).get();
-                        JsonFormat.parser().ignoringUnknownFields().merge(request.getPayload().toString(), builder);
+                        JsonFormat.parser().ignoringUnknownFields().merge(request.getPayload().toStringUtf8(), builder);
                         builder.setProtoData(Any.pack(messageBuilder.build()));
                     }
                     return toExternalResponse(type, mapCommandMethod(builder.build()));
@@ -182,17 +186,26 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
         }
     }
 
-    private Optional<Matcher> getMatchingPath(String uri) {
-        return QUERY_PATH_MAPPINGS
-                .keySet()
-                .stream()
-                .map(p -> p.matcher(uri))
-                .filter(m -> m.matches())
-                .findFirst();
+    private Optional<Matcher> getMatchingPath(String uri, String action) {
+        switch (action) {
+            case CE_ACTION_QUERY:
+                return QUERY_PATH_MAPPINGS
+                        .keySet()
+                        .stream()
+                        .map(p -> p.matcher(uri))
+                        .filter(m -> m.matches())
+                        .findFirst();
+            default:
+                return COMMAND_PATH_MAPPINGS.keySet()
+                        .stream()
+                        .map(p -> p.matcher(uri))
+                        .filter(m -> m.matches())
+                        .findFirst();
+        }
     }
 
-    private String getType(Pattern key, String method) {
-        switch (method) {
+    private String getType(Pattern key, String action) {
+        switch (action) {
             case CE_ACTION_QUERY:
                 return QUERY_PATH_MAPPINGS.get(key);
             default:
@@ -201,13 +214,19 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
     }
 
     private Uni<ExternalResponse> toExternalResponse(String type, Uni<? extends Message> m) throws InvalidProtocolBufferException {
+        if(m == null) {
+            return Uni.createFrom()
+                    .nullItem()
+                    .onItem()
+                    .transform(o -> ExternalResponse.newBuilder().setResponseCode(202).build());
+        }
         return m.onItem().transform(message -> {
             Class<Message> outType = OUT_TYPE_MAPPINGS.get(type);
             if (outType == null) {
                 return ExternalResponse.newBuilder().setResponseCode(500).build();
             }
             try {
-                return ExternalResponse.newBuilder().setResponseCode(202).setPayload(ByteString.copyFromUtf8(JsonFormat.printer().print(message))).build();
+                return ExternalResponse.newBuilder().setResponseCode(200).setPayload(ByteString.copyFromUtf8(JsonFormat.printer().print(message))).build();
             } catch (InvalidProtocolBufferException e) {
                 return ExternalResponse.newBuilder().setResponseCode(500).build();
             }

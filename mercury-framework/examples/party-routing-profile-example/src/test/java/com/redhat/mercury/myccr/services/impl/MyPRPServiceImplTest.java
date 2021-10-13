@@ -41,7 +41,7 @@ class MyPRPServiceImplTest {
     void testQuery() throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<Empty> receiveMsg = new CompletableFuture<>();
         svc.receive(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
-                .setType(CustomerOffer.CUSTOMER_OFFER_INITIATED)
+                .setType(CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE)
                 .setProtoData(Any.pack(CustomerOfferNotification.newBuilder()
                         .setCustomerOfferReference(BasicReference.newBuilder().setId("kermit").build()).build()))
                 .build()).subscribe().with(reply -> receiveMsg.complete(reply));
