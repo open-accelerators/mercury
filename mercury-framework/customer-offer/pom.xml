@@ -1,0 +1,17 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.redhat.mercury</groupId>
+        <artifactId>mercury-framework-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>customer-offer</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>customer-offer-common</module>
+        <module>customer-offer-service</module>
+        <module>customer-offer-client</module>
+        <module>customer-offer-events</module>
+    </modules>
+</project>

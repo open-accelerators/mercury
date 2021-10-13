@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package org.bian.protobuf.partyroutingprofile;
+
+option java_multiple_files = true;
+option java_package = "org.bian.protobuf.partyroutingprofile";
+
+message PartyRoutingStateList {
+  repeated PartyRoutingState partyRoutingStates = 1;
+}
+
+message PartyRoutingState {
+  string customerOfferStatus = 1;
+  string processId = 2;
+}

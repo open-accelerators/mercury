@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package org.bian.protobuf;
+
+import "google/protobuf/empty.proto";
+import "spec.proto";
+
+option java_multiple_files = true;
+option java_package = "org.bian.protobuf";
+
+message ExternalRequest {
+  string path = 1;
+  string verb = 2;
+  optional bytes payload = 3;
+}
+
+message ExternalResponse {
+  uint32 responseCode = 1;
+  optional bytes payload = 2;
+}
+
+service OutboundBindingService {
+  rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {} //Should it return Empty?
+  rpc notify (io.cloudevents.v1.CloudEvent) returns (google.protobuf.Empty) {}
+}
+
+service InboundBindingService {
+  rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {} //Should it return Empty?
+  rpc receive (io.cloudevents.v1.CloudEvent) returns (google.protobuf.Empty) {}
+  // In order to avoid having the BindingSvc depending on all types only for external requests
+  // this method is used
+  rpc external (ExternalRequest) returns (ExternalResponse) {}
+}
+
+service InternalBindingService {
+  rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {} //Should it return Empty?
+}
