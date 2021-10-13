@@ -23,7 +23,7 @@ public class CustomerOfferInitiatedHandler implements BianNotificationHandler {
 
     @Override
     public String getType() {
-        return CustomerOffer.CUSTOMER_OFFER_INITIATED;
+        return CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE;
     }
 
     @Override

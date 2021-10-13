@@ -22,12 +22,12 @@ public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificat
 
     @Override
     public void onCustomerOfferInitiated(CustomerOfferNotification notification) {
-        onCustomerOfferEvent(notification, CustomerOffer.CUSTOMER_OFFER_INITIATED);
+        onCustomerOfferEvent(notification, CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE);
     }
 
     @Override
     public void onCustomerOfferCompleted(CustomerOfferNotification notification) {
-        onCustomerOfferEvent(notification, CustomerOffer.CUSTOMER_OFFER_COMPLETED);
+        onCustomerOfferEvent(notification, CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE);
     }
 
     private void onCustomerOfferEvent(CustomerOfferNotification notification, String eventType) {

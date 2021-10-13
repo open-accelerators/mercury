@@ -23,7 +23,7 @@ public class CustomerOfferCompletedHandler implements BianNotificationHandler {
 
     @Override
     public String getType() {
-        return CustomerOffer.CUSTOMER_OFFER_COMPLETED;
+        return CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE;
     }
 
     @Override

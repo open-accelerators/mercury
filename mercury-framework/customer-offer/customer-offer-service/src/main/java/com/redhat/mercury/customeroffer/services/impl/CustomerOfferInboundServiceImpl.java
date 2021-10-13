@@ -41,6 +41,8 @@ import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION_QUERY;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_BQ_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
+import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE;
+import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.DOMAIN_NAME;
 
 @GrpcService
@@ -49,11 +51,15 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferInboundServiceImpl.class);
 
     private static final String GET_VERB = "GET";
+    private static final Pattern CUSTOMER_OFFER_PROCEDURE_INITIATION_PATH = Pattern.compile("/" + DOMAIN_NAME + "/([a-zA-Z0-9\\-]+)/customer-offer-procedure/initiation");
+    private static final Pattern CUSTOMER_OFFER_PROCEDURE_UPDATE_PATH = Pattern.compile("/" + DOMAIN_NAME + "/([a-zA-Z0-9\\-]+)/customer-offer-procedure/([a-zA-Z0-9\\-]+)/update");
 
     private static final Map<Pattern, String> QUERY_PATH_MAPPINGS = Map.of(
             //TODO: Implement
     );
     private static final Map<Pattern, String> COMMAND_PATH_MAPPINGS = Map.of(
+            CUSTOMER_OFFER_PROCEDURE_INITIATION_PATH, CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE,
+            CUSTOMER_OFFER_PROCEDURE_UPDATE_PATH, CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE
             //TODO: Implement
     );
     private static final Map<String, Supplier<Message.Builder>> IN_TYPE_MAPPINGS = Map.of(
@@ -75,7 +81,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                 .transform(e -> CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(request.getType())
-                        .setSource("http://" + DOMAIN_NAME)
+                        .setSource(DOMAIN_NAME)
                         .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
                         .setProtoData(Any.pack(e))
                         .build());
@@ -89,7 +95,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                 .transform(e -> CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(request.getType())
-                        .setSource("http://" + DOMAIN_NAME)
+                        .setSource(DOMAIN_NAME)
                         .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
                         .setProtoData(Any.pack(e))
                         .build());
@@ -141,7 +147,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
             try {
                 String action = GET_VERB.equals(request.getVerb()) ? CE_ACTION_QUERY : CE_ACTION_COMMAND;
                 String type = getType(path.get().pattern(), action);
-                if(type == null) {
+                if (type == null) {
                     throw new IllegalStateException("Unable to retrieve the right CloudEvent type from " + path.get() + " and " + action);
                 }
                 addRefToCE(builder, path.get(), 1, CE_SD_REF);

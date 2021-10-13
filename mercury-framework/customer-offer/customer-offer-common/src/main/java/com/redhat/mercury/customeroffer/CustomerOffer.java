@@ -8,12 +8,14 @@ public final class CustomerOffer {
     // TODO: Implement
 
     // COMMANDS
+    public static final String CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE = "orb.bian.customeroffer.procedure.initiation";
+    public static final String CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE = "orb.bian.customeroffer.procedure.update";
     // TODO: Implement
 
     // EVENTS
     //TODO: Only for demo. Implement appropriately
-    public static final String CUSTOMER_OFFER_INITIATED = "org.bian.customeroffer.initiated";
-    public static final String CUSTOMER_OFFER_COMPLETED = "org.bian.customeroffer.completed";
+    public static final String CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE = "org.bian.customeroffer.procedure.initiated";
+    public static final String CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE = "org.bian.customeroffer.procedure.completed";
 
     private CustomerOffer() {
     }
