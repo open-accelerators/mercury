@@ -66,10 +66,13 @@ public class ConfigurationService {
     }
 
     public String getBinding(CloudEvent cloudEvent, @Header("CamelGrpcMethodName") String method) {
-        String ref = cloudEvent.getType().replace(BianCloudEvent.CE_TYPE_PREFIX, "");
+        LOGGER.debug("getBinding for CloudEvent type {} and method {}", cloudEvent.getType(), method);
         if(Action.notify.equals(method)) {
-            return "kafka:{{mercury.servicedomain}}?brokers={{mercury.kafka.brokers}}";
+            String endpoint = "kafka:{{mercury.servicedomain}}?brokers={{mercury.kafka.brokers}}";
+            LOGGER.debug("endpoint for CloudEvent type {} and method {} -> {}", cloudEvent.getType(), method, endpoint);
+            return endpoint;
         }
+        String ref = cloudEvent.getType().replace(BianCloudEvent.CE_TYPE_PREFIX, "");
         Binding binding = reduceBinding(ref, method);
         if (binding != null) {
             LOGGER.debug("Redirecting to: {}", binding.getEndpoint());
@@ -126,7 +129,7 @@ public class ConfigurationService {
                 from("platform-http:/{{mercury.servicedomain}}?matchOnUriPrefix=true")
                         .routeId(HTTP_ROUTE_NAME)
                         .bean(BianHttpCloudEventMarshaller.class, "toExternalRequest")
-                        .to("grpc://{{route.grpc.hostservice}}/org.bian.protobuf.InboundBindingService?synchronous=true&method=external")
+                        .to("grpc://{{route.grpc.hostService}}/org.bian.protobuf.InboundBindingService?synchronous=true&method=external")
                         .bean(BianHttpCloudEventMarshaller.class, "toHttp");
             }
         };
@@ -153,7 +156,7 @@ public class ConfigurationService {
                     public void configure() {
                         from("kafka:" + getTopicName(s.getServiceDomain()) + "?brokers={{mercury.kafka.brokers}}")
                                 .routeId(routeName)
-                                .to("grpc://{{route.grpc.hostservice}}/org.bian.protobuf.InboundBindingService?method=receive");
+                                .to("grpc://{{route.grpc.hostService}}/org.bian.protobuf.InboundBindingService?method=receive");
                     }
                 });
                 LOGGER.debug("Create subscription {}", s);

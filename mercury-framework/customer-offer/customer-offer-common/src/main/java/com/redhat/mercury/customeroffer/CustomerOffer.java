@@ -8,8 +8,8 @@ public final class CustomerOffer {
     // TODO: Implement
 
     // COMMANDS
-    public static final String CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE = "orb.bian.customeroffer.procedure.initiation";
-    public static final String CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE = "orb.bian.customeroffer.procedure.update";
+    public static final String CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE = "org.bian.customeroffer.procedure.initiation";
+    public static final String CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE = "org.bian.customeroffer.procedure.update";
     // TODO: Implement
 
     // EVENTS

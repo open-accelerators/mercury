@@ -101,7 +101,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                         .setType(request.getType())
                         .setSource(DOMAIN_NAME)
                         .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
-                        .setProtoData(Any.pack(e))
+//                        .setProtoData(Any.pack(e))
                         .build());
     }
 
@@ -134,8 +134,18 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
         return null;
     }
 
-    protected Uni<? extends Message> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
+        try {
+            switch (cloudEvent.getType()) {
+                case CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE:
+                    return service.initiateCustomerOfferProcedure(cloudEvent.getProtoData().unpack(CustomerOfferProcedure.class));
+                case CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE:
+                    return service.updateCustomerOfferProcedure(cloudEvent.getProtoData().unpack(CustomerOfferProcedureUpdate.class));
+            }
+        } catch (InvalidProtocolBufferException e) {
+            LOGGER.error("Unable to convert to the expected data type", e);
+        }
         return null;
     }
 
@@ -165,7 +175,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                         JsonFormat.parser().ignoringUnknownFields().merge(request.getPayload().toStringUtf8(), builder);
                         builder.setProtoData(Any.pack(messageBuilder.build()));
                     }
-                    return toExternalResponse(type, mapCommandMethod(builder.build()));
+                    return mapCommandMethod(builder.build()).chain(v -> toExternalResponse(type, null));
                 } else {
                     return toExternalResponse(type, mapQueryMethod(builder.build()));
                 }
@@ -213,8 +223,8 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
         }
     }
 
-    private Uni<ExternalResponse> toExternalResponse(String type, Uni<? extends Message> m) throws InvalidProtocolBufferException {
-        if(m == null) {
+    private Uni<ExternalResponse> toExternalResponse(String type, Uni<? extends Message> m) {
+        if (m == null) {
             return Uni.createFrom()
                     .nullItem()
                     .onItem()

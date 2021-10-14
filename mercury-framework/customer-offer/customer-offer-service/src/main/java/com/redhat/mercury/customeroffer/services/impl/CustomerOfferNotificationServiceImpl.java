@@ -17,7 +17,7 @@ import io.quarkus.grpc.GrpcClient;
 @ApplicationScoped
 public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificationService {
 
-    @GrpcClient
+    @GrpcClient("outboundBindingService")
     OutboundBindingService outbound;
 
     @Override
