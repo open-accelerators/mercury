@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bian-binding-service-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-domain-role
+rules:
+  - apiGroups:
+    - ""
+    - mercury.redhat.io
+    resources:
+      - services
+      - servicedomainbindings
+    verbs:
+      - list
+      - get
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: service-domain-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-domain-role
+subjects:
+  - kind: ServiceAccount
+    name: bian-binding-service-sa

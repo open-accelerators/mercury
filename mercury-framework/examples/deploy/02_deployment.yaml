@@ -1,0 +1,230 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-credit-rating
+  labels:
+    app: bian-customer-credit-rating
+    service-domain: customer-credit-rating
+spec:
+  selector:
+    matchLabels:
+      app: bian-customer-credit-rating
+  template:
+    metadata:
+      labels:
+        app: bian-customer-credit-rating
+        service-domain: customer-credit-rating
+    spec:
+      serviceAccountName: bian-binding-service-sa
+      containers:
+        - name: business-service
+          image: quay.io/ruben/customer-credit-rating-example:latest
+          ports:
+            - containerPort: 10001
+              name: inbound
+          env:
+            - name: QUARKUS_HTTP_PORT
+              value: "8081"
+            - name: MERCURY_SERVICEDOMAIN
+              value: customer-credit-rating
+        - name: binding-service
+          image: quay.io/ruben/mercury-binding-service:latest
+          env:
+            - name: MERCURY_SERVICEDOMAIN
+              value: customer-credit-rating
+            - name: MERCURY_KAFKA_BROKERS
+              value: my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+          ports:
+            - containerPort: 10100
+              name: outbound
+            - containerPort: 10101
+              name: internal
+            - containerPort: 8080
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-credit-rating-binding
+  labels:
+    app: bian-customer-credit-rating
+    service-domain: customer-credit-rating
+    mercury-binding: internal
+spec:
+  ports:
+    - port: 10101
+      protocol: TCP
+      name: internal
+  selector:
+    app: bian-customer-credit-rating
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-offer
+  labels:
+    app: bian-customer-offer
+    service-domain: customer-offer
+spec:
+  selector:
+    matchLabels:
+      app: bian-customer-offer
+  template:
+    metadata:
+      labels:
+        app: bian-customer-offer
+        service-domain: customer-offer
+    spec:
+      serviceAccountName: bian-binding-service-sa
+      containers:
+        - name: business-service
+          image: quay.io/ruben/customer-offer-example:latest
+          ports:
+            - containerPort: 10001
+              name: inbound
+          env:
+            - name: QUARKUS_HTTP_PORT
+              value: "8081"
+            - name: MERCURY_SERVICEDOMAIN
+              value: customer-offer
+        - name: binding-service
+          image: quay.io/ruben/mercury-binding-service:latest
+          env:
+            - name: MERCURY_SERVICEDOMAIN
+              value: customer-offer
+            - name: MERCURY_KAFKA_BROKERS
+              value: my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+          ports:
+            - containerPort: 10100
+              name: outbound
+            - containerPort: 10101
+              name: internal
+            - containerPort: 8080
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-offer-binding
+  labels:
+    app: bian-customer-offer
+    service-domain: customer-offer
+    mercury-binding: internal
+spec:
+  ports:
+    - port: 10101
+      protocol: TCP
+      name: internal
+  selector:
+    app: bian-customer-offer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: party-routing-profile
+  labels:
+    app: bian-party-routing-profile
+    service-domain: party-routing-profile
+spec:
+  selector:
+    matchLabels:
+      app: bian-party-routing-profile
+  template:
+    metadata:
+      labels:
+        app: bian-party-routing-profile
+        service-domain: party-routing-profile
+    spec:
+      serviceAccountName: bian-binding-service-sa
+      containers:
+        - name: business-service
+          image: quay.io/ruben/party-routing-profile-example:latest
+          ports:
+            - containerPort: 10001
+              name: inbound
+          env:
+            - name: MERCURY_SERVICEDOMAIN
+              value: party-routing-profile
+            - name: QUARKUS_HTTP_PORT
+              value: "8081"
+        - name: binding-service
+          image: quay.io/ruben/mercury-binding-service:latest
+          env:
+            - name: MERCURY_SERVICEDOMAIN
+              value: party-routing-profile
+            - name: MERCURY_KAFKA_BROKERS
+              value: my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+          ports:
+            - containerPort: 10100
+              name: outbound
+            - containerPort: 10101
+              name: internal
+            - containerPort: 8080
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: party-routing-profile-binding
+  labels:
+    app: bian-party-routing-profile
+    service-domain: party-routing-profile
+    mercury-binding: internal
+spec:
+  ports:
+    - port: 10101
+      protocol: TCP
+      name: internal
+  selector:
+    app: bian-party-routing-profile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-offer-http
+  labels:
+    app: bian-customer-offer
+    service-domain: customer-offer
+    mercury-binding: external
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: bian-customer-offer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-credit-rating-http
+  labels:
+    app: bian-customer-credit-rating
+    service-domain: customer-credit-rating
+    mercury-binding: external
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: bian-customer-credit-rating
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: party-routing-profile-http
+  labels:
+    app: bian-party-routing-profile
+    service-domain: party-routing-profile
+    mercury-binding: external
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: bian-party-routing-profile

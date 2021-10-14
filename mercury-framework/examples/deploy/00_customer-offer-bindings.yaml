@@ -1,0 +1,17 @@
+apiVersion: mercury.redhat.io/v1alpha1
+kind: ServiceDomainBinding
+metadata:
+  name: customer-offer-bindings
+  labels:
+    service-domain: customer-offer
+spec:
+  bindings:
+    - serviceDomain: customer-credit-rating
+      scopeRef: customercreditrating.state
+      action: query
+    - serviceDomain: customer-credit-rating
+      scopeRef: customercreditrating
+      action: command
+  exposedScopes:
+    - scopeRef: customeroffer
+      action: command
