@@ -26,30 +26,24 @@ public class MyCOServiceImpl extends CustomerOfferService {
     @Override
     public Uni<Void> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
         LOGGER.info("initiateCustomerOfferProcedure received");
-        return Uni.createFrom()
-                .voidItem()
-                .onItem()
-                .invoke(() -> notificationService.onCustomerOfferInitiated(CustomerOfferNotification
-                        .newBuilder()
-                        .setCustomerOfferReference(BasicReference.newBuilder()
-                                .setId(procedure.getProcedure()
-                                        .getCustomerReference())
-                                .build())
-                        .build()));
+        return notificationService.onCustomerOfferInitiated(CustomerOfferNotification
+                .newBuilder()
+                .setCustomerOfferReference(BasicReference.newBuilder()
+                        .setId(procedure.getProcedure()
+                                .getCustomerReference())
+                        .build())
+                .build());
     }
 
     @Override
     public Uni<Void> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate procedure) {
         LOGGER.info("updateCustomerOfferProcedure received");
-        return Uni.createFrom()
-                .voidItem()
-                .onItem()
-                .invoke(() -> notificationService.onCustomerOfferCompleted(CustomerOfferNotification
-                        .newBuilder()
-                        .setCustomerOfferReference(BasicReference.newBuilder()
-                                .setId(procedure.getProcedure()
-                                        .getCustomerReference())
-                                .build())
-                        .build()));
+        return notificationService.onCustomerOfferCompleted(CustomerOfferNotification
+                .newBuilder()
+                .setCustomerOfferReference(BasicReference.newBuilder()
+                        .setId(procedure.getProcedure()
+                                .getCustomerReference())
+                        .build())
+                .build());
     }
 }

@@ -14,6 +14,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Header;
 import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,8 @@ import com.redhat.mercury.binding.model.BindingDefinition.Action;
 import com.redhat.mercury.binding.model.k8s.BindingSpec;
 import com.redhat.mercury.binding.model.k8s.ExposedScopeSpec;
 import com.redhat.mercury.binding.model.k8s.SubscriptionSpec;
+import com.redhat.mercury.binding.serialization.CloudEventsDeserializer;
+import com.redhat.mercury.binding.serialization.CloudEventsSerializer;
 import com.redhat.mercury.constants.BianCloudEvent;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -52,6 +55,9 @@ public class ConfigurationService {
 
     private Map<String, Binding> bindings;
 
+    @ConfigProperty(name = "mercury.servicedomain")
+    String serviceDomain;
+
     @PostConstruct
     void initialize() {
         k8sService.registerWatcher(binding -> {
@@ -67,8 +73,8 @@ public class ConfigurationService {
 
     public String getBinding(CloudEvent cloudEvent, @Header("CamelGrpcMethodName") String method) {
         LOGGER.debug("getBinding for CloudEvent type {} and method {}", cloudEvent.getType(), method);
-        if(Action.notify.equals(method)) {
-            String endpoint = "kafka:{{mercury.servicedomain}}?brokers={{mercury.kafka.brokers}}";
+        if (Action.notify.name().equals(method)) {
+            String endpoint = "kafka:" + getTopicName(serviceDomain) + "?brokers={{mercury.kafka.brokers}}&valueSerializer=" + CloudEventsSerializer.class.getCanonicalName();
             LOGGER.debug("endpoint for CloudEvent type {} and method {} -> {}", cloudEvent.getType(), method, endpoint);
             return endpoint;
         }
@@ -154,7 +160,9 @@ public class ConfigurationService {
                 expected.put(routeName, new RouteBuilder() {
                     @Override
                     public void configure() {
-                        from("kafka:" + getTopicName(s.getServiceDomain()) + "?brokers={{mercury.kafka.brokers}}")
+                        from("kafka:" + getTopicName(s.getServiceDomain())
+                                + "?brokers={{mercury.kafka.brokers}}&valueDeserializer="
+                                + CloudEventsDeserializer.class.getCanonicalName())
                                 .routeId(routeName)
                                 .to("grpc://{{route.grpc.hostService}}/org.bian.protobuf.InboundBindingService?method=receive");
                     }

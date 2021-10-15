@@ -74,7 +74,7 @@ public class PartyRoutingProfileInboundServiceImpl implements InboundBindingServ
 
     @Override
     public Uni<CloudEvent> query(CloudEvent request) {
-        LOGGER.info("received query request");
+        LOGGER.info("received query request for type: {}", request.getType());
         return mapQueryMethod(request)
                 .onItem()
                 .transform(e -> CloudEvent.newBuilder()
@@ -88,7 +88,7 @@ public class PartyRoutingProfileInboundServiceImpl implements InboundBindingServ
 
     @Override
     public Uni<CloudEvent> command(CloudEvent request) {
-        LOGGER.info("received command request");
+        LOGGER.info("received command request for type: {}", request.getType());
         return mapCommandMethod(request)
                 .onItem()
                 .transform(e -> CloudEvent.newBuilder()
@@ -102,17 +102,18 @@ public class PartyRoutingProfileInboundServiceImpl implements InboundBindingServ
 
     @Override
     public Uni<Empty> receive(CloudEvent request) {
-        LOGGER.info("received receive request");
-        return Uni.createFrom().item(() -> {
-            if (eventHandlers.containsKey(request.getType())) {
-                try {
-                    eventHandlers.get(request.getType()).onEvent(request);
-                } catch (DataTransformationException e) {
-                    LOGGER.error("Unable to process received event", e);
-                }
+        LOGGER.info("received receive request for type: {}", request.getType());
+        if (eventHandlers.containsKey(request.getType())) {
+            try {
+                return eventHandlers.get(request.getType())
+                        .onEvent(request)
+                        .onItem()
+                        .transform(i -> Empty.getDefaultInstance());
+            } catch (DataTransformationException e) {
+                LOGGER.error("Unable to process received event", e);
             }
-            return Empty.getDefaultInstance();
-        });
+        }
+        return Uni.createFrom().item(() -> Empty.getDefaultInstance());
     }
 
     private Map<String, BianNotificationHandler> eventHandlers = new HashMap<>();
