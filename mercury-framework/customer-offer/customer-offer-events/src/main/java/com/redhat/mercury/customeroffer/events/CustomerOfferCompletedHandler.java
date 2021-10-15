@@ -13,6 +13,7 @@ import com.redhat.mercury.exceptions.DataTransformationException;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.arc.Unremovable;
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 @Unremovable
@@ -27,9 +28,9 @@ public class CustomerOfferCompletedHandler implements BianNotificationHandler {
     }
 
     @Override
-    public void onEvent(CloudEvent event) throws DataTransformationException {
+    public Uni<Void> onEvent(CloudEvent event) throws DataTransformationException {
         try {
-            notificationService.onCustomerOfferCompleted(event.getProtoData().unpack(CustomerOfferNotification.class));
+            return notificationService.onCustomerOfferCompleted(event.getProtoData().unpack(CustomerOfferNotification.class));
         } catch (InvalidProtocolBufferException e) {
             throw new DataTransformationException("Unable to convert to CustomerOfferNotification", e);
         }

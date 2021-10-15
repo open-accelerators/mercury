@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
 import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
 import org.slf4j.Logger;
@@ -26,6 +25,7 @@ public class PartyRoutingService {
     }
 
     public void updatePartyRoutingState(String status, String processId) {
+        LOGGER.info("Updating PartyRoutingState ProcessId: {} - Status: {}", processId, status);
         Set<PartyRoutingState> states = partyRoutings.computeIfAbsent(processId, k -> new HashSet<>());
         states.removeIf(e -> processId.equals(e.getProcessId()));
         states.add(PartyRoutingState.newBuilder().setCustomerOfferStatus(status)

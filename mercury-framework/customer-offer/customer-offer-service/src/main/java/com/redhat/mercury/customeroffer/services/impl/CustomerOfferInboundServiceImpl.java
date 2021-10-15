@@ -101,23 +101,23 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                         .setType(request.getType())
                         .setSource(DOMAIN_NAME)
                         .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
-//                        .setProtoData(Any.pack(e))
                         .build());
     }
 
     @Override
     public Uni<Empty> receive(CloudEvent request) {
         LOGGER.info("received receive request");
-        return Uni.createFrom().item(() -> {
-            if (eventHandlers.containsKey(request.getType())) {
-                try {
-                    eventHandlers.get(request.getType()).onEvent(request);
-                } catch (DataTransformationException e) {
-                    LOGGER.error("Unable to process received event", e);
-                }
+        if (eventHandlers.containsKey(request.getType())) {
+            try {
+                return eventHandlers.get(request.getType())
+                        .onEvent(request)
+                        .onItem()
+                        .transform(i -> Empty.getDefaultInstance());
+            } catch (DataTransformationException e) {
+                LOGGER.error("Unable to process received event", e);
             }
-            return Empty.getDefaultInstance();
-        });
+        }
+        return Uni.createFrom().item(() -> Empty.getDefaultInstance());
     }
 
     private Map<String, BianNotificationHandler> eventHandlers = new HashMap<>();
@@ -172,7 +172,7 @@ public class CustomerOfferInboundServiceImpl implements InboundBindingService {
                 if (CE_ACTION_COMMAND.equals(action)) {
                     if (IN_TYPE_MAPPINGS.containsKey(type)) {
                         Message.Builder messageBuilder = IN_TYPE_MAPPINGS.get(type).get();
-                        JsonFormat.parser().ignoringUnknownFields().merge(request.getPayload().toStringUtf8(), builder);
+                        JsonFormat.parser().ignoringUnknownFields().merge(request.getPayload().toStringUtf8(), messageBuilder);
                         builder.setProtoData(Any.pack(messageBuilder.build()));
                     }
                     return mapCommandMethod(builder.build()).chain(v -> toExternalResponse(type, null));

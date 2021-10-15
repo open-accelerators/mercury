@@ -23,7 +23,7 @@ public class MyPRPServiceImpl extends PartyRoutingProfileService {
     @Override
     public Uni<PartyRoutingStateList> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         return Uni.createFrom().item(() -> {
-            LOGGER.debug("Retrieving party state status for {}/{}/{}", sdRef, crRef, bqRef);
+            LOGGER.info("Retrieving party state status for {}/{}/{}", sdRef, crRef, bqRef);
             PartyRoutingStateList.Builder resultBuilder = PartyRoutingStateList.newBuilder();
             if (crRef != null) {
                 resultBuilder.addAllPartyRoutingStates(svc.getState(crRef));
