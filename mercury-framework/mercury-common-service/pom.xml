@@ -5,22 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.redhat.mercury</groupId>
-        <artifactId>party-routing-profile</artifactId>
+        <artifactId>mercury-framework-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <artifactId>party-routing-profile-service</artifactId>
+    <artifactId>mercury-common-service</artifactId>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>mercury-common-service</artifactId>
+            <artifactId>mercury-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.redhat.mercury</groupId>
-            <artifactId>party-routing-profile-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
