@@ -65,6 +65,7 @@
     <modules>
         <module>mercury-common</module>
         <module>mercury-binding-service</module>
+        <module>mercury-common-service</module>
         <module>customer-credit-rating</module>
         <module>customer-offer</module>
         <module>party-routing-profile</module>
