@@ -1,6 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project>
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>com.redhat.mercury</groupId>
         <artifactId>mercury-framework-parent</artifactId>
@@ -9,10 +9,10 @@
     <artifactId>service-domain-parent</artifactId>
     <name>Service Domains</name>
     <packaging>pom</packaging>
-
     <modules>
         <module>customer-credit-rating</module>
         <module>customer-offer</module>
         <module>party-routing-profile</module>
+        <module>advertising</module>
     </modules>
 </project>
