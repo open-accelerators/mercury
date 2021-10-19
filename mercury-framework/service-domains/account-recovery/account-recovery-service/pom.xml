@@ -5,29 +5,25 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.redhat.mercury</groupId>
-        <artifactId>${rootArtifactId}</artifactId>
+        <artifactId>account-recovery</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <artifactId>${artifactId}</artifactId>
-    <name>Service Domains :: ${sdName} :: Client</name>
+    <artifactId>account-recovery-service</artifactId>
+    <name>Service Domains :: AccountRecovery :: Service</name>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>${rootArtifactId}-common</artifactId>
+            <artifactId>account-recovery-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.redhat.mercury</groupId>
+            <artifactId>mercury-common-service</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

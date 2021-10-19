@@ -14,5 +14,6 @@
         <module>customer-offer</module>
         <module>party-routing-profile</module>
         <module>advertising</module>
+        <module>account-recovery</module>
     </modules>
 </project>
