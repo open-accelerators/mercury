@@ -3,6 +3,7 @@
 
     <groupId>com.redhat.mercury</groupId>
     <artifactId>mercury-framework-parent</artifactId>
+    <name>Mercury Framework Parent</name>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -66,9 +67,7 @@
         <module>mercury-common</module>
         <module>mercury-binding-service</module>
         <module>mercury-common-service</module>
-        <module>customer-credit-rating</module>
-        <module>customer-offer</module>
-        <module>party-routing-profile</module>
+        <module>service-domains</module>
         <module>examples</module>
     </modules>
 </project>

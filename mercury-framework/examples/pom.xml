@@ -9,6 +9,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>mercury-framework-examples</artifactId>
+    <name>Examples</name>
     <packaging>pom</packaging>
     <modules>
         <module>customer-credit-rating-example</module>

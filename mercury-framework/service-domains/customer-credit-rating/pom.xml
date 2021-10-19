@@ -1,0 +1,18 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.redhat.mercury</groupId>
+        <artifactId>service-domain-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>customer-credit-rating</artifactId>
+    <name>Service Domains :: Customer Credit Rating</name>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>customer-credit-rating-common</module>
+        <module>customer-credit-rating-service</module>
+        <module>customer-credit-rating-client</module>
+        <module>customer-credit-rating-events</module>
+    </modules>
+</project>

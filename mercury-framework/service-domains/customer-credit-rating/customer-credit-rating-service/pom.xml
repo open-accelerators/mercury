@@ -5,34 +5,25 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.redhat.mercury</groupId>
-        <artifactId>mercury-framework-examples</artifactId>
+        <artifactId>customer-credit-rating</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <artifactId>party-routing-profile-example</artifactId>
-    <name>Examples :: Party Routing Profile</name>
+    <artifactId>customer-credit-rating-service</artifactId>
+    <name>Service Domains :: Customer Credit Rating :: Service</name>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>party-routing-profile-service</artifactId>
+            <artifactId>customer-credit-rating-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>customer-offer-events</artifactId>
+            <artifactId>mercury-common-service</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -72,43 +63,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${surefire-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>
-                                            ${project.build.directory}/${project.build.finalName}-runner
-                                        </native.image.path>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager
-                                        </java.util.logging.manager>
-                                        <maven.home>${maven.home}</maven.home>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-            <properties>
-                <quarkus.package.type>native</quarkus.package.type>
-            </properties>
-        </profile>
-    </profiles>
 </project>
