@@ -9,6 +9,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>customer-credit-rating-example</artifactId>
+    <name>Examples :: Customer Credit Rating</name>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
