@@ -44,14 +44,14 @@ public class AdvertisingInboundServiceImpl extends BaseInboundService {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     @Override

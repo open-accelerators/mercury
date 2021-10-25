@@ -13,18 +13,19 @@ import javax.annotation.PostConstruct;
 import org.bian.protobuf.ExternalRequest;
 import org.bian.protobuf.ExternalResponse;
 import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.MercuryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Empty;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.redhat.mercury.constants.BianCloudEvent;
 import com.redhat.mercury.events.BianNotificationHandler;
 import com.redhat.mercury.exceptions.DataTransformationException;
+import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.Builder;
@@ -56,6 +57,9 @@ public abstract class BaseInboundService implements InboundBindingService {
     public Uni<CloudEvent> query(CloudEvent request) {
         LOGGER.info("received query request");
         return mapQueryMethod(request)
+                .onFailure(MappingNotFoundException.class)
+                .recoverWithItem(t -> recoverFailure(t).await().indefinitely())
+
                 .onItem()
                 .transform(e -> CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
@@ -66,10 +70,22 @@ public abstract class BaseInboundService implements InboundBindingService {
                         .build());
     }
 
+    private Uni<? extends Message> recoverFailure(Throwable t) {
+        return Uni.createFrom().item(MercuryException.newBuilder()
+                .setType(MappingNotFoundException.class.getSimpleName())
+                .setMessage(t.getMessage())
+                .build());
+    }
+
     @Override
     public Uni<CloudEvent> command(CloudEvent request) {
         LOGGER.info("received command request");
         return mapCommandMethod(request)
+//                .onFailure(MappingNotFoundException.class)
+//                .recoverWithItem(t -> MercuryException.newBuilder()
+//                        .setType(MappingNotFoundException.class.getSimpleName())
+//                        .setMessage(t.getMessage())
+//                        .build())
                 .onItem()
                 .transform(e -> CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
@@ -80,19 +96,32 @@ public abstract class BaseInboundService implements InboundBindingService {
     }
 
     @Override
-    public Uni<Empty> receive(CloudEvent request) {
+    public Uni<CloudEvent> receive(CloudEvent request) {
         LOGGER.info("received receive request");
         if (eventHandlers.containsKey(request.getType())) {
             try {
                 return eventHandlers.get(request.getType())
                         .onEvent(request)
                         .onItem()
-                        .transform(i -> Empty.getDefaultInstance());
+                        .transform(e -> CloudEvent.newBuilder()
+                                .setId(UUID.randomUUID().toString())
+                                .setType(request.getType())
+                                .setSource(getDomainName())
+                                .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
+                                .build());
             } catch (DataTransformationException e) {
                 LOGGER.error("Unable to process received event", e);
             }
         }
-        return Uni.createFrom().item(() -> Empty.getDefaultInstance());
+        return Uni.createFrom()
+                .nullItem()
+                .onItem()
+                .transform(e -> CloudEvent.newBuilder()
+                        .setId(UUID.randomUUID().toString())
+                        .setType(request.getType())
+                        .setSource(getDomainName())
+                        .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
+                        .build());
     }
 
     @Override

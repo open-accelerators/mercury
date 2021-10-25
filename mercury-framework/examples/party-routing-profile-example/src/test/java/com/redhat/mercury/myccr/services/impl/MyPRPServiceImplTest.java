@@ -39,7 +39,7 @@ class MyPRPServiceImplTest {
 
     @Test
     void testQuery() throws ExecutionException, InterruptedException, TimeoutException {
-        CompletableFuture<Empty> receiveMsg = new CompletableFuture<>();
+        CompletableFuture<CloudEvent> receiveMsg = new CompletableFuture<>();
         svc.receive(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
                 .setType(CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE)
                 .setProtoData(Any.pack(CustomerOfferNotification.newBuilder()

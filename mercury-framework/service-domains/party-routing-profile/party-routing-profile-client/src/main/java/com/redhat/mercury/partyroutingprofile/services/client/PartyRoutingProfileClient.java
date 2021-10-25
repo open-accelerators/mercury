@@ -1,5 +1,7 @@
 package com.redhat.mercury.partyroutingprofile.services.client;
 
+import java.util.UUID;
+
 import javax.enterprise.context.ApplicationScoped;
 
 import org.bian.protobuf.OutboundBindingService;
@@ -34,7 +36,8 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
     @Override
     public Uni<PartyRoutingStateList> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
-        return outbound.query(CloudEvent.newBuilder().setSource(DOMAIN_NAME)
+        return outbound.query(CloudEvent.newBuilder()
+                        .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_STATUS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()
                                 .setCeString(sdRef)

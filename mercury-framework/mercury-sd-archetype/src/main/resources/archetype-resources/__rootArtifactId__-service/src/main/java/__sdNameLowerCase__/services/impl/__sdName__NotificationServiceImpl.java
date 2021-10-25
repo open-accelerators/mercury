@@ -1,4 +1,4 @@
-package com.redhat.mercury.${sdNameLowerCase}.services.impl;
+package ${package}.${sdNameLowerCase}.services.impl;
 
 import java.util.UUID;
 
@@ -8,7 +8,7 @@ import org.bian.protobuf.OutboundBindingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.${sdNameLowerCase}.services.${sdName}NotificationService;
+import ${package}.${sdNameLowerCase}.services.${sdName}NotificationService;
 
 import io.quarkus.grpc.GrpcClient;
 

@@ -1,4 +1,4 @@
-package com.redhat.mercury.${sdNameLowerCase};
+package ${package}.${sdNameLowerCase};
 
 public final class ${sdName} {
 

@@ -50,12 +50,12 @@ public class CustomerCreditRatingInboundServiceImpl extends BaseInboundService {
                 return service.retrieveCustomerCreditRatingState(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF));
             //TODO: Add more mappings
         }
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     @Override

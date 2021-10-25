@@ -55,13 +55,13 @@ public class PartyRoutingProfileInboundServiceImpl extends BaseInboundService {
                 return service.retrievePartyStateStatus(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF), getRef(cloudEvent, CE_BQ_REF));
             //TODO: Add more mappings
         }
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     @Override
     protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     @Override
