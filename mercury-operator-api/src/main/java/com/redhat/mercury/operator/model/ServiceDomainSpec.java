@@ -9,6 +9,8 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize
 @ToString
@@ -17,16 +19,9 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainClusterStatus {
-    public enum State {
-        CREATED,
-        ALREADY_PRESENT,
-        PROCESSING,
-        ERROR,
-        UNKNOWN
-    }
+public class ServiceDomainSpec implements Serializable {
+    private String businessImage;
+    private String serviceDomainCluster;
+    private String bindingServiceImage;
 
-    private ServiceDomainStatus.State state = ServiceDomainStatus.State.UNKNOWN;
-    private boolean error;
-    private String message;
 }

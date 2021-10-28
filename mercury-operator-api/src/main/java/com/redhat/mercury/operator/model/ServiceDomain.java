@@ -9,5 +9,5 @@ import io.fabric8.kubernetes.model.annotation.Version;
 @Group("mercury.redhat.io")
 @Version("v1alpha1")
 @ShortNames("sdr")
-public class ServiceDomainRequest extends CustomResource<ServiceDomainSpec, ServiceDomainStatus> implements Namespaced{
+public class ServiceDomain extends CustomResource<ServiceDomainSpec, ServiceDomainStatus> implements Namespaced{
 }
