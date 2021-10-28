@@ -19,23 +19,6 @@
             <artifactId>quarkus-operator-sdk</artifactId>
             <version>${operator-sdk.version}</version>
         </dependency>
-<!---->
-<!--        <dependency>-->
-<!--            <groupId>io.quarkus</groupId>-->
-<!--            <artifactId>quarkus-re        <dependency>-->
-        <!--            <groupId>io.quarkiverse.operatorsdk</groupId>-->
-        <!--            <artifactId>quarkus-operator-sdk-csv-generator</artifactId>-->
-        <!--            <version>${operator-sdk.version}</version>-->
-        <!--        </dependency>steasy-jackson</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.quarkus</groupId>-->
-<!--            <artifactId>quarkus-rest-client</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.quarkus</groupId>-->
-<!--            <artifactId>quarkus-rest-client-jackson</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>io.quarkiverse.operatorsdk</groupId>
             <artifactId>quarkus-operator-sdk-csv-generator-deployment</artifactId>
@@ -46,11 +29,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.strimzi</groupId>-->
-<!--            <artifactId>api</artifactId>-->
-<!--            <version>0.26.0</version>-->
-<!--        </dependency>-->
     </dependencies>
     <build>
         <plugins>
