@@ -17,17 +17,6 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainStatus {
-    public enum State {
-        CREATED,
-        ALREADY_PRESENT,
-        PROCESSING,
-        ERROR,
-        UNKNOWN
-    }
-
-    private State state = State.UNKNOWN;
-    private boolean error;
-    private String message;
-
+public class ServiceDomainClusterStatus {
+    private String kafkaBroker;
 }

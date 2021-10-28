@@ -8,6 +8,6 @@ import io.fabric8.kubernetes.model.annotation.Version;
 
 @Group("mercury.redhat.io")
 @Version("v1alpha1")
-@ShortNames("sdbr")
-public class ServiceDomainBindingRequest extends CustomResource<ServiceDomainBindingSpec, ServiceDomainBindingStatus> implements Namespaced {
+@ShortNames("sdc")
+public class ServiceDomainCluster extends CustomResource<ServiceDomainClusterSpec, ServiceDomainClusterStatus> implements Namespaced {
 }
