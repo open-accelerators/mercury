@@ -9,8 +9,6 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
-import java.io.Serializable;
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize
 @ToString
@@ -19,10 +17,7 @@ import java.io.Serializable;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainSpec implements Serializable {
-    private String name;
-    private String businessImage;
-    private String serviceDomainCluster;
-    private String bindingServiceImage;
-
+public class ServiceDomainStatus {
+    private String kafkaTopic;
+    private String kafkaUser;
 }
