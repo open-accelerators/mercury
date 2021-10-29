@@ -6,6 +6,7 @@ import javax.inject.Inject;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
 import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 import com.redhat.mercury.events.BianNotificationHandler;
@@ -28,7 +29,7 @@ public class CustomerOfferInitiatedHandler implements BianNotificationHandler {
     }
 
     @Override
-    public Uni<Void> onEvent(CloudEvent event) throws DataTransformationException {
+    public Uni<Message> onEvent(CloudEvent event) throws DataTransformationException {
         try {
             return notificationService.onCustomerOfferInitiated(event.getProtoData().unpack(CustomerOfferNotification.class));
         } catch (InvalidProtocolBufferException e) {

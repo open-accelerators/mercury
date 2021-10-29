@@ -102,3 +102,57 @@ message AgreementInstanceRecord {
 message ProductInitializationInstanceRecord {
   string productInstanceReference = 1;
 }
+
+message SDCustomerOffer {
+  string serviceDomainRetrieveActionTaskReference = 1;
+  google.protobuf.Any serviceDomainRetrieveActionTaskRecord = 2;
+  string serviceDomainRetrieveActionResponse = 3;
+  ServiceDomainRetrieveActionRecord serviceDomainRetrieveActionRecord = 4;
+  ServiceDomainOfferedService serviceDomainOfferedService = 5;
+
+  message ServiceDomainRetrieveActionRecord {
+    ServiceDomainActivityAnalysis serviceDomainActivityAnalysis = 1;
+    ServiceDomainPerformanceAnalysis serviceDomainPerformanceAnalysis = 2;
+    ControlRecordPortfolioAnalysis controlRecordPortfolioAnalysis = 3;
+
+    message ServiceDomainActivityAnalysis {
+      string activityAnalysisReference = 1;
+      string activityAnalysisResult = 2;
+      string activityAnalysisReportType = 3;
+      google.protobuf.Any activityAnalysisReport = 4;
+    }
+
+    message ServiceDomainPerformanceAnalysis {
+      string performanceAnalysisReference = 1;
+      string performanceAnalysisResult = 2;
+      string performanceAnalysisReportType = 3;
+      google.protobuf.Any performanceAnalysisReport = 4;
+    }
+
+    message ControlRecordPortfolioAnalysis {
+      string controlRecordPortfolioAnalysisReference = 1;
+      string controlRecordPortfolioAnalysisResult = 2;
+      string controlRecordPortfolioAnalysisReportType = 3;
+      google.protobuf.Any controlRecordAnalysisReport = 4;
+    }
+  }
+
+  message ServiceDomainOfferedService {
+    string serviceDomainServiceReference = 1;
+    ServiceDomainServiceRecord serviceDomainServiceRecord = 2;
+
+    message ServiceDomainServiceRecord {
+      string serviceDomainServiceType = 1;
+      string serviceDomainServiceVersion = 2;
+      string serviceDomainServiceDescription = 3;
+      ServiceDomainServicePoliciesandGuidelines serviceDomainServicePoliciesandGuidelines = 4;
+      string serviceDomainServiceSchedule = 5;
+
+      message ServiceDomainServicePoliciesandGuidelines {
+        string serviceDomainServiceEligibility = 1;
+        string serviceDomainServiceIntendedUses = 2;
+        string serviceDomainServicePricingandTerms = 3;
+      }
+    }
+  }
+}

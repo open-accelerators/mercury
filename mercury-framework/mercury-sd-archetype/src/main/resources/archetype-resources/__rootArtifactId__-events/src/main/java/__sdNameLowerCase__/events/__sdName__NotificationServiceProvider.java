@@ -1,8 +1,8 @@
-package com.redhat.mercury.${sdNameLowerCase}.events;
+package ${package}.${sdNameLowerCase}.events;
 
 import javax.enterprise.inject.Produces;
 
-import com.redhat.mercury.${sdNameLowerCase}.services.${sdName}NotificationService;
+import ${package}.${sdNameLowerCase}.services.${sdName}NotificationService;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;

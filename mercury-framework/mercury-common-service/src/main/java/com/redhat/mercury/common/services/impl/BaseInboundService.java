@@ -13,18 +13,19 @@ import javax.annotation.PostConstruct;
 import org.bian.protobuf.ExternalRequest;
 import org.bian.protobuf.ExternalResponse;
 import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.MercuryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Empty;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.redhat.mercury.constants.BianCloudEvent;
 import com.redhat.mercury.events.BianNotificationHandler;
 import com.redhat.mercury.exceptions.DataTransformationException;
+import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.Builder;
@@ -44,6 +45,7 @@ public abstract class BaseInboundService implements InboundBindingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseInboundService.class);
 
     protected static final String GET_VERB = "GET";
+    private static final String EVENT_HANDLER_NOT_FOUND_ERROR = "EventHandlerNotFoundForCEType";
 
     private Map<String, BianNotificationHandler> eventHandlers = new HashMap<>();
 
@@ -56,20 +58,71 @@ public abstract class BaseInboundService implements InboundBindingService {
     public Uni<CloudEvent> query(CloudEvent request) {
         LOGGER.info("received query request");
         return mapQueryMethod(request)
+                .onFailure(MappingNotFoundException.class)
+                .recoverWithItem(this::produceException)
                 .onItem()
-                .transform(e -> CloudEvent.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setType(request.getType())
-                        .setSource(getDomainName())
-                        .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
-                        .setProtoData(Any.pack(e))
-                        .build());
+                .transform(message -> transformAction(message, request));
     }
 
     @Override
     public Uni<CloudEvent> command(CloudEvent request) {
         LOGGER.info("received command request");
         return mapCommandMethod(request)
+                .onFailure(MappingNotFoundException.class)
+                .recoverWithItem(this::produceException)
+                .onItem()
+                .transform(message -> transformAction(message, request));
+    }
+
+    private CloudEvent transformAction(Message message, CloudEvent request) {
+        String type = request.getType();
+        if (message instanceof MercuryException) {
+            type = BianCloudEvent.CE_EXCEPTION_TYPE;
+        }
+        Builder ceBuilder = CloudEvent.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setType(type)
+                .setSource(getDomainName())
+                .putAttributes(CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build());
+        if (message != null) {
+            ceBuilder.setProtoData(Any.pack(message));
+        }
+        return ceBuilder.build();
+    }
+
+    private Message produceException(Throwable e) {
+        return MercuryException.newBuilder()
+                .setType(MappingNotFoundException.class.getSimpleName())
+                .setMessage(e.getMessage())
+                .build();
+    }
+
+    @Override
+    public Uni<CloudEvent> receive(CloudEvent request) {
+        LOGGER.info("received receive request");
+        if (eventHandlers.containsKey(request.getType())) {
+            try {
+                return eventHandlers.get(request.getType())
+                        .onEvent(request)
+                        .onItem()
+                        .transform(message -> transformAction(message, request));
+            } catch (DataTransformationException e) {
+                LOGGER.error("Unable to process received event", e);
+                Message errorMsg = MercuryException.newBuilder().setMessage("Unable to process received event: " + e.getMessage()).setType(e.getClass().getSimpleName()).build();
+                Uni.createFrom()
+                        .nullItem()
+                        .onItem()
+                        .transform(m -> CloudEvent.newBuilder()
+                                .setId(UUID.randomUUID().toString())
+                                .setType(BianCloudEvent.CE_EXCEPTION_TYPE)
+                                .setSource(getDomainName())
+                                .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
+                                .setProtoData(Any.pack(errorMsg))
+                                .build());
+            }
+        }
+        return Uni.createFrom()
+                .nullItem()
                 .onItem()
                 .transform(e -> CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
@@ -77,22 +130,6 @@ public abstract class BaseInboundService implements InboundBindingService {
                         .setSource(getDomainName())
                         .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
                         .build());
-    }
-
-    @Override
-    public Uni<Empty> receive(CloudEvent request) {
-        LOGGER.info("received receive request");
-        if (eventHandlers.containsKey(request.getType())) {
-            try {
-                return eventHandlers.get(request.getType())
-                        .onEvent(request)
-                        .onItem()
-                        .transform(i -> Empty.getDefaultInstance());
-            } catch (DataTransformationException e) {
-                LOGGER.error("Unable to process received event", e);
-            }
-        }
-        return Uni.createFrom().item(() -> Empty.getDefaultInstance());
     }
 
     @Override
@@ -196,9 +233,9 @@ public abstract class BaseInboundService implements InboundBindingService {
 
     protected abstract String getDomainName();
 
-    protected abstract Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent);
+    protected abstract Uni<Message> mapQueryMethod(CloudEvent cloudEvent);
 
-    protected abstract Uni<Void> mapCommandMethod(CloudEvent cloudEvent);
+    protected abstract Uni<Message> mapCommandMethod(CloudEvent cloudEvent);
 
     protected abstract Map<String, Supplier<Message.Builder>> getInTypeMappings();
 

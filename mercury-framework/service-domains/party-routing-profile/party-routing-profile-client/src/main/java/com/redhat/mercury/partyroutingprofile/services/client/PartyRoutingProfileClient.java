@@ -1,5 +1,7 @@
 package com.redhat.mercury.partyroutingprofile.services.client;
 
+import java.util.UUID;
+
 import javax.enterprise.context.ApplicationScoped;
 
 import org.bian.protobuf.OutboundBindingService;
@@ -8,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -19,7 +22,6 @@ import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_BQ_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
-import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.DOMAIN_NAME;
 import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_ACTION;
 import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE;
 
@@ -32,9 +34,10 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
     OutboundBindingService outbound;
 
     @Override
-    public Uni<PartyRoutingStateList> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
+    public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
-        return outbound.query(CloudEvent.newBuilder().setSource(DOMAIN_NAME)
+        return outbound.query(CloudEvent.newBuilder()
+                        .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_STATUS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()
                                 .setCeString(sdRef)

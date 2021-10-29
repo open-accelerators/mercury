@@ -1,12 +1,14 @@
 package com.redhat.mercury.advertising.services;
 
+import com.google.protobuf.Message;
+
 import io.smallrye.mutiny.Uni;
 
 public abstract class AdvertisingNotificationService {
 
-    private Uni<Void> noOpReply() {
+    private Uni<Message> noOpReply() {
         return Uni.createFrom()
-                .voidItem();
+                .nullItem();
     }
 
     //TODO: Implement events

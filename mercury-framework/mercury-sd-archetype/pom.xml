@@ -24,5 +24,13 @@
                 <version>${archetype.version}</version>
             </extension>
         </extensions>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>${archetype.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>
