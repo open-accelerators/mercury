@@ -41,14 +41,14 @@ public class ${sdName}InboundServiceImpl extends BaseInboundService {
     @Inject
     ${sdName}Service service;
 
-    protected Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
-    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }

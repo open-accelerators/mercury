@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
 import com.redhat.mercury.customercreditrating.CustomerCreditRating;
 import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingService;
 
@@ -31,8 +32,8 @@ public class CustomerCreditRatingClient extends CustomerCreditRatingService {
     OutboundBindingService outbound;
 
     @Override
-    public Uni<Rating> retrieveCustomerCreditRatingState(String sd, String cr) {
-        LOGGER.info("Received retrieveCustomerCreditRatingState for {}/{}", sd,cr);
+    public Uni<Message> retrieveCustomerCreditRatingState(String sd, String cr) {
+        LOGGER.info("Received retrieveCustomerCreditRatingState for {}/{}", sd, cr);
         return outbound.query(CloudEvent.newBuilder()
                         .setSource(CustomerCreditRating.DOMAIN_NAME)
                         .setType(STATE_RETRIEVE_TYPE)

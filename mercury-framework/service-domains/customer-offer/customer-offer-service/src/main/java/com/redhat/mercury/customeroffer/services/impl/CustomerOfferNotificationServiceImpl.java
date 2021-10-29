@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Any;
+import com.google.protobuf.Message;
 import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 
@@ -26,17 +27,17 @@ public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificat
     OutboundBindingService outbound;
 
     @Override
-    public Uni<Void> onCustomerOfferInitiated(CustomerOfferNotification notification) {
+    public Uni<Message> onCustomerOfferInitiated(CustomerOfferNotification notification) {
         return onCustomerOfferEvent(notification, CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE);
     }
 
     @Override
-    public Uni<Void> onCustomerOfferCompleted(CustomerOfferNotification notification) {
+    public Uni<Message> onCustomerOfferCompleted(CustomerOfferNotification notification) {
         return onCustomerOfferEvent(notification, CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE);
     }
 
 
-    private Uni<Void> onCustomerOfferEvent(CustomerOfferNotification notification, String eventType) {
+    private Uni<Message> onCustomerOfferEvent(CustomerOfferNotification notification, String eventType) {
         LOGGER.info("Notify CustomerOffer type: {} - Event: {}", eventType, notification);
         return outbound.notify(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
                         .setSource(CustomerOffer.DOMAIN_NAME)

@@ -44,7 +44,7 @@ public class CustomerCreditRatingInboundServiceImpl extends BaseInboundService {
     CustomerCreditRatingService service;
 
 
-    protected Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             case CustomerCreditRating.STATE_RETRIEVE_TYPE:
                 return service.retrieveCustomerCreditRatingState(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF));
@@ -53,7 +53,7 @@ public class CustomerCreditRatingInboundServiceImpl extends BaseInboundService {
         return Uni.createFrom().nullItem();
     }
 
-    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
         return Uni.createFrom().nullItem();
     }

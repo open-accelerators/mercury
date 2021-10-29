@@ -9,8 +9,8 @@ import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 
 import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.MercuryException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.redhat.mercury.constants.BianCloudEvent;
@@ -21,7 +21,6 @@ import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.mutiny.Uni;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,20 +34,25 @@ class ${sdName}InboundServiceImplTest {
     ${sdName}Service service;
 
     @Test
-    void testQuery() throws InterruptedException, ExecutionException, TimeoutException {
+    void testQuery() throws InterruptedException, ExecutionException, TimeoutException, InvalidProtocolBufferException {
         String sdRefId = "foo";
-        // Use constant from com.redhat.mercury.${sdNameLowerCase}.${sdName}
-        String ceType = "org.bian.${sdNameLowerCase}.replaceme";
+        // Use constant from com.redhat.mercury.testservicedomain.TestServiceDomain
+        String ceType = "org.bian.testservicedomain.replaceme";
         // SomeType expected = SomeType.newBuilder()....build();
-        Uni<CloudEvent> response = inboundBindingService.query(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
+        CompletableFuture<CloudEvent> message = new CompletableFuture<>();
+        inboundBindingService.query(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
                 .setType(ceType)
                 .putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue.newBuilder()
                         .setCeString(sdRefId)
                         .build())
-                .build());
-        CompletableFuture<CloudEvent> message = new CompletableFuture<>();
+                .build()).subscribe().with(ce -> message.complete(ce));
+
         // Testing the missing mapping for this CloudEvent
-        response.onFailure(MappingNotFoundException.class).call(e -> assertThat(e.getMessage()).isEqualTo("Mapping not found for CloudEvent type: " + ceType));
+        CloudEvent event = message.get(10, TimeUnit.SECONDS);
+        assertThat(event.getType().equals(BianCloudEvent.CE_EXCEPTION_TYPE));
+        MercuryException ex = event.getProtoData().unpack(MercuryException.class);
+        assertThat(ex.getType()).isEqualTo(MappingNotFoundException.class.getSimpleName());
+        assertThat(ex.getMessage()).isEqualTo("Mapping not found for CloudEvent type: " + ceType);
 
         // assertThat(ce.getType()).isEqualTo(ceType);
         // assertThat(ce.getId()).isNotBlank();

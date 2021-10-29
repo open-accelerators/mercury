@@ -55,7 +55,7 @@ public class CustomerOfferInboundServiceImpl extends BaseInboundService {
     @Inject
     CustomerOfferService service;
 
-    protected Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             case CUSTOMER_OFFER_RETRIEVE_TYPE:
                 return service.retrieveSDCustomerOffer(getRef(cloudEvent, CE_SD_REF));
@@ -64,7 +64,7 @@ public class CustomerOfferInboundServiceImpl extends BaseInboundService {
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
-    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
         try {
             switch (cloudEvent.getType()) {

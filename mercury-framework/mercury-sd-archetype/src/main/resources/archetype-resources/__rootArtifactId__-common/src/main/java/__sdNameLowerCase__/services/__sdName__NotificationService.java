@@ -2,11 +2,13 @@ package ${package}.${sdNameLowerCase}.services;
 
 import io.smallrye.mutiny.Uni;
 
+import com.google.protobuf.Message;
+
 public abstract class ${sdName}NotificationService {
 
-    private Uni<Void> noOpReply() {
+    private Uni<Message> noOpReply() {
         return Uni.createFrom()
-                .voidItem();
+                .nullItem();
     }
 
     //TODO: Implement events

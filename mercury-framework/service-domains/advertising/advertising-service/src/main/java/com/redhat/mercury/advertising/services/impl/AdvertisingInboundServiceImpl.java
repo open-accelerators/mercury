@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
-import com.redhat.mercury.common.services.impl.BaseInboundService;
 import com.redhat.mercury.advertising.services.AdvertisingService;
+import com.redhat.mercury.common.services.impl.BaseInboundService;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.grpc.GrpcService;
@@ -40,14 +40,14 @@ public class AdvertisingInboundServiceImpl extends BaseInboundService {
     @Inject
     AdvertisingService service;
 
-    protected Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
         return Uni.createFrom().nullItem();
     }
 
-    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }

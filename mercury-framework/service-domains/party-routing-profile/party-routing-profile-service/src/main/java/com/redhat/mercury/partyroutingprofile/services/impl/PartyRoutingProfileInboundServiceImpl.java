@@ -49,7 +49,7 @@ public class PartyRoutingProfileInboundServiceImpl extends BaseInboundService {
         return DOMAIN_NAME;
     }
 
-    protected Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             case PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE:
                 return service.retrievePartyStateStatus(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF), getRef(cloudEvent, CE_BQ_REF));
@@ -59,7 +59,7 @@ public class PartyRoutingProfileInboundServiceImpl extends BaseInboundService {
     }
 
     @Override
-    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
         return Uni.createFrom().nullItem();
     }

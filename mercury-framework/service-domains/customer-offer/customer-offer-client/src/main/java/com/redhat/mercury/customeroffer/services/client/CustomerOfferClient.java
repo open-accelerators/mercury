@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -31,7 +32,7 @@ public class CustomerOfferClient extends CustomerOfferService {
     OutboundBindingService outbound;
 
     @Override
-    public Uni<Void> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
+    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
         return outbound.command(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
@@ -42,7 +43,7 @@ public class CustomerOfferClient extends CustomerOfferService {
     }
 
     @Override
-    public Uni<Void> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
+    public Uni<Message> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
         return outbound.command(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
@@ -53,7 +54,7 @@ public class CustomerOfferClient extends CustomerOfferService {
     }
 
     @Override
-    public Uni<SDCustomerOffer> retrieveSDCustomerOffer(String sdRefId) {
+    public Uni<Message> retrieveSDCustomerOffer(String sdRefId) {
         return outbound.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(CUSTOMER_OFFER_RETRIEVE_TYPE)
