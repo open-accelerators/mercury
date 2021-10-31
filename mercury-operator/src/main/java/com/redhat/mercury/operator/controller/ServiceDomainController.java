@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
-@Controller(namespaces = Controller.WATCH_CURRENT_NAMESPACE)
+@Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
 
     private static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
