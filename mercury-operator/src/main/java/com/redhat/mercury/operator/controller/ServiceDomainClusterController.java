@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@Controller(namespaces = Controller.WATCH_CURRENT_NAMESPACE)
+@Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
 
     private static final String SERVICE_DOMAIN_ROLE = "service-domain-role";
