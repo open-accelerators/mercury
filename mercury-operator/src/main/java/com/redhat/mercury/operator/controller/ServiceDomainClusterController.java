@@ -94,8 +94,10 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.rbac().roles().create(desiredRole);
             LOGGER.info("{} role was created successfully", SERVICE_DOMAIN_ROLE);
         } else {
-            client.rbac().roles().replace(desiredRole);
-            LOGGER.info("{} role was updated successfully", SERVICE_DOMAIN_ROLE);
+            if(!Objects.equals(role, desiredRole)) {
+                client.rbac().roles().replace(desiredRole);
+                LOGGER.info("{} role was updated successfully", SERVICE_DOMAIN_ROLE);
+            }
         }
     }
 
@@ -122,8 +124,10 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.rbac().roleBindings().create(desiredRoleBinding);
             LOGGER.info("{} role binding was created successfully", ROLE_BINDING);
         } else {
-            client.rbac().roleBindings().replace(desiredRoleBinding);
-            LOGGER.info("{} role binding was updated successfully", ROLE_BINDING);
+            if(!Objects.equals(roleBinding, desiredRoleBinding)) {
+                client.rbac().roleBindings().replace(desiredRoleBinding);
+                LOGGER.info("{} role binding was updated successfully", ROLE_BINDING);
+            }
         }
     }
 
@@ -181,9 +185,9 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.resources(Kafka.class).create(desiredKafka);
             LOGGER.info("{} desiredKafka broker created successfully", KAFKA_CLUSTER);
         } else {
-            if(Objects.equals(list.getItems().get(0), desiredKafka)) {
+            if(!Objects.equals(list.getItems().get(0), desiredKafka)) {
                 client.resources(Kafka.class).replace(desiredKafka);
-                LOGGER.info("{} desiredKafka broker updated successfully", KAFKA_CLUSTER);
+                LOGGER.info("{} kafka broker updated successfully", KAFKA_CLUSTER);
             }
         }
 
