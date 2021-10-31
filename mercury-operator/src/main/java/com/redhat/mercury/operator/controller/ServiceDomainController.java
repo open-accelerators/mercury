@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
@@ -114,24 +115,29 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private String createKafkaTopic(ServiceDomain sd) {
         final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
         KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
+        KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
+                .withNewMetadata()
+                .withName(kafkaTopicName)
+                .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka"))
+                .endMetadata()
+                .withNewSpec()
+                .withPartitions(1)
+                .withReplicas(1)
+                .endSpec()
+                .build();
+
+        desiredKafkaTopic.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
+                .withName(sd.getMetadata().getName())
+                .withUid(sd.getMetadata().getUid()).build()));
 
         if(kafkaTopic == null) {
-            kafkaTopic = new KafkaTopicBuilder()
-                    .withNewMetadata()
-                    .withName(kafkaTopicName)
-                    .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka"))
-                    .endMetadata()
-                    .withNewSpec()
-                    .withPartitions(1)
-                    .withReplicas(1)
-                    .endSpec()
-                    .build();
-
-            kafkaTopic.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                    .withName(sd.getMetadata().getName())
-                    .withUid(sd.getMetadata().getUid()).build()));
-
-            client.resources(KafkaTopic.class).create(kafkaTopic);
+            client.resources(KafkaTopic.class).create(desiredKafkaTopic);
+            LOGGER.info("{} kafka topic created successfully", kafkaTopicName);
+        } else {
+            if(!Objects.equals(kafkaTopic, desiredKafkaTopic)) {
+                client.resources(KafkaTopic.class).replace(desiredKafkaTopic);
+                LOGGER.info("{} kafka topic updated successfully", kafkaTopicName);
+            }
         }
 
         return kafkaTopicName;
@@ -141,7 +147,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
 
-        Deployment deployment = new DeploymentBuilder()
+        Deployment desiredDeployment = new DeploymentBuilder()
                 .withApiVersion("apps/v1")
                 .withNewMetadata()
                 .withName(sdName)
@@ -195,17 +201,19 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                                 .build())
                 .build();
 
-        deployment.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
+        desiredDeployment.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid()).build()));
 
         final DeploymentList sdDeploymentList = client.apps().deployments().inNamespace(sdNS).list();
         if(sdDeploymentList.getItems().isEmpty()) {
-            client.apps().deployments().inNamespace(sdNS).create(deployment);
+            client.apps().deployments().inNamespace(sdNS).create(desiredDeployment);
             LOGGER.debug("{} deployment was created successfully", sdName);
         } else {
-            client.apps().deployments().inNamespace(sdNS).replace(deployment);
-            LOGGER.debug("{} deployment was updated successfully", sdName);
+            if(!Objects.equals(sdDeploymentList.getItems().get(0), desiredDeployment)) {
+                client.apps().deployments().inNamespace(sdNS).replace(desiredDeployment);
+                LOGGER.debug("{} deployment was updated successfully", sdName);
+            }
         }
     }
 
@@ -213,7 +221,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
 
-        Service service = new ServiceBuilder()
+        Service desiredService = new ServiceBuilder()
                 .withApiVersion("v1")
                 .withNewMetadata()
                 .withName(sdName + "-binding")
@@ -230,18 +238,20 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withSelector(Map.of("app", "bian-" + sdName))//TODO: where do I get the value
                 .endSpec().build();
 
-        service.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
+        desiredService.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid()).build()));
 
         final ServiceList sdServiceList = client.services().inNamespace(sdNS).list();
 
         if(sdServiceList.getItems().isEmpty()) {
-            client.services().inNamespace(sdNS).create(service);//TODO: does it need to be in a namespace
+            client.services().inNamespace(sdNS).create(desiredService);//TODO: does it need to be in a namespace
             LOGGER.debug("{} service was created successfully", sdName + "-binding");
         } else {
-            LOGGER.debug("{} service was updated successfully", sdName + "-binding");
-            client.services().inNamespace(sdNS).replace(service);//TODO: does it need to be in a namespace
+            if(!Objects.equals(sdServiceList.getItems().get(0), desiredService)) {
+                client.services().inNamespace(sdNS).replace(desiredService);//TODO: does it need to be in a namespace
+                LOGGER.debug("{} service was updated successfully", sdName + "-binding");
+            }
         }
    }
 
@@ -253,24 +263,22 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .inNamespace(sdNS)
                 .withName(BINDING_SERVICE_SA).get();
 
-        if(serviceAccount == null){
-            serviceAccount = new ServiceAccountBuilder()
-                    .withNewMetadata()
-                    .withName(BINDING_SERVICE_SA)
-                    .endMetadata()
-                    .build();
+        ServiceAccount desiredServiceAccount = new ServiceAccountBuilder()
+                .withNewMetadata()
+                .withName(BINDING_SERVICE_SA)
+                .endMetadata()
+                .build();
 
-            serviceAccount.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                    .withName(sd.getMetadata().getName())
-                    .withUid(sd.getMetadata().getUid()).build()));
+        desiredServiceAccount.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
+                .withName(sd.getMetadata().getName())
+                .withUid(sd.getMetadata().getUid()).build()));
 
-            final ServiceAccountList sdServiceAccountList = client.serviceAccounts().inNamespace(sdNS).list();
-
-            if(sdServiceAccountList.getItems().isEmpty()) {
-                client.serviceAccounts().create(serviceAccount);//TODO: does it need to be in a namespace
-                LOGGER.debug("{} service account was created successfully", BINDING_SERVICE_SA);
-            } else {
-                client.serviceAccounts().replace(serviceAccount);//TODO: does it need to be in a namespace
+        if(serviceAccount == null) {
+            client.serviceAccounts().create(desiredServiceAccount);//TODO: does it need to be in a namespace
+            LOGGER.debug("{} service account was created successfully", BINDING_SERVICE_SA);
+        } else {
+            if(!Objects.equals(serviceAccount, desiredServiceAccount)) {
+                client.serviceAccounts().replace(desiredServiceAccount);//TODO: does it need to be in a namespace
                 LOGGER.debug("{} service account was updated successfully", BINDING_SERVICE_SA);
             }
         }
