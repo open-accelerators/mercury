@@ -65,6 +65,7 @@
     </dependencyManagement>
     <modules>
         <module>mercury-framework</module>
+        <module>mercury-operator-api</module>
         <module>mercury-operator</module>
     </modules>
 </project>
