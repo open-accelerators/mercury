@@ -8,11 +8,6 @@ import "spec.proto";
 option java_multiple_files = true;
 option java_package = "org.bian.protobuf";
 
-message MercuryException {
-  string type = 1;
-  string message = 2;
-}
-
 message ExternalRequest {
   string path = 1;
   string verb = 2;

@@ -9,16 +9,16 @@ import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 
 import org.bian.protobuf.InboundBindingService;
-import org.bian.protobuf.MercuryException;
 import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.redhat.mercury.constants.BianCloudEvent;
-import com.redhat.mercury.exceptions.MappingNotFoundException;
 import ${package}.${sdNameLowerCase}.services.${sdName}Service;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -45,14 +45,20 @@ class ${sdName}InboundServiceImplTest {
                 .putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue.newBuilder()
                         .setCeString(sdRefId)
                         .build())
-                .build()).subscribe().with(ce -> message.complete(ce));
+                .build()).subscribe().with(ce -> message.complete(ce), failure -> {
+                    message.completeExceptionally(failure);
+                }
+        );
 
         // Testing the missing mapping for this CloudEvent
-        CloudEvent event = message.get(10, TimeUnit.SECONDS);
-        assertThat(event.getType().equals(BianCloudEvent.CE_EXCEPTION_TYPE));
-        MercuryException ex = event.getProtoData().unpack(MercuryException.class);
-        assertThat(ex.getType()).isEqualTo(MappingNotFoundException.class.getSimpleName());
-        assertThat(ex.getMessage()).isEqualTo("Mapping not found for CloudEvent type: " + ceType);
+        message.handle((ce, e) -> {
+            assertThat(ce).isNull();
+            assertThat(e).isInstanceOf(StatusRuntimeException.class);
+            assertThat(((StatusRuntimeException) e).getStatus().getCode()).isEqualTo(Status.INVALID_ARGUMENT.getCode());
+            assertThat(e.getMessage()).isEqualTo("INVALID_ARGUMENT: Mapping not found for CloudEvent type: %s", ceType);
+            return null;
+        }).get(10, TimeUnit.SECONDS);
+        assertThat(message.isCompletedExceptionally()).isTrue();
 
         // assertThat(ce.getType()).isEqualTo(ceType);
         // assertThat(ce.getId()).isNotBlank();

@@ -13,7 +13,6 @@ import javax.annotation.PostConstruct;
 import org.bian.protobuf.ExternalRequest;
 import org.bian.protobuf.ExternalResponse;
 import org.bian.protobuf.InboundBindingService;
-import org.bian.protobuf.MercuryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +29,8 @@ import com.redhat.mercury.exceptions.MappingNotFoundException;
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.Builder;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.arc.Arc;
 import io.smallrye.mutiny.Uni;
 
@@ -45,7 +46,6 @@ public abstract class BaseInboundService implements InboundBindingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseInboundService.class);
 
     protected static final String GET_VERB = "GET";
-    private static final String EVENT_HANDLER_NOT_FOUND_ERROR = "EventHandlerNotFoundForCEType";
 
     private Map<String, BianNotificationHandler> eventHandlers = new HashMap<>();
 
@@ -58,43 +58,43 @@ public abstract class BaseInboundService implements InboundBindingService {
     public Uni<CloudEvent> query(CloudEvent request) {
         LOGGER.info("received query request");
         return mapQueryMethod(request)
-                .onFailure(MappingNotFoundException.class)
-                .recoverWithItem(this::produceException)
                 .onItem()
-                .transform(message -> transformAction(message, request));
+                .transform(message -> transformAction(message, request))
+                .onFailure()
+                .transform(this::exceptionTransformer);
+    }
+
+    private Throwable exceptionTransformer(Throwable e) {
+        if (e instanceof MappingNotFoundException) {
+            return new StatusRuntimeException(Status.INVALID_ARGUMENT
+                    .withCause(e)
+                    .withDescription(e.getMessage()));
+        }
+        return new StatusRuntimeException(Status.INTERNAL
+                .withCause(e)
+                .withDescription(e.getMessage()));
     }
 
     @Override
     public Uni<CloudEvent> command(CloudEvent request) {
         LOGGER.info("received command request");
         return mapCommandMethod(request)
-                .onFailure(MappingNotFoundException.class)
-                .recoverWithItem(this::produceException)
                 .onItem()
-                .transform(message -> transformAction(message, request));
+                .transform(message -> transformAction(message, request))
+                .onFailure()
+                .transform(this::exceptionTransformer);
     }
 
     private CloudEvent transformAction(Message message, CloudEvent request) {
-        String type = request.getType();
-        if (message instanceof MercuryException) {
-            type = BianCloudEvent.CE_EXCEPTION_TYPE;
-        }
         Builder ceBuilder = CloudEvent.newBuilder()
                 .setId(UUID.randomUUID().toString())
-                .setType(type)
+                .setType(request.getType())
                 .setSource(getDomainName())
                 .putAttributes(CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build());
         if (message != null) {
             ceBuilder.setProtoData(Any.pack(message));
         }
         return ceBuilder.build();
-    }
-
-    private Message produceException(Throwable e) {
-        return MercuryException.newBuilder()
-                .setType(MappingNotFoundException.class.getSimpleName())
-                .setMessage(e.getMessage())
-                .build();
     }
 
     @Override
@@ -107,29 +107,12 @@ public abstract class BaseInboundService implements InboundBindingService {
                         .onItem()
                         .transform(message -> transformAction(message, request));
             } catch (DataTransformationException e) {
-                LOGGER.error("Unable to process received event", e);
-                Message errorMsg = MercuryException.newBuilder().setMessage("Unable to process received event: " + e.getMessage()).setType(e.getClass().getSimpleName()).build();
                 Uni.createFrom()
-                        .nullItem()
-                        .onItem()
-                        .transform(m -> CloudEvent.newBuilder()
-                                .setId(UUID.randomUUID().toString())
-                                .setType(BianCloudEvent.CE_EXCEPTION_TYPE)
-                                .setSource(getDomainName())
-                                .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
-                                .setProtoData(Any.pack(errorMsg))
-                                .build());
+                        .failure(exceptionTransformer(e));
             }
         }
         return Uni.createFrom()
-                .nullItem()
-                .onItem()
-                .transform(e -> CloudEvent.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setType(request.getType())
-                        .setSource(getDomainName())
-                        .putAttributes(BianCloudEvent.CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build())
-                        .build());
+                .failure(exceptionTransformer(new MappingNotFoundException(request.getType())));
     }
 
     @Override

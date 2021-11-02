@@ -1,7 +1,5 @@
 package com.redhat.mercury.customeroffer.services.impl;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -18,16 +16,18 @@ import org.mockito.Mockito;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.redhat.mercury.constants.BianCloudEvent;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
-import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
 class CustomerOfferInboundServiceImplTest {
@@ -68,7 +68,16 @@ class CustomerOfferInboundServiceImplTest {
                 .build());
         // Testing the missing mapping for this CloudEvent
         CompletableFuture<CloudEvent> message = new CompletableFuture<>();
-        response.subscribe().with(ce -> message.complete(ce));
-        CloudEvent ce = message.get(5, TimeUnit.SECONDS);
+        response.subscribe().with(
+                ce -> message.complete(ce),
+                failure -> message.completeExceptionally(failure)
+        );
+        message.handle((ce, e) -> {
+            assertThat(ce).isNull();
+            assertThat(e).isInstanceOf(StatusRuntimeException.class);
+            assertThat(((StatusRuntimeException) e).getStatus().getCode()).isEqualTo(Status.INVALID_ARGUMENT.getCode());
+            assertThat(e.getMessage()).isEqualTo("INVALID_ARGUMENT: Mapping not found for CloudEvent type: %s", ceType);
+            return null;
+        }).get(10, TimeUnit.SECONDS);
     }
 }
