@@ -10,6 +10,7 @@ import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
@@ -24,7 +25,7 @@ public class MyCOServiceImpl extends CustomerOfferService {
     CustomerOfferNotificationService notificationService;
 
     @Override
-    public Uni<Void> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
+    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
         LOGGER.info("initiateCustomerOfferProcedure received");
         return notificationService.onCustomerOfferInitiated(CustomerOfferNotification
                 .newBuilder()
@@ -36,7 +37,7 @@ public class MyCOServiceImpl extends CustomerOfferService {
     }
 
     @Override
-    public Uni<Void> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate procedure) {
+    public Uni<Message> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate procedure) {
         LOGGER.info("updateCustomerOfferProcedure received");
         return notificationService.onCustomerOfferCompleted(CustomerOfferNotification
                 .newBuilder()

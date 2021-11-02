@@ -5,6 +5,7 @@ public final class CustomerOffer {
     public static final String DOMAIN_NAME = "customer-offer";
 
     // QUERIES
+    public static final String CUSTOMER_OFFER_RETRIEVE_TYPE = "org.bian.customeroffer.retrieve";
     // TODO: Implement
 
     // COMMANDS

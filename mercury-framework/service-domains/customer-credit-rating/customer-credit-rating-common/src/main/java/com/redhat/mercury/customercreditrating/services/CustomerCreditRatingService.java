@@ -1,12 +1,12 @@
 package com.redhat.mercury.customercreditrating.services;
 
-import org.bian.protobuf.customercreditrating.Rating;
+import com.google.protobuf.Message;
 
 import io.smallrye.mutiny.Uni;
 
 public abstract class CustomerCreditRatingService {
 
-    public Uni<Rating> retrieveCustomerCreditRatingState(String sd, String cr) {
+    public Uni<Message> retrieveCustomerCreditRatingState(String sd, String cr) {
         // No-op
         return Uni.createFrom().nullItem();
     }

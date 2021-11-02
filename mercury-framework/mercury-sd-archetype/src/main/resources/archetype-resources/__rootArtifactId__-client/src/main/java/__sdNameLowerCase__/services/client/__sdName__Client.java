@@ -1,4 +1,4 @@
-package com.redhat.mercury.${sdNameLowerCase}.services.client;
+package ${package}.${sdNameLowerCase}.services.client;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -6,7 +6,7 @@ import org.bian.protobuf.OutboundBindingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.${sdNameLowerCase}.services.${sdName}Service;
+import ${package}.${sdNameLowerCase}.services.${sdName}Service;
 
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;

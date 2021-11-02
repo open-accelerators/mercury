@@ -1,5 +1,6 @@
 package com.redhat.mercury.events;
 
+import com.google.protobuf.Message;
 import com.redhat.mercury.exceptions.DataTransformationException;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -9,6 +10,6 @@ public interface BianNotificationHandler {
 
     String getType();
 
-    Uni<Void> onEvent(CloudEvent event) throws DataTransformationException;
+    Uni<Message> onEvent(CloudEvent event) throws DataTransformationException;
 
 }

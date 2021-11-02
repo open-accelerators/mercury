@@ -1,4 +1,4 @@
-package com.redhat.mercury.${sdNameLowerCase}.services.impl;
+package ${package}.${sdNameLowerCase}.services.impl;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -12,13 +12,14 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.redhat.mercury.common.services.impl.BaseInboundService;
-import com.redhat.mercury.${sdNameLowerCase}.services.${sdName}Service;
+import com.redhat.mercury.exceptions.MappingNotFoundException;
+import ${package}.${sdNameLowerCase}.services.${sdName}Service;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
-import static com.redhat.mercury.${sdNameLowerCase}.${sdName}.DOMAIN_NAME;
+import static ${package}.${sdNameLowerCase}.${sdName}.DOMAIN_NAME;
 
 @GrpcService
 public class ${sdName}InboundServiceImpl extends BaseInboundService {
@@ -40,18 +41,18 @@ public class ${sdName}InboundServiceImpl extends BaseInboundService {
     @Inject
     ${sdName}Service service;
 
-    protected Uni<? extends Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
-        return null;
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
-    protected Uni<Void> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
-        return null;
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     @Override

@@ -1,9 +1,9 @@
-package com.redhat.mercury.${sdNameLowerCase}.services.impl;
+package ${package}.${sdNameLowerCase}.services.impl;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
-import com.redhat.mercury.${sdNameLowerCase}.services.${sdName}Service;
+import ${package}.${sdNameLowerCase}.services.${sdName}Service;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;

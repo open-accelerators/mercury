@@ -1,4 +1,4 @@
-package com.redhat.mercury.${sdNameLowerCase}.services;
+package ${package}.${sdNameLowerCase}.services;
 
 public abstract class ${sdName}Service {
 

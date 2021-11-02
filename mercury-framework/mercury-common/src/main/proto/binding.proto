@@ -21,14 +21,14 @@ message ExternalResponse {
 
 service OutboundBindingService {
   rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
-  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {} //Should it return Empty?
-  rpc notify (io.cloudevents.v1.CloudEvent) returns (google.protobuf.Empty) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc notify (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
 }
 
 service InboundBindingService {
   rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
-  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {} //Should it return Empty?
-  rpc receive (io.cloudevents.v1.CloudEvent) returns (google.protobuf.Empty) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc receive (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
   // In order to avoid having the BindingSvc depending on all types only for external requests
   // this method is used
   rpc external (ExternalRequest) returns (ExternalResponse) {}
@@ -36,5 +36,5 @@ service InboundBindingService {
 
 service InternalBindingService {
   rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
-  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {} //Should it return Empty?
+  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
 }
