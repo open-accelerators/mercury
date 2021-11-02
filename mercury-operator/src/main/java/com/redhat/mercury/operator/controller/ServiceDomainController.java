@@ -1,16 +1,17 @@
 package com.redhat.mercury.operator.controller;
 
 import com.redhat.mercury.operator.model.ServiceDomain;
+import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
-import io.fabric8.kubernetes.api.model.apps.DeploymentList;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.Context;
 import io.javaoperatorsdk.operator.api.*;
-import io.strimzi.api.kafka.model.*;
+import io.strimzi.api.kafka.model.KafkaTopic;
+import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,20 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
+    public static final String SERVICE_DOMAIN_LABEL = "service-domain";
+    public static final String SERVICE_ACCOUNT_NAME = "bian-binding-service-sa";
+    public static final String BUSINESS_SERVICE_CONTAINER_NAME = "business-service";
+    public static final String QUARKUS_HTTP_PORT_ENV_VAR = "QUARKUS_HTTP_PORT";
+    public static final String QUARKUS_HTTP_PORT = "8081";
+    public static final String MERCURY_SERVICE_DOMAIN_ENV_VAR = "MERCURY_SERVICEDOMAIN";
+    public static final String CONTAINER_NAME_INBOUND = "inbound";
+    public static final String BINDING_SERVICE_CONTAINER_NAME = "binding-service";
+    public static final String APP_LABEL = "app";
+    public static final String CONTAINER_NAME_OUTBOUND = "outbound";
+    public static final String MERCURY_KAFKA_BROKER_ENV_VAR = "MERCURY_KAFKA_BROKERS";
+    public static final String INTERNAL = "internal";
+    public static final String HTTP_CONTAINER_NAME = "http";
+    public static final String TCP_PROTOCOL = "TCP";
 
     @Inject
     KubernetesClient client;
@@ -114,7 +129,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
     private String createKafkaTopic(ServiceDomain sd) {
         final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
+
         KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
                 .withNewMetadata()
                 .withName(kafkaTopicName)
@@ -130,13 +145,15 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid()).build()));
 
+        final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
+
         if(kafkaTopic == null) {
             client.resources(KafkaTopic.class).create(desiredKafkaTopic);
-            LOGGER.info("{} kafka topic created successfully", kafkaTopicName);
+            LOGGER.debug("{} kafka topic was missing, creating it", kafkaTopicName);
         } else {
-            if(!Objects.equals(kafkaTopic, desiredKafkaTopic)) {
+            if(!Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
                 client.resources(KafkaTopic.class).replace(desiredKafkaTopic);
-                LOGGER.info("{} kafka topic updated successfully", kafkaTopicName);
+                LOGGER.debug("{} kafka topic was updated", kafkaTopicName);
             }
         }
 
@@ -144,58 +161,62 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     }
 
     private void createOrUpdateDeployment(ServiceDomain sd) {
+        String kafkaBrokerUr = null;
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
+        final ServiceDomainCluster serviceDomainCluster = client.resources(ServiceDomainCluster.class).inNamespace(client.getNamespace()).withName(sd.getSpec().getServiceDomainCluster()).get();
+        if(serviceDomainCluster != null){
+            kafkaBrokerUr = serviceDomainCluster.getStatus().getKafkaBroker();
+        }
 
         Deployment desiredDeployment = new DeploymentBuilder()
-                .withApiVersion("apps/v1")
                 .withNewMetadata()
                 .withName(sdName)
-                .withNamespace(sdNS)//TODO: does it need to be in a namespace
-                .withLabels(Map.of("app", "bian-" + sdName, "service-domain", sdName))
+                .withNamespace(sdNS)
+                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
                                 .withSelector(new LabelSelectorBuilder()
-                                                .withMatchLabels(Map.of("app", "bian-" + sdName))
+                                                .withMatchLabels(Map.of(APP_LABEL, "bian-" + sdName))
                                                 .build())
                                 .withTemplate(new PodTemplateSpecBuilder()
                                                     .withNewMetadata()
-                                                    .withLabels(Map.of("app", "bian-" + sdName, "service-domain", sdName))
+                                                    .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
                                                     .endMetadata()
                                                     .withSpec(new PodSpecBuilder()
-                                                                    .withServiceAccountName("bian-binding-service-sa")
+                                                                    .withServiceAccountName(SERVICE_ACCOUNT_NAME)
                                                                     .withContainers(new ContainerBuilder()
-                                                                                        .withName("business-service")
+                                                                                        .withName(BUSINESS_SERVICE_CONTAINER_NAME)
                                                                                         .withImage(sd.getSpec().getBusinessImage())
                                                                                         .withPorts(new ContainerPortBuilder()
                                                                                                 .withContainerPort(10001)
-                                                                                                .withName("inbound").build())
+                                                                                                .withName(CONTAINER_NAME_INBOUND).build())
                                                                                         .withEnv(new EnvVarBuilder()
-                                                                                                        .withName("QUARKUS_HTTP_PORT")
-                                                                                                        .withValue("8081").build(),
+                                                                                                        .withName(QUARKUS_HTTP_PORT_ENV_VAR)
+                                                                                                        .withValue(QUARKUS_HTTP_PORT).build(),
                                                                                                 new EnvVarBuilder()
-                                                                                                        .withName("MERCURY_SERVICEDOMAIN")
+                                                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
                                                                                                         .withValue(sdName).build())
                                                                                         .build(),
                                                                                     new ContainerBuilder()
-                                                                                        .withName("binding-service")
+                                                                                        .withName(BINDING_SERVICE_CONTAINER_NAME)
                                                                                         .withImage(sd.getSpec().getBindingServiceImage())
                                                                                         .withPorts(new ContainerPortBuilder()
                                                                                                         .withContainerPort(10100)
-                                                                                                        .withName("outbound").build(),
+                                                                                                        .withName(CONTAINER_NAME_OUTBOUND).build(),
                                                                                                 new ContainerPortBuilder()
                                                                                                         .withContainerPort(10101)
-                                                                                                        .withName("internal").build(),
+                                                                                                        .withName(INTERNAL).build(),
                                                                                                 new ContainerPortBuilder()
                                                                                                         .withContainerPort(8080)
-                                                                                                        .withName("http").build())
+                                                                                                        .withName(HTTP_CONTAINER_NAME).build())
                                                                                         .withEnv(new EnvVarBuilder()
-                                                                                                        .withName("MERCURY_SERVICEDOMAIN")
+                                                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
                                                                                                         .withValue(sdName).build(),
                                                                                                 new EnvVarBuilder()
-                                                                                                        .withName("MERCURY_KAFKA_BROKERS")
-                                                                                                        .withValue("").build())
-                                                                                        .build())//TODO: set the correct value)
+                                                                                                        .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
+                                                                                                        .withValue(kafkaBrokerUr).build())
+                                                                                        .build())
                                                                     .build())
                                                     .build())
                                 .build())
@@ -205,14 +226,15 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid()).build()));
 
-        final DeploymentList sdDeploymentList = client.apps().deployments().inNamespace(sdNS).list();
-        if(sdDeploymentList.getItems().isEmpty()) {
+        final Deployment sdDeployment = client.apps().deployments().inNamespace(sdNS).withName(sdName).get();
+
+        if(sdDeployment == null) {
             client.apps().deployments().inNamespace(sdNS).create(desiredDeployment);
-            LOGGER.debug("{} deployment was created successfully", sdName);
+            LOGGER.debug("{} deployment was missing, creating it", sdName);
         } else {
-            if(!Objects.equals(sdDeploymentList.getItems().get(0), desiredDeployment)) {
+            if(!Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec())) {
                 client.apps().deployments().inNamespace(sdNS).replace(desiredDeployment);
-                LOGGER.debug("{} deployment was updated successfully", sdName);
+                LOGGER.debug("{} deployment was updated", sdName);
             }
         }
     }
@@ -221,36 +243,38 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
 
+        final String serviceName = sdName + "-binding";
         Service desiredService = new ServiceBuilder()
                 .withApiVersion("v1")
                 .withNewMetadata()
-                .withName(sdName + "-binding")
-                .withNamespace(sdNS)//TODO: does it need to be in a namespace
-                .withLabels(Map.of("app", "bian-" + sdName,
-                                   "service-domain", sdName,
-                                   "mercury-binding", "internal"))//TODO: where do I get the value
+                .withName(serviceName)
+                .withNamespace(sdNS)
+                .withLabels(Map.of(APP_LABEL, "bian-" + sdName,
+                                   "com.redhat.mercury/service-domain", sdName,
+                                   "com.redhat.mercury/service-domain-binding", INTERNAL,
+                                   "com.redhat.mercury/service-domain-cluster", sd.getSpec().getServiceDomainCluster()))
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(new ServicePortBuilder()
-                                .withPort(10101)//TODO: where do I get the value
-                                .withProtocol("TCP")//TODO: where do I get the value
-                                .withName("internal").build())
-                .withSelector(Map.of("app", "bian-" + sdName))//TODO: where do I get the value
+                                .withPort(10101)
+                                .withProtocol(TCP_PROTOCOL)
+                                .withName(INTERNAL).build())
+                .withSelector(Map.of(APP_LABEL, "bian-" + sdName))
                 .endSpec().build();
 
         desiredService.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid()).build()));
 
-        final ServiceList sdServiceList = client.services().inNamespace(sdNS).list();
+        final Service sdService = client.services().inNamespace(sdNS).withName(serviceName).get();
 
-        if(sdServiceList.getItems().isEmpty()) {
-            client.services().inNamespace(sdNS).create(desiredService);//TODO: does it need to be in a namespace
-            LOGGER.debug("{} service was created successfully", sdName + "-binding");
+        if(sdService == null) {
+            client.services().inNamespace(sdNS).create(desiredService);
+            LOGGER.debug("{} service was missing, creating it", serviceName);
         } else {
-            if(!Objects.equals(sdServiceList.getItems().get(0), desiredService)) {
-                client.services().inNamespace(sdNS).replace(desiredService);//TODO: does it need to be in a namespace
-                LOGGER.debug("{} service was updated successfully", sdName + "-binding");
+            if(!Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
+                client.services().inNamespace(sdNS).replace(desiredService);
+                LOGGER.debug("{} service was updated", serviceName);
             }
         }
    }
@@ -258,14 +282,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private void createOrUpdateServiceAccount(ServiceDomain sd) {
         String sdNS = sd.getMetadata().getNamespace();
 
-        ServiceAccount serviceAccount = client
-                .serviceAccounts()
-                .inNamespace(sdNS)
-                .withName(BINDING_SERVICE_SA).get();
-
         ServiceAccount desiredServiceAccount = new ServiceAccountBuilder()
                 .withNewMetadata()
                 .withName(BINDING_SERVICE_SA)
+                .withNamespace(sdNS)
                 .endMetadata()
                 .build();
 
@@ -273,13 +293,15 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid()).build()));
 
+        ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(sdNS).withName(BINDING_SERVICE_SA).get();
+
         if(serviceAccount == null) {
-            client.serviceAccounts().create(desiredServiceAccount);//TODO: does it need to be in a namespace
-            LOGGER.debug("{} service account was created successfully", BINDING_SERVICE_SA);
+            client.serviceAccounts().inNamespace(sdNS).create(desiredServiceAccount);
+            LOGGER.debug("{} service account was missing, creating it", BINDING_SERVICE_SA);
         } else {
             if(!Objects.equals(serviceAccount, desiredServiceAccount)) {
-                client.serviceAccounts().replace(desiredServiceAccount);//TODO: does it need to be in a namespace
-                LOGGER.debug("{} service account was updated successfully", BINDING_SERVICE_SA);
+                client.serviceAccounts().inNamespace(sdNS).replace(desiredServiceAccount);
+                LOGGER.debug("{} service account was updated", BINDING_SERVICE_SA);
             }
         }
     }

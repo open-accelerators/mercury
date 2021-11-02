@@ -1,32 +1,31 @@
 package com.redhat.mercury.operator.controller;
 
+import com.redhat.mercury.operator.KafkaServiceEvent;
+import com.redhat.mercury.operator.KafkaServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
-import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.rbac.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.MixedOperation;
-import io.fabric8.kubernetes.client.dsl.Resource;
 import io.javaoperatorsdk.operator.api.*;
+import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpecBuilder;
 import io.strimzi.api.kafka.model.ZookeeperClusterSpecBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
+import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.storage.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
@@ -38,12 +37,17 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     private static final String ROLE_REF = "service-domain-role";
     private static final String ROLE_REF_KIND = "Role";
     private static final String ROLE_REF_API_GROUP = "rbac.authorization.k8s.io";
-    private static final String KAFKA_CLUSTER = "mercury-kafka-cluster";
+//    private static final String KAFKA_CLUSTER = "mercury-kafka-cluster";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainClusterController.class);
 
     @Inject
     KubernetesClient client;
+
+    @Override
+    public void init(EventSourceManager eventSourceManager) {
+        eventSourceManager.registerEventSource("kafka-service-event-source", KafkaServiceEventSource.createAndRegisterWatch(client, ""));//TODO: sdcName where do I get it from
+    }
 
     @Override
     public DeleteControl deleteResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
@@ -56,18 +60,24 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     public UpdateControl<ServiceDomainCluster> createOrUpdateResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
         ServiceDomainClusterStatus status = new ServiceDomainClusterStatus();
         try {
+            Optional<KafkaServiceEvent> latestKafkaServiceEvent = context.getEvents().getLatestOfType(KafkaServiceEvent.class);
+            if(latestKafkaServiceEvent.isPresent()) {
+                for(ListenerStatus listener : latestKafkaServiceEvent.get().getKafka().getStatus().getListeners()){
+                    final String bootstrapServers = listener.getBootstrapServers();
+                    LOGGER.debug("The kafka bootstrap url is {}", bootstrapServers);
+                    status.setKafkaBroker(bootstrapServers);
+                    sdc.setStatus(status);
+                }
+            }
+
             createOrUpdateRole(sdc);
             createOrUpdateRoleBinding(sdc);
-            String kafkaBrokerUrl = createOrUpdateKafkaBroker(sdc);
-
-            ServiceDomainClusterStatus sdcs = new ServiceDomainClusterStatus();
-            sdcs.setKafkaBroker(kafkaBrokerUrl);
+            createOrUpdateKafkaBroker(sdc);
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
             return UpdateControl.noUpdate();
         }
 
-        sdc.setStatus(status);
         return UpdateControl.updateStatusSubResource(sdc);
     }
 
@@ -131,14 +141,14 @@ public class ServiceDomainClusterController implements ResourceController<Servic
         }
     }
 
-    private String createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
-        MixedOperation<Kafka, KubernetesResourceList<Kafka>, Resource<Kafka>> kafkaResources = client.resources(Kafka.class);
-        KubernetesResourceList<Kafka> list = kafkaResources.list();
+    private void createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
+        final String sdcName = sdc.getMetadata().getName();
 
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
-                .withResourceVersion("desiredKafka.strimzi.io/v1beta2")
-                .withName("mercury-desiredKafka-cluster")
+                .withName(sdcName)
+                .withNamespace(client.getNamespace())
+                .withLabels(Map.of("com.redhat.mercury/service-domain-cluster", sdcName))//TODO:add labels later
                 .endMetadata()
                 .withNewSpec()
                 .withKafka(new KafkaClusterSpecBuilder()
@@ -178,28 +188,19 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                 .build();
 
         desiredKafka.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sdc.getMetadata().getName())
+                .withName(sdcName)
                 .withUid(sdc.getMetadata().getUid()).build()));
 
-        if (list.getItems().isEmpty()){
+        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
+
+        if (currentKafka == null){
             client.resources(Kafka.class).create(desiredKafka);
-            LOGGER.info("{} desiredKafka broker created successfully", KAFKA_CLUSTER);
+            LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
         } else {
-            if(!Objects.equals(list.getItems().get(0), desiredKafka)) {
+            if(!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
                 client.resources(Kafka.class).replace(desiredKafka);
-                LOGGER.info("{} kafka broker updated successfully", KAFKA_CLUSTER);
+                LOGGER.debug("{} kafka broker was updated", sdcName);
             }
         }
-
-        return getKafkaBrokerUrl();
-    }
-
-    private String getKafkaBrokerUrl() {
-//        if(client.services().withName("mercury-kafka-cluster").isReady()){
-//            final Service kafkaService = client.services().withName("mercury-kafka-cluster").get();
-//            kafkaService.getSpec().getgetStatus().
-//            retu
-//        }
-        return null;//TODO: implement
     }
 }

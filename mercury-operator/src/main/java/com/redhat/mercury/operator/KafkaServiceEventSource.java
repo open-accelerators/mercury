@@ -1,39 +1,38 @@
 package com.redhat.mercury.operator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.javaoperatorsdk.operator.processing.event.AbstractEventSource;
 import io.strimzi.api.kafka.model.Kafka;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getUID;
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getVersion;
 
 public class KafkaServiceEventSource extends AbstractEventSource implements Watcher<Kafka> {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaServiceEventSource.class);
-    private static final String SDC_LABEL = "com.redhat.mercury/service-domain-cluster";
-    public static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
-    public static final String OPERATOR_NAME = "service-domain-cluster-operator";
 
     private final KubernetesClient client;
 
-    public static KafkaServiceEventSource createAndRegisterWatch(KubernetesClient client) {
-        KafkaServiceEventSource eventSource = new KafkaServiceEventSource(client);
+    private final String sdcName;
+
+    public static KafkaServiceEventSource createAndRegisterWatch(KubernetesClient client, String sdcName) {
+        KafkaServiceEventSource eventSource = new KafkaServiceEventSource(client, sdcName);
         eventSource.registerWatch();
         return eventSource;
     }
 
-    private KafkaServiceEventSource(KubernetesClient client) {
+    private KafkaServiceEventSource(KubernetesClient client, String sdcName) {
         this.client = client;
+        this.sdcName = sdcName;
     }
 
     private void registerWatch() {
         client.resources(Kafka.class)
                 .inNamespace(client.getNamespace())
-                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .withLabel("com.redhat.mercury/service-domain-cluster", sdcName)
                 .watch(this);
     }
 
