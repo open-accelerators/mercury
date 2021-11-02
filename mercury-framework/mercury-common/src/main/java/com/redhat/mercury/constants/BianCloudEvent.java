@@ -4,8 +4,6 @@ public final class BianCloudEvent {
 
     public static final String CE_TYPE_PREFIX = "org.bian.";
 
-    public static final String CE_EXCEPTION_TYPE = "com.redhat.mercury.exception";
-
     public static final String CE_CR_REF = "biancrref";
     public static final String CE_SD_REF = "biansdref";
     public static final String CE_BQ_REF = "bianbqref";
