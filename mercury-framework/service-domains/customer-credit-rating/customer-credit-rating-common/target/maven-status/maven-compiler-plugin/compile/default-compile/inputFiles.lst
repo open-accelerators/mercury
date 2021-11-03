@@ -1,8 +1,0 @@
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/src/main/java/com/redhat/mercury/customercreditrating/CustomerCreditRating.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/src/main/java/com/redhat/mercury/customercreditrating/services/CustomerCreditRatingNotificationService.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/target/generated-sources/grpc/org/bian/protobuf/customercreditrating/Rating.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/src/main/java/com/redhat/mercury/customercreditrating/services/CustomerCreditRatingService.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/target/generated-sources/grpc/org/bian/protobuf/customercreditrating/RatingOrBuilder.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/target/generated-sources/grpc/org/bian/protobuf/customercreditrating/RatingEventOrBuilder.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/target/generated-sources/grpc/org/bian/protobuf/customercreditrating/CustomerCreditRatingModel.java
-/home/Ilonas/Documents/BIAN/mercury/mercury-framework/service-domains/customer-credit-rating/customer-credit-rating-common/target/generated-sources/grpc/org/bian/protobuf/customercreditrating/RatingEvent.java
