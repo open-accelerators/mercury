@@ -22,5 +22,9 @@ public abstract class CustomerOfferService {
         return Uni.createFrom().nullItem().onItem().castTo(Message.class);
     }
 
+    public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
+        return Uni.createFrom().nullItem().onItem().castTo(Message.class);
+    }
+
     //TODO: Implement other queries and commands
 }

@@ -1,0 +1,3 @@
+com/redhat/mercury/customeroffer/events/CustomerOfferCompletedHandler.class
+com/redhat/mercury/customeroffer/events/CustomerOfferInitiatedHandler.class
+com/redhat/mercury/customeroffer/events/CustomerOfferNotificationServiceProvider.class

@@ -20,9 +20,13 @@ import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
+import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
+import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_CUSTOMER_OFFER_TYPE;
+
+
 
 public class CustomerOfferClient extends CustomerOfferService {
 
@@ -72,6 +76,28 @@ public class CustomerOfferClient extends CustomerOfferService {
                         return null;
                     }
                 });
+    }
+
+    @Override
+    public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
+        return outbound.query(CloudEvent.newBuilder()
+                        .setId(UUID.randomUUID().toString())
+                        .setType(CUSTOMER_OFFER_RETRIEVE_CUSTOMER_OFFER_TYPE)
+                        .putAttributes(CE_SD_REF, CE_CR_REF, CloudEventAttributeValue
+                                .newBuilder()
+                                .setCeString(sdRefId, crRefId)
+                                .build())
+                        .build())
+                .onItem()
+                .transform(ce -> {
+                    try {
+                        return ce.getProtoData().unpack(retrieveCustomerOffer.class);
+                    } catch (InvalidProtocolBufferException e) {
+                        LOGGER.error("Unable to unpack response", e);
+                        return null;
+                    }
+                });
+
     }
 
 }

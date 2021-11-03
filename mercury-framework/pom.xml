@@ -67,8 +67,8 @@
         <module>mercury-common</module>
         <module>mercury-binding-service</module>
         <module>mercury-common-service</module>
-        <module>mercury-sd-archetype</module>
         <module>service-domains</module>
+        <module>mercury-sd-archetype</module>
         <module>examples</module>
     </modules>
 </project>
