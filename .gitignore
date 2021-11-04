@@ -1,8 +1,6 @@
 # common IDE, java and maven generated resouces
 */.mvn/maven-wrapper.jar
 */target/**
-target
-target/*
 .settings
 .classpath
 .settings
