@@ -16,6 +16,7 @@ import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
@@ -47,13 +48,7 @@ public class CustomerCreditRatingClient extends CustomerCreditRatingService {
                                 .setCeString(STATE_RETRIEVE_ACTION)
                                 .build())
                         .build())
-                .onItem().transform(ce -> {
-                    try {
-                        return ce.getProtoData().unpack(Rating.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Unable to unpack Rating response", e);
-                        return null;
-                    }
-                });
+                .onItem()
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(Rating.class)));
     }
 }

@@ -5,7 +5,7 @@ import javax.inject.Inject;
 
 import org.bian.protobuf.customeroffer.BasicReference;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
-import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public class MyCOServiceImpl extends CustomerOfferService {
     CustomerOfferNotificationService notificationService;
 
     @Override
-    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
+    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
         LOGGER.info("initiateCustomerOfferProcedure received");
         return notificationService.onCustomerOfferInitiated(CustomerOfferNotification
                 .newBuilder()

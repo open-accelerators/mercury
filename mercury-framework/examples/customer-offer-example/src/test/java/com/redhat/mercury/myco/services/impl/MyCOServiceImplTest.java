@@ -9,7 +9,7 @@ import java.util.concurrent.TimeoutException;
 import org.bian.protobuf.InboundBindingService;
 import org.bian.protobuf.customeroffer.BasicReference;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
-import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.bian.protobuf.customeroffer.ProcedureInstanceRecord;
 import org.junit.jupiter.api.Test;
@@ -19,14 +19,10 @@ import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 
 import io.cloudevents.v1.proto.CloudEvent;
-import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
 
-import static com.redhat.mercury.constants.BianCloudEvent.CE_BQ_REF;
-import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
-import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -41,7 +37,7 @@ class MyCOServiceImplTest {
 
     @Test
     void testInitiateCustomerOfferProcedure() throws ExecutionException, InterruptedException, TimeoutException {
-        CustomerOfferProcedure procedure = CustomerOfferProcedure.newBuilder()
+        CustomerOfferProcedureInitiation procedure = CustomerOfferProcedureInitiation.newBuilder()
                 .setProcedure(ProcedureInstanceRecord.newBuilder()
                         .setCustomerReference("foo")
                         .build())

@@ -1,6 +1,6 @@
 package com.redhat.mercury.customeroffer.services;
 
-import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.bian.protobuf.customeroffer.SDCustomerOffer;
 
@@ -10,7 +10,7 @@ import io.smallrye.mutiny.Uni;
 
 public abstract class CustomerOfferService {
 
-    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
+    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
         return Uni.createFrom().item(() -> null);
     }
 
@@ -19,6 +19,10 @@ public abstract class CustomerOfferService {
     }
 
     public Uni<Message> retrieveSDCustomerOffer(String sdRefId) {
+        return Uni.createFrom().nullItem().onItem().castTo(Message.class);
+    }
+
+    public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
         return Uni.createFrom().nullItem().onItem().castTo(Message.class);
     }
 
