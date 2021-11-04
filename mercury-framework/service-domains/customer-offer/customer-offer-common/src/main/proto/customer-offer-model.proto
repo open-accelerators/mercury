@@ -29,7 +29,7 @@ message FacilityApplicationReference {
   string productCode = 1;
 }
 
-message CustomerOfferProcedure {
+message CustomerOfferProcedureInitiation {
   string servicingSessionReference = 1;
   google.protobuf.Any procedureInitiate = 2;
   string procedureInstanceStatus = 3;
@@ -157,7 +157,7 @@ message SDCustomerOffer {
   }
 }
 
-message retrieveCustomerOffer {
+message CustomerOfferProcedure {
   CustomerOfferProcedureInstanceRecord customerOfferProcedureInstanceRecord = 1;
   string customerOfferProcedureRetrieveActionTaskReference = 2;
   google.protobuf.Any customerOfferProcedureRetrieveActionTaskRecord = 3;

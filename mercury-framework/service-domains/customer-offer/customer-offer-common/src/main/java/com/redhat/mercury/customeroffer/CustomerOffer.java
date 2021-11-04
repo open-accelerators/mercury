@@ -6,7 +6,7 @@ public final class CustomerOffer {
 
     // QUERIES
     public static final String CUSTOMER_OFFER_RETRIEVE_TYPE = "org.bian.customeroffer.retrieve";
-    public static final String CUSTOMER_OFFER_RETRIEVE_CUSTOMER_OFFER_TYPE = "org.bian.customeroffer.procedure.retrieve";
+    public static final String CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE = "org.bian.customeroffer.procedure.retrieve";
     // TODO: Implement
 
     // COMMANDS

@@ -17,6 +17,7 @@ import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_BQ_REF;
@@ -52,13 +53,7 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
                                 .setCeString(PARTY_STATE_STATUS_RETRIEVE_ACTION)
                                 .build())
                         .build())
-                .onItem().transform(ce -> {
-                    try {
-                        return ce.getProtoData().unpack(PartyRoutingStateList.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Unable to unpack response", e);
-                        return null;
-                    }
-                });
+                .onItem()
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(PartyRoutingStateList.class)));
     }
 }

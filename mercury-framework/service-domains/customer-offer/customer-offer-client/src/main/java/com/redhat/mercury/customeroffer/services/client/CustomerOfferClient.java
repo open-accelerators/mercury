@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.bian.protobuf.OutboundBindingService;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.bian.protobuf.customeroffer.SDCustomerOffer;
 import org.slf4j.Logger;
@@ -18,13 +19,14 @@ import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
-import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_CUSTOMER_OFFER_TYPE;
+import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE;
 
 
 
@@ -36,7 +38,7 @@ public class CustomerOfferClient extends CustomerOfferService {
     OutboundBindingService outbound;
 
     @Override
-    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedure procedure) {
+    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
         return outbound.command(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
@@ -68,36 +70,24 @@ public class CustomerOfferClient extends CustomerOfferService {
                                 .build())
                         .build())
                 .onItem()
-                .transform(ce -> {
-                    try {
-                        return ce.getProtoData().unpack(SDCustomerOffer.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Unable to unpack response", e);
-                        return null;
-                    }
-                });
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(SDCustomerOffer.class)));
     }
 
     @Override
     public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
         return outbound.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
-                        .setType(CUSTOMER_OFFER_RETRIEVE_CUSTOMER_OFFER_TYPE)
-                        .putAttributes(CE_SD_REF, CE_CR_REF, CloudEventAttributeValue
+                        .setType(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
+                        .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
-                                .setCeString(sdRefId, crRefId)
+                                .setCeString(sdRefId)
+                                .build())
+                        .putAttributes(CE_CR_REF, CloudEventAttributeValue
+                                .newBuilder()
+                                .setCeString(crRefId)
                                 .build())
                         .build())
                 .onItem()
-                .transform(ce -> {
-                    try {
-                        return ce.getProtoData().unpack(retrieveCustomerOffer.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Unable to unpack response", e);
-                        return null;
-                    }
-                });
-
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(CustomerOfferProcedure.class)));
     }
-
 }
