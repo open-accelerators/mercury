@@ -20,12 +20,6 @@
             <version>${operator-sdk.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.sundr</groupId>
-            <artifactId>builder-annotations</artifactId>
-            <version>${builder-annotations.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>io.quarkiverse.operatorsdk</groupId>
             <artifactId>quarkus-operator-sdk-csv-generator-deployment</artifactId>
             <version>${operator-sdk.version}</version>
