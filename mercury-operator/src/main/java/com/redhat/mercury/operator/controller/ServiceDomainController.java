@@ -26,20 +26,22 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
-    public static final String SERVICE_DOMAIN_LABEL = "service-domain";
-    public static final String SERVICE_ACCOUNT_NAME = "bian-binding-service-sa";
-    public static final String BUSINESS_SERVICE_CONTAINER_NAME = "business-service";
-    public static final String QUARKUS_HTTP_PORT_ENV_VAR = "QUARKUS_HTTP_PORT";
-    public static final String QUARKUS_HTTP_PORT = "8081";
-    public static final String MERCURY_SERVICE_DOMAIN_ENV_VAR = "MERCURY_SERVICEDOMAIN";
-    public static final String CONTAINER_NAME_INBOUND = "inbound";
-    public static final String BINDING_SERVICE_CONTAINER_NAME = "binding-service";
-    public static final String APP_LABEL = "app";
-    public static final String CONTAINER_NAME_OUTBOUND = "outbound";
-    public static final String MERCURY_KAFKA_BROKER_ENV_VAR = "MERCURY_KAFKA_BROKERS";
-    public static final String INTERNAL = "internal";
-    public static final String HTTP_CONTAINER_NAME = "http";
-    public static final String TCP_PROTOCOL = "TCP";
+    private static final String SERVICE_DOMAIN_LABEL = "service-domain";
+    private static final String SERVICE_ACCOUNT_NAME = "bian-binding-service-sa";
+    private static final String BUSINESS_SERVICE_CONTAINER_NAME = "business-service";
+    private static final String QUARKUS_HTTP_PORT_ENV_VAR = "QUARKUS_HTTP_PORT";
+    private static final String QUARKUS_HTTP_PORT = "8081";
+    private static final String MERCURY_SERVICE_DOMAIN_ENV_VAR = "MERCURY_SERVICEDOMAIN";
+    private static final String CONTAINER_NAME_INBOUND = "inbound";
+    private static final String BINDING_SERVICE_CONTAINER_NAME = "binding-service";
+    private static final String APP_LABEL = "app";
+    private static final String CONTAINER_NAME_OUTBOUND = "outbound";
+    private static final String MERCURY_KAFKA_BROKER_ENV_VAR = "MERCURY_KAFKA_BROKERS";
+    private static final String INTERNAL = "internal";
+    private static final String HTTP_CONTAINER_NAME = "http";
+    private static final String TCP_PROTOCOL = "TCP";
+    private static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
+    private static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
 
     @Inject
     KubernetesClient client;
@@ -53,19 +55,27 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
     @Override
     public UpdateControl<ServiceDomain> createOrUpdateResource(ServiceDomain sd, Context<ServiceDomain> context) {
+        String kafkaBrokerUr;
         ServiceDomainStatus status = new ServiceDomainStatus();
         String sdName = sd.getMetadata().getName();
 
         try {
-            createOrUpdateServiceAccount(sd);
-            createOrUpdateDeployment(sd);
-            createOrUpdateService(sd);
-            String kafkaTopic = createKafkaTopic(sd);
-            String kafkaUser = createKafkaUser(sd, kafkaTopic);
+            final ServiceDomainCluster serviceDomainCluster = client.resources(ServiceDomainCluster.class)
+                    .inNamespace(client.getNamespace())
+                    .withName(sd.getSpec().getServiceDomainCluster()).get();
 
-            ServiceDomainStatus sds = new ServiceDomainStatus();
-            sds.setKafkaTopic(kafkaTopic);
-            sds.setKafkaUser(kafkaUser);
+            if(isKafkaBrokerUrlInCluster(serviceDomainCluster)){
+                kafkaBrokerUr = serviceDomainCluster.getStatus().getKafkaBroker();
+
+                createOrUpdateServiceAccount(sd);
+                createOrUpdateDeployment(sd, kafkaBrokerUr);
+                createOrUpdateService(sd);
+                String kafkaTopic = createKafkaTopic(sd);
+                String kafkaUser = createKafkaUser(sd, kafkaTopic);
+
+                status.setKafkaTopic(kafkaTopic);
+                status.setKafkaUser(kafkaUser);
+            }
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
             return UpdateControl.noUpdate();
@@ -73,6 +83,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         sd.setStatus(status);
         return UpdateControl.updateStatusSubResource(sd);
+    }
+
+    private boolean isKafkaBrokerUrlInCluster(ServiceDomainCluster serviceDomainCluster) {
+        return serviceDomainCluster != null && serviceDomainCluster.getStatus().getKafkaBroker() != null;
     }
 
     private String createKafkaUser(ServiceDomain sd, String kafkaTopic) {
@@ -143,7 +157,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         desiredKafkaTopic.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid()).build()));
+                .withUid(sd.getMetadata().getUid())
+                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .build()));
 
         final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
 
@@ -160,14 +177,9 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         return kafkaTopicName;
     }
 
-    private void createOrUpdateDeployment(ServiceDomain sd) {
-        String kafkaBrokerUr = null;
+    private void createOrUpdateDeployment(ServiceDomain sd, String kafkaBrokerUr) {
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
-        final ServiceDomainCluster serviceDomainCluster = client.resources(ServiceDomainCluster.class).inNamespace(client.getNamespace()).withName(sd.getSpec().getServiceDomainCluster()).get();
-        if(serviceDomainCluster != null){
-            kafkaBrokerUr = serviceDomainCluster.getStatus().getKafkaBroker();
-        }
 
         Deployment desiredDeployment = new DeploymentBuilder()
                 .withNewMetadata()
@@ -224,7 +236,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         desiredDeployment.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid()).build()));
+                .withUid(sd.getMetadata().getUid())
+                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .build()));
 
         final Deployment sdDeployment = client.apps().deployments().inNamespace(sdNS).withName(sdName).get();
 
@@ -264,7 +279,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         desiredService.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid()).build()));
+                .withUid(sd.getMetadata().getUid())
+                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .build()));
 
         final Service sdService = client.services().inNamespace(sdNS).withName(serviceName).get();
 
@@ -291,7 +309,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         desiredServiceAccount.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid()).build()));
+                .withUid(sd.getMetadata().getUid())
+                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .build()));
 
         ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(sdNS).withName(BINDING_SERVICE_SA).get();
 

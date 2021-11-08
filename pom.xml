@@ -15,13 +15,15 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>2.3.0.Final</quarkus.platform.version>
+        <quarkus.platform.version>2.4.0.Final</quarkus.platform.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <cloudevents.version>2.2.0</cloudevents.version>
         <testcontainers.version>1.6.0</testcontainers.version>
         <lombok.version>1.18.16</lombok.version>
-        <builder-annotations.version>0.24.3</builder-annotations.version>
+        <builder-annotations.version>0.50.1</builder-annotations.version>
         <operator-sdk.version>2.0.0.CR2</operator-sdk.version>
+        <strimzi-api.version>0.26.0</strimzi-api.version>
+        <fabric8.version>5.9.0</fabric8.version>
     </properties>
 
     <dependencyManagement>
