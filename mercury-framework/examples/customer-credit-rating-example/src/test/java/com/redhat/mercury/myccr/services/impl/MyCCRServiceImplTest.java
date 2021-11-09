@@ -31,6 +31,7 @@ class MyCCRServiceImplTest {
 
     @Test
     void testQuery() throws ExecutionException, InterruptedException, TimeoutException {
+        assertThat(svc).isNotNull();
         CloudEvent ce = CloudEvent.newBuilder()
                 .setType(CustomerCreditRating.STATE_RETRIEVE_TYPE)
                 .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder().setCeString("some-sd").build())
