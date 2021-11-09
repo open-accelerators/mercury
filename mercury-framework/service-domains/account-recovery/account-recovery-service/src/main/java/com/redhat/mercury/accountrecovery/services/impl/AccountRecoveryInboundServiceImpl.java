@@ -13,6 +13,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.redhat.mercury.accountrecovery.services.AccountRecoveryService;
 import com.redhat.mercury.common.services.impl.BaseInboundService;
+import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.grpc.GrpcService;
@@ -44,14 +45,14 @@ public class AccountRecoveryInboundServiceImpl extends BaseInboundService {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     @Override
