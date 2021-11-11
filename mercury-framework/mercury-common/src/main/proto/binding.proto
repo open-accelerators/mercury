@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package org.bian.protobuf;
 
-import "google/protobuf/empty.proto";
 import "spec.proto";
 
 option java_multiple_files = true;
