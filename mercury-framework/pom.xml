@@ -1,68 +1,13 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.redhat.mercury</groupId>
+    <parent>
+        <groupId>com.redhat.mercury</groupId>
+        <artifactId>mercury-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
     <artifactId>mercury-framework-parent</artifactId>
     <name>Mercury Framework Parent</name>
-    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
-    <properties>
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>2.3.0.Final</quarkus.platform.version>
-        <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-        <cloudevents.version>2.2.0</cloudevents.version>
-        <testcontainers.version>1.6.0</testcontainers.version>
-        <lombok.version>1.18.16</lombok.version>
-        <builder-annotations.version>0.24.3</builder-annotations.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus.platform</groupId>
-                <artifactId>quarkus-camel-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>io.cloudevents</groupId>
-                <artifactId>cloudevents-protobuf</artifactId>
-                <version>${cloudevents.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>kafka</artifactId>
-                <version>${testcontainers.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.sundr</groupId>
-                <artifactId>builder-annotations</artifactId>
-                <version>${builder-annotations.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <modules>
         <module>mercury-common</module>
         <module>mercury-binding-service</module>
