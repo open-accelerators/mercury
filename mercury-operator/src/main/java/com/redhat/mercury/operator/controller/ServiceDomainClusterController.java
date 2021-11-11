@@ -1,13 +1,34 @@
 package com.redhat.mercury.operator.controller;
 
-import com.redhat.mercury.operator.KafkaServiceEvent;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.redhat.mercury.operator.KafkaServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
+
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.rbac.*;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.Role;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
+import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.RoleRef;
+import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
+import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.javaoperatorsdk.operator.api.*;
+import io.javaoperatorsdk.operator.api.Context;
+import io.javaoperatorsdk.operator.api.Controller;
+import io.javaoperatorsdk.operator.api.DeleteControl;
+import io.javaoperatorsdk.operator.api.ResourceController;
+import io.javaoperatorsdk.operator.api.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
@@ -18,14 +39,6 @@ import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.storage.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 import static com.redhat.mercury.operator.KafkaServiceEventSource.MANAGED_BY_LABEL;
 import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
@@ -81,13 +94,13 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context, ServiceDomainClusterStatus status) {
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdc.getMetadata().getName()).get();
 
-        if(kafka != null && isaKafkaBrokerReady(kafka)) {
+        if (kafka != null && isaKafkaBrokerReady(kafka)) {
             final List<ListenerStatus> listeners = kafka.getStatus().getListeners();
 
-            for(ListenerStatus listener : listeners){
+            for (ListenerStatus listener : listeners) {
                 final String bootstrapServers = listener.getBootstrapServers();
                 LOGGER.debug("The kafka bootstrap url is {}", bootstrapServers);
-                if("plain".equals(listener.getType())) {
+                if ("plain".equals(listener.getType())) {
                     status.setKafkaBroker(bootstrapServers);
                     sdc.setStatus(status);
                 }
@@ -101,32 +114,31 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
     private void createOrUpdateRole(ServiceDomainCluster sdc) {
         final PolicyRule rule = new PolicyRuleBuilder().withApiGroups("", "mercury.redhat.io").withResources("services", "servicedomainbindings").withVerbs("list", "get", "watch").build();
-        Role desiredRole = new RoleBuilder()
+        Role expected = new RoleBuilder()
                 .withNewMetadata()
+                .withOwnerReferences(new OwnerReferenceBuilder()
+                        .withName(sdc.getMetadata().getName())
+                        .withUid(sdc.getMetadata().getUid())
+                        .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
+                        .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
+                        .build())
                 .withName(SERVICE_DOMAIN_ROLE)
                 .endMetadata()
                 .withRules(rule)
                 .build();
 
-        Role role = client
-                .rbac().roles()
-                .withName(SERVICE_DOMAIN_ROLE).get();
-
-        desiredRole.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                                                                    .withName(sdc.getMetadata().getName())
-                                                                    .withUid(sdc.getMetadata().getUid())
-                                                                    .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
-                                                                    .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
-                                                                    .build()));
-
-        if(role == null) {
-            LOGGER.info("{} role doesn't exist", SERVICE_DOMAIN_ROLE);
-            client.rbac().roles().create(desiredRole);
-            LOGGER.debug("{} role was missing, creating it", SERVICE_DOMAIN_ROLE);
+        Role current = client.rbac()
+                .roles()
+                .withName(SERVICE_DOMAIN_ROLE)
+                .get();
+        if (current == null) {
+            LOGGER.debug("{} Role doesn't exist", SERVICE_DOMAIN_ROLE);
+            Role role = client.rbac().roles().createOrReplace(expected);
+            LOGGER.info("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
         } else {
-            if(!Objects.equals(role, desiredRole)) {
-                client.rbac().roles().replace(desiredRole);
-                LOGGER.debug("{} role was updated", SERVICE_DOMAIN_ROLE);
+            if (!Objects.equals(current, expected)) {
+                client.rbac().roles().createOrReplace(expected);
+                LOGGER.debug("{} Role was updated", SERVICE_DOMAIN_ROLE);
             }
         }
     }
@@ -152,12 +164,12 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                 .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
                 .build()));
 
-        if(roleBinding == null){
+        if (roleBinding == null) {
             LOGGER.info("{} role binding doesn't exist", ROLE_BINDING);
             client.rbac().roleBindings().create(desiredRoleBinding);
             LOGGER.debug("{} role binding was missing, creating it", ROLE_BINDING);
         } else {
-            if(!Objects.equals(roleBinding, desiredRoleBinding)) {
+            if (!Objects.equals(roleBinding, desiredRoleBinding)) {
                 client.rbac().roleBindings().replace(desiredRoleBinding);
                 LOGGER.debug("{} role binding was updated", ROLE_BINDING);
             }
@@ -175,38 +187,38 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                 .endMetadata()
                 .withNewSpec()
                 .withKafka(new KafkaClusterSpecBuilder()
-                                                .withVersion("3.0.0")
-                                                .withReplicas(3)
-                                                .withListeners(new GenericKafkaListenerBuilder()
-                                                                    .withName("plain")
-                                                                    .withPort(9092)
-                                                                    .withType(KafkaListenerType.INTERNAL)
-                                                                    .withTls(false).build(),
-                                                              new GenericKafkaListenerBuilder()
-                                                                    .withName("tls")
-                                                                    .withPort(9093)
-                                                                    .withType(KafkaListenerType.INTERNAL)
-                                                                    .withTls(true).build())
-                                                .withConfig(Map.of("offsets.topic.replication.factor", 3,
-                                                                "transaction.state.log.replication.factor", 3,
-                                                                "transaction.state.log.min.isr", 2,
-                                                                "log.message.format.version", "3.0",
-                                                                "inter.broker.protocol.version", "3.0"))
-                                                .withStorage(new JbodStorageBuilder()
-                                                                    .withVolumes(new PersistentClaimStorageBuilder()
-                                                                                        .withId(0)
-                                                                                        .withSize("100Gi")
-                                                                                        .withDeleteClaim(false)
-                                                                                        .build())
-                                                                    .build())
-                                                .build())
-                .withZookeeper(new ZookeeperClusterSpecBuilder()
-                                .withReplicas(3)
-                                .withStorage(new PersistentClaimStorageBuilder()
-                                                    .withSize("100Gi")
-                                                    .withDeleteClaim(false)
-                                                    .build())
+                        .withVersion("3.0.0")
+                        .withReplicas(3)
+                        .withListeners(new GenericKafkaListenerBuilder()
+                                        .withName("plain")
+                                        .withPort(9092)
+                                        .withType(KafkaListenerType.INTERNAL)
+                                        .withTls(false).build(),
+                                new GenericKafkaListenerBuilder()
+                                        .withName("tls")
+                                        .withPort(9093)
+                                        .withType(KafkaListenerType.INTERNAL)
+                                        .withTls(true).build())
+                        .withConfig(Map.of("offsets.topic.replication.factor", 3,
+                                "transaction.state.log.replication.factor", 3,
+                                "transaction.state.log.min.isr", 2,
+                                "log.message.format.version", "3.0",
+                                "inter.broker.protocol.version", "3.0"))
+                        .withStorage(new JbodStorageBuilder()
+                                .withVolumes(new PersistentClaimStorageBuilder()
+                                        .withId(0)
+                                        .withSize("100Gi")
+                                        .withDeleteClaim(false)
+                                        .build())
                                 .build())
+                        .build())
+                .withZookeeper(new ZookeeperClusterSpecBuilder()
+                        .withReplicas(3)
+                        .withStorage(new PersistentClaimStorageBuilder()
+                                .withSize("100Gi")
+                                .withDeleteClaim(false)
+                                .build())
+                        .build())
                 .endSpec()
                 .build();
 
@@ -219,11 +231,11 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
         final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
 
-        if (currentKafka == null){
+        if (currentKafka == null) {
             client.resources(Kafka.class).create(desiredKafka);
             LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
         } else {
-            if(!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
+            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
                 client.resources(Kafka.class).replace(desiredKafka);
                 LOGGER.debug("{} kafka broker was updated", sdcName);
             }
