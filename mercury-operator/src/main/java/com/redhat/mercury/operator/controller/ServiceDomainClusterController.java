@@ -93,22 +93,22 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context, ServiceDomainClusterStatus status) {
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdc.getMetadata().getName()).get();
 
-        if (kafka != null && isaKafkaBrokerReady(kafka)) {
+        if (isaKafkaBrokerReady(kafka)) {
             final List<ListenerStatus> listeners = kafka.getStatus().getListeners();
 
-            for (ListenerStatus listener : listeners) {
-                final String bootstrapServers = listener.getBootstrapServers();
-                LOGGER.debug("The kafka bootstrap url is {}", bootstrapServers);
-                if (KAFKA_LISTENER_TYPE_PLAIN.equals(listener.getType())) {
-                    status.setKafkaBroker(bootstrapServers);
-                    sdc.setStatus(status);
-                }
+            final ListenerStatus listenerStatus = listeners.stream()
+                    .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
+                    .findFirst().orElse(null);
+
+            if(listenerStatus != null){
+                status.setKafkaBroker(listenerStatus.getBootstrapServers());
+                sdc.setStatus(status);
             }
         }
     }
 
     private boolean isaKafkaBrokerReady(Kafka kafka) {
-        return kafka.getStatus() != null && kafka.getStatus().getListeners() != null;
+        return kafka != null && kafka.getStatus() != null && kafka.getStatus().getListeners() != null;
     }
 
     private void createOrUpdateRole(ServiceDomainCluster sdc) {
