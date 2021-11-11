@@ -47,17 +47,16 @@ import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
 
     public static final String SERVICE_DOMAIN_ROLE = "service-domain-role";
-    private static final String ROLE_BINDING = "service-domain-role-binding";
-    private static final String SUBJECT_NAME = "bian-binding-service-sa";
-    private static final String SUBJECT_KIND = "ServiceAccount";
-    private static final String ROLE_REF = "service-domain-role";
-    private static final String ROLE_REF_KIND = "Role";
-    private static final String ROLE_REF_API_GROUP = "rbac.authorization.k8s.io";
+    public static final String ROLE_BINDING = "service-domain-role-binding";
+    public static final String SUBJECT_NAME = "bian-binding-service-sa";
+    public static final String SUBJECT_KIND = "ServiceAccount";
+    public static final String ROLE_REF = "service-domain-role";
+    public static final String ROLE_REF_KIND = "Role";
+    public static final String ROLE_REF_API_GROUP = "rbac.authorization.k8s.io";
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainClusterController.class);
     public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND = "ServiceDomainCluster";
     public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
-//    private static final String KAFKA_CLUSTER = "mercury-kafka-cluster";
-
+    public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
 
     @Inject
     KubernetesClient client;
@@ -100,7 +99,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             for (ListenerStatus listener : listeners) {
                 final String bootstrapServers = listener.getBootstrapServers();
                 LOGGER.debug("The kafka bootstrap url is {}", bootstrapServers);
-                if ("plain".equals(listener.getType())) {
+                if (KAFKA_LISTENER_TYPE_PLAIN.equals(listener.getType())) {
                     status.setKafkaBroker(bootstrapServers);
                     sdc.setStatus(status);
                 }
