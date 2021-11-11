@@ -18,15 +18,6 @@ spec:
       openAPIV3Schema:
         properties:
           spec:
-            properties:
-              exposedScopes:
-                type: object
-              subscriptions:
-                type: object
-              serviceDomain:
-                type: string
-              bindings:
-                type: object
             type: object
           status:
             properties:
