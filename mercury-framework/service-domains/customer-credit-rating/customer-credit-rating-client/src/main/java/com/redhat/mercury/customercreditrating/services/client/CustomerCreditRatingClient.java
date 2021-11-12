@@ -30,12 +30,12 @@ public class CustomerCreditRatingClient extends CustomerCreditRatingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerCreditRatingClient.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
     @Override
     public Uni<Message> retrieveCustomerCreditRatingState(String sd, String cr) {
         LOGGER.info("Received retrieveCustomerCreditRatingState for {}/{}", sd, cr);
-        return outbound.query(CloudEvent.newBuilder()
+        return outboundBindingService.query(CloudEvent.newBuilder()
                         .setSource(CustomerCreditRating.DOMAIN_NAME)
                         .setType(STATE_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()

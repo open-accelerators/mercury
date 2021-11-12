@@ -9,7 +9,6 @@ import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
@@ -32,12 +31,12 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyRoutingProfileClient.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
     @Override
     public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
-        return outbound.query(CloudEvent.newBuilder()
+        return outboundBindingService.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_STATUS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()

@@ -17,6 +17,6 @@ public class ${sdName}Client extends ${sdName}Service {
     private static final Logger LOGGER = LoggerFactory.getLogger(${sdName}Client.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
 }

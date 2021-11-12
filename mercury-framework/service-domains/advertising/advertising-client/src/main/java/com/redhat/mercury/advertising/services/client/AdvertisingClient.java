@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import com.redhat.mercury.advertising.services.AdvertisingService;
 
 import io.quarkus.grpc.GrpcClient;
-import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class AdvertisingClient extends AdvertisingService {
@@ -17,6 +16,6 @@ public class AdvertisingClient extends AdvertisingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdvertisingClient.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
 }
