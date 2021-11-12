@@ -17,6 +17,6 @@ public class AccountRecoveryClient extends AccountRecoveryService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountRecoveryClient.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
 }
