@@ -1,9 +1,10 @@
-package com.redhat.mercury.operator.model;
+package com.redhat.mercury.api.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.fabric8.kubernetes.api.model.Condition;
+
 import io.sundr.builder.annotations.Buildable;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,9 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainBindingStatus {
-    private Condition ready;
+public class ExposedScopeSpec {
+
+    private String scopeRef;
+    private String action;
+
 }

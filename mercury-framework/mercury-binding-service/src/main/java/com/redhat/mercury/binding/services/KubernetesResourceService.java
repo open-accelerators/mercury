@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.mercury.binding.model.BindingDefinition;
-import com.redhat.mercury.binding.model.k8s.ServiceDomainBinding;
+import com.redhat.mercury.api.model.ServiceDomainBinding;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;

@@ -6,7 +6,7 @@ import org.apache.camel.CamelContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import com.redhat.mercury.binding.model.k8s.ServiceDomainBinding;
+import com.redhat.mercury.api.model.ServiceDomainBinding;
 import com.redhat.mercury.binding.test.Profiles.KafkaIntegrationProfile;
 
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;

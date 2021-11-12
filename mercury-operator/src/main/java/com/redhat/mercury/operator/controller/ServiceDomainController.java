@@ -1,24 +1,41 @@
 package com.redhat.mercury.operator.controller;
 
-import com.redhat.mercury.operator.model.ServiceDomain;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import com.redhat.mercury.operator.model.ServiceDomainStatus;
-import io.fabric8.kubernetes.api.model.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.redhat.mercury.api.model.ServiceDomain;
+import com.redhat.mercury.api.model.ServiceDomainCluster;
+import com.redhat.mercury.api.model.ServiceDomainStatus;
+
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
+import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
+import io.fabric8.kubernetes.api.model.PodSpecBuilder;
+import io.fabric8.kubernetes.api.model.PodTemplateSpecBuilder;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceAccount;
+import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
+import io.fabric8.kubernetes.api.model.ServiceBuilder;
+import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.Context;
-import io.javaoperatorsdk.operator.api.*;
+import io.javaoperatorsdk.operator.api.Controller;
+import io.javaoperatorsdk.operator.api.DeleteControl;
+import io.javaoperatorsdk.operator.api.ResourceController;
+import io.javaoperatorsdk.operator.api.UpdateControl;
 import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.KafkaTopicBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
@@ -64,7 +81,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                     .inNamespace(client.getNamespace())
                     .withName(sd.getSpec().getServiceDomainCluster()).get();
 
-            if(isKafkaBrokerUrlInCluster(serviceDomainCluster)){
+            if (isKafkaBrokerUrlInCluster(serviceDomainCluster)) {
                 kafkaBrokerUr = serviceDomainCluster.getStatus().getKafkaBroker();
 
                 createOrUpdateServiceAccount(sd);
@@ -164,11 +181,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
 
-        if(kafkaTopic == null) {
+        if (kafkaTopic == null) {
             client.resources(KafkaTopic.class).create(desiredKafkaTopic);
             LOGGER.debug("{} kafka topic was missing, creating it", kafkaTopicName);
         } else {
-            if(!Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
+            if (!Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
                 client.resources(KafkaTopic.class).replace(desiredKafkaTopic);
                 LOGGER.debug("{} kafka topic was updated", kafkaTopicName);
             }
@@ -188,50 +205,50 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
-                                .withSelector(new LabelSelectorBuilder()
-                                                .withMatchLabels(Map.of(APP_LABEL, "bian-" + sdName))
-                                                .build())
-                                .withTemplate(new PodTemplateSpecBuilder()
-                                                    .withNewMetadata()
-                                                    .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
-                                                    .endMetadata()
-                                                    .withSpec(new PodSpecBuilder()
-                                                                    .withServiceAccountName(SERVICE_ACCOUNT_NAME)
-                                                                    .withContainers(new ContainerBuilder()
-                                                                                        .withName(BUSINESS_SERVICE_CONTAINER_NAME)
-                                                                                        .withImage(sd.getSpec().getBusinessImage())
-                                                                                        .withPorts(new ContainerPortBuilder()
-                                                                                                .withContainerPort(10001)
-                                                                                                .withName(CONTAINER_NAME_INBOUND).build())
-                                                                                        .withEnv(new EnvVarBuilder()
-                                                                                                        .withName(QUARKUS_HTTP_PORT_ENV_VAR)
-                                                                                                        .withValue(QUARKUS_HTTP_PORT).build(),
-                                                                                                new EnvVarBuilder()
-                                                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
-                                                                                                        .withValue(sdName).build())
-                                                                                        .build(),
-                                                                                    new ContainerBuilder()
-                                                                                        .withName(BINDING_SERVICE_CONTAINER_NAME)
-                                                                                        .withImage(sd.getSpec().getBindingServiceImage())
-                                                                                        .withPorts(new ContainerPortBuilder()
-                                                                                                        .withContainerPort(10100)
-                                                                                                        .withName(CONTAINER_NAME_OUTBOUND).build(),
-                                                                                                new ContainerPortBuilder()
-                                                                                                        .withContainerPort(10101)
-                                                                                                        .withName(INTERNAL).build(),
-                                                                                                new ContainerPortBuilder()
-                                                                                                        .withContainerPort(8080)
-                                                                                                        .withName(HTTP_CONTAINER_NAME).build())
-                                                                                        .withEnv(new EnvVarBuilder()
-                                                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
-                                                                                                        .withValue(sdName).build(),
-                                                                                                new EnvVarBuilder()
-                                                                                                        .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
-                                                                                                        .withValue(kafkaBrokerUr).build())
-                                                                                        .build())
-                                                                    .build())
-                                                    .build())
+                        .withSelector(new LabelSelectorBuilder()
+                                .withMatchLabels(Map.of(APP_LABEL, "bian-" + sdName))
                                 .build())
+                        .withTemplate(new PodTemplateSpecBuilder()
+                                .withNewMetadata()
+                                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
+                                .endMetadata()
+                                .withSpec(new PodSpecBuilder()
+                                        .withServiceAccountName(SERVICE_ACCOUNT_NAME)
+                                        .withContainers(new ContainerBuilder()
+                                                        .withName(BUSINESS_SERVICE_CONTAINER_NAME)
+                                                        .withImage(sd.getSpec().getBusinessImage())
+                                                        .withPorts(new ContainerPortBuilder()
+                                                                .withContainerPort(10001)
+                                                                .withName(CONTAINER_NAME_INBOUND).build())
+                                                        .withEnv(new EnvVarBuilder()
+                                                                        .withName(QUARKUS_HTTP_PORT_ENV_VAR)
+                                                                        .withValue(QUARKUS_HTTP_PORT).build(),
+                                                                new EnvVarBuilder()
+                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
+                                                                        .withValue(sdName).build())
+                                                        .build(),
+                                                new ContainerBuilder()
+                                                        .withName(BINDING_SERVICE_CONTAINER_NAME)
+                                                        .withImage(sd.getSpec().getBindingServiceImage())
+                                                        .withPorts(new ContainerPortBuilder()
+                                                                        .withContainerPort(10100)
+                                                                        .withName(CONTAINER_NAME_OUTBOUND).build(),
+                                                                new ContainerPortBuilder()
+                                                                        .withContainerPort(10101)
+                                                                        .withName(INTERNAL).build(),
+                                                                new ContainerPortBuilder()
+                                                                        .withContainerPort(8080)
+                                                                        .withName(HTTP_CONTAINER_NAME).build())
+                                                        .withEnv(new EnvVarBuilder()
+                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
+                                                                        .withValue(sdName).build(),
+                                                                new EnvVarBuilder()
+                                                                        .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
+                                                                        .withValue(kafkaBrokerUr).build())
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
                 .build();
 
         desiredDeployment.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
@@ -243,11 +260,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final Deployment sdDeployment = client.apps().deployments().inNamespace(sdNS).withName(sdName).get();
 
-        if(sdDeployment == null) {
+        if (sdDeployment == null) {
             client.apps().deployments().inNamespace(sdNS).create(desiredDeployment);
             LOGGER.debug("{} deployment was missing, creating it", sdName);
         } else {
-            if(!Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec())) {
+            if (!Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec())) {
                 client.apps().deployments().inNamespace(sdNS).replace(desiredDeployment);
                 LOGGER.debug("{} deployment was updated", sdName);
             }
@@ -265,15 +282,15 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withName(serviceName)
                 .withNamespace(sdNS)
                 .withLabels(Map.of(APP_LABEL, "bian-" + sdName,
-                                   "com.redhat.mercury/service-domain", sdName,
-                                   "com.redhat.mercury/service-domain-binding", INTERNAL,
-                                   "com.redhat.mercury/service-domain-cluster", sd.getSpec().getServiceDomainCluster()))
+                        "com.redhat.mercury/service-domain", sdName,
+                        "com.redhat.mercury/service-domain-binding", INTERNAL,
+                        "com.redhat.mercury/service-domain-cluster", sd.getSpec().getServiceDomainCluster()))
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(new ServicePortBuilder()
-                                .withPort(10101)
-                                .withProtocol(TCP_PROTOCOL)
-                                .withName(INTERNAL).build())
+                        .withPort(10101)
+                        .withProtocol(TCP_PROTOCOL)
+                        .withName(INTERNAL).build())
                 .withSelector(Map.of(APP_LABEL, "bian-" + sdName))
                 .endSpec().build();
 
@@ -286,16 +303,16 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final Service sdService = client.services().inNamespace(sdNS).withName(serviceName).get();
 
-        if(sdService == null) {
+        if (sdService == null) {
             client.services().inNamespace(sdNS).create(desiredService);
             LOGGER.debug("{} service was missing, creating it", serviceName);
         } else {
-            if(!Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
+            if (!Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
                 client.services().inNamespace(sdNS).replace(desiredService);
                 LOGGER.debug("{} service was updated", serviceName);
             }
         }
-   }
+    }
 
     private void createOrUpdateServiceAccount(ServiceDomain sd) {
         String sdNS = sd.getMetadata().getNamespace();
@@ -316,11 +333,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(sdNS).withName(BINDING_SERVICE_SA).get();
 
-        if(serviceAccount == null) {
+        if (serviceAccount == null) {
             client.serviceAccounts().inNamespace(sdNS).create(desiredServiceAccount);
             LOGGER.debug("{} service account was missing, creating it", BINDING_SERVICE_SA);
         } else {
-            if(!Objects.equals(serviceAccount, desiredServiceAccount)) {
+            if (!Objects.equals(serviceAccount, desiredServiceAccount)) {
                 client.serviceAccounts().inNamespace(sdNS).replace(desiredServiceAccount);
                 LOGGER.debug("{} service account was updated", BINDING_SERVICE_SA);
             }

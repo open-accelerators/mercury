@@ -1,8 +1,17 @@
 package com.redhat.mercury.operator;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.redhat.mercury.api.model.ServiceDomainCluster;
+import com.redhat.mercury.api.model.ServiceDomainClusterSpecBuilder;
 import com.redhat.mercury.operator.controller.ServiceDomainClusterController;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
+
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
@@ -25,21 +34,25 @@ import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.storage.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static com.redhat.mercury.operator.KafkaServiceEventSource.MANAGED_BY_LABEL;
 import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
-import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.*;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.ROLE_BINDING;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.ROLE_REF;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.ROLE_REF_API_GROUP;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.ROLE_REF_KIND;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.SERVICE_DOMAIN_ROLE;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.SUBJECT_KIND;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.SUBJECT_NAME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
 @WithKubernetesTestServer
@@ -52,43 +65,43 @@ public class ServiceDomainClusterControllerTest {
     private Kafka expectedKafka;
 
     @BeforeEach
-    public void beforeEach(){
+    public void beforeEach() {
         final NamespacedKubernetesClient client = mockServer.getClient();
         expectedKafka = getExpectedKafKa();
 
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if(kafka == null) {
+        if (kafka == null) {
             client.resources(Kafka.class).inNamespace(client.getNamespace()).create(expectedKafka);
         }
     }
 
     @AfterEach
-    public void afterEach(){
+    public void afterEach() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         final ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if(sdc != null){
+        if (sdc != null) {
             client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
         }
 
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if(kafka != null){
+        if (kafka != null) {
             client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
         }
 
         final Role role = client.resources(Role.class).withName(SERVICE_DOMAIN_ROLE).get();
-        if(role != null){
+        if (role != null) {
             client.resources(Role.class).withName(SERVICE_DOMAIN_ROLE).delete();
         }
 
         final RoleBinding roleBinding = client.resources(RoleBinding.class).withName(ROLE_BINDING).get();
-        if(roleBinding != null){
+        if (roleBinding != null) {
             client.resources(RoleBinding.class).withName(ROLE_BINDING).delete();
         }
     }
 
     @Test
-    public void test(){
+    public void test() {
         final ServiceDomainCluster cluster = new ServiceDomainCluster();
         cluster.setMetadata(new ObjectMetaBuilder().withName(SERVICE_DOMAIN_CLUSTER_NAME).withNamespace(mockServer.getClient().getNamespace()).build());
         cluster.setSpec(new ServiceDomainClusterSpecBuilder().build());
@@ -146,7 +159,7 @@ public class ServiceDomainClusterControllerTest {
     }
 
     @Test
-    public void updateTest(){
+    public void updateTest() {
         final ServiceDomainCluster cluster = new ServiceDomainCluster();
         cluster.setMetadata(new ObjectMetaBuilder().withName(SERVICE_DOMAIN_CLUSTER_NAME).withNamespace(mockServer.getClient().getNamespace()).build());
         cluster.setSpec(new ServiceDomainClusterSpecBuilder().build());
@@ -209,7 +222,7 @@ public class ServiceDomainClusterControllerTest {
                 && mockServer.getClient().resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker() != null;
     }
 
-    public Kafka getExpectedKafKa(){
+    public Kafka getExpectedKafKa() {
         final Kafka kafka = new KafkaBuilder()
                 .withNewMetadata()
                 .withName(SERVICE_DOMAIN_CLUSTER_NAME)

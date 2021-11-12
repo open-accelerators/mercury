@@ -23,12 +23,12 @@ import com.google.common.collect.ImmutableMap.Builder;
 import com.redhat.mercury.binding.model.Binding;
 import com.redhat.mercury.binding.model.BindingDefinition;
 import com.redhat.mercury.binding.model.BindingDefinition.Action;
-import com.redhat.mercury.binding.model.k8s.BindingSpec;
-import com.redhat.mercury.binding.model.k8s.ExposedScopeSpec;
-import com.redhat.mercury.binding.model.k8s.SubscriptionSpec;
 import com.redhat.mercury.binding.serialization.CloudEventsDeserializer;
 import com.redhat.mercury.binding.serialization.CloudEventsSerializer;
 import com.redhat.mercury.constants.BianCloudEvent;
+import com.redhat.mercury.api.model.BindingSpec;
+import com.redhat.mercury.api.model.ExposedScopeSpec;
+import com.redhat.mercury.api.model.SubscriptionSpec;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.runtime.Startup;

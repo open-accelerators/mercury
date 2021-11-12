@@ -1,7 +1,4 @@
-package com.redhat.mercury.binding.model.k8s;
-
-import java.io.Serializable;
-import java.util.Collection;
+package com.redhat.mercury.api.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -22,11 +19,11 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainBindingSpec implements Serializable {
+public class BindingSpec {
 
     private String serviceDomain;
-    private Collection<BindingSpec> bindings;
-    private Collection<ExposedScopeSpec> exposedScopes;
-    private Collection<SubscriptionSpec> subscriptions;
+    private String scopeRef;
+    private String action;
 
 }
+

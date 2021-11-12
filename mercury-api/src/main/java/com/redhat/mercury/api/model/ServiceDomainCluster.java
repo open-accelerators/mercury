@@ -1,4 +1,4 @@
-package com.redhat.mercury.operator.model;
+package com.redhat.mercury.api.model;
 
 import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -8,6 +8,6 @@ import io.fabric8.kubernetes.model.annotation.Version;
 
 @Group("mercury.redhat.io")
 @Version("v1alpha1")
-@ShortNames("sdb")
-public class ServiceDomainBinding extends CustomResource<ServiceDomainBindingSpec, ServiceDomainBindingStatus> implements Namespaced {
+@ShortNames("sdc")
+public class ServiceDomainCluster extends CustomResource<ServiceDomainClusterSpec, ServiceDomainClusterStatus> implements Namespaced {
 }

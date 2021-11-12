@@ -1,4 +1,4 @@
-package com.redhat.mercury.operator.model;
+package com.redhat.mercury.api.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

@@ -1,4 +1,4 @@
-package com.redhat.mercury.operator.model;
+package com.redhat.mercury.api.model;
 
 import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
