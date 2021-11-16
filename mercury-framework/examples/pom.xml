@@ -15,5 +15,6 @@
         <module>customer-credit-rating-example</module>
         <module>party-routing-profile-example</module>
         <module>customer-offer-example</module>
+        <module>customer-offer-kogito-example</module>
     </modules>
 </project>
