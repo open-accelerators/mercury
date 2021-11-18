@@ -1,14 +1,11 @@
 package com.redhat.mercury.common.services.impl;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.annotation.PostConstruct;
 
 import org.bian.protobuf.ExternalRequest;
 import org.bian.protobuf.ExternalResponse;
@@ -18,12 +15,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Empty;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.redhat.mercury.constants.BianCloudEvent;
-import com.redhat.mercury.events.BianNotificationHandler;
-import com.redhat.mercury.exceptions.DataTransformationException;
 import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -31,7 +27,6 @@ import io.cloudevents.v1.proto.CloudEvent.Builder;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.quarkus.arc.Arc;
 import io.smallrye.mutiny.Uni;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
@@ -46,13 +41,6 @@ public abstract class BaseInboundService implements InboundBindingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseInboundService.class);
 
     protected static final String GET_VERB = "GET";
-
-    private Map<String, BianNotificationHandler> eventHandlers = new HashMap<>();
-
-    @PostConstruct
-    void initEventHandlers() {
-        Arc.container().select(BianNotificationHandler.class).forEach(e -> eventHandlers.put(e.getType(), e));
-    }
 
     @Override
     public Uni<CloudEvent> query(CloudEvent request) {
@@ -76,13 +64,9 @@ public abstract class BaseInboundService implements InboundBindingService {
     }
 
     @Override
-    public Uni<CloudEvent> command(CloudEvent request) {
+    public Uni<Empty> command(CloudEvent request) {
         LOGGER.info("received command request");
-        return mapCommandMethod(request)
-                .onItem()
-                .transform(message -> transformAction(message, request))
-                .onFailure()
-                .transform(this::exceptionTransformer);
+        return mapCommandMethod(request);
     }
 
     private CloudEvent transformAction(Message message, CloudEvent request) {
@@ -100,17 +84,6 @@ public abstract class BaseInboundService implements InboundBindingService {
     @Override
     public Uni<CloudEvent> receive(CloudEvent request) {
         LOGGER.info("received receive request");
-        if (eventHandlers.containsKey(request.getType())) {
-            try {
-                return eventHandlers.get(request.getType())
-                        .onEvent(request)
-                        .onItem()
-                        .transform(message -> transformAction(message, request));
-            } catch (DataTransformationException e) {
-                Uni.createFrom()
-                        .failure(exceptionTransformer(e));
-            }
-        }
         return Uni.createFrom()
                 .failure(exceptionTransformer(new MappingNotFoundException(request.getType())));
     }
@@ -133,7 +106,7 @@ public abstract class BaseInboundService implements InboundBindingService {
         String uri = request.getPath();
         String action = GET_VERB.equals(request.getVerb()) ? CE_ACTION_QUERY : CE_ACTION_COMMAND;
         Optional<Matcher> path = getMatchingPath(uri, action);
-        if (!path.isEmpty()) {
+        if (path.isPresent()) {
             try {
                 String type = getCEType(path.get().pattern(), action);
                 if (type == null) {
@@ -194,13 +167,13 @@ public abstract class BaseInboundService implements InboundBindingService {
                         .keySet()
                         .stream()
                         .map(p -> p.matcher(uri))
-                        .filter(m -> m.matches())
+                        .filter(Matcher::matches)
                         .findFirst();
             default:
                 return getCommandPathMappings().keySet()
                         .stream()
                         .map(p -> p.matcher(uri))
-                        .filter(m -> m.matches())
+                        .filter(Matcher::matches)
                         .findFirst();
         }
     }
@@ -218,7 +191,7 @@ public abstract class BaseInboundService implements InboundBindingService {
 
     protected abstract Uni<Message> mapQueryMethod(CloudEvent cloudEvent);
 
-    protected abstract Uni<Message> mapCommandMethod(CloudEvent cloudEvent);
+    protected abstract Uni<Empty> mapCommandMethod(CloudEvent cloudEvent);
 
     protected abstract Map<String, Supplier<Message.Builder>> getInTypeMappings();
 

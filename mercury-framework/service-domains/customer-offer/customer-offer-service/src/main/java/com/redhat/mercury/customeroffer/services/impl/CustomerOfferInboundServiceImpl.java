@@ -11,6 +11,7 @@ import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Empty;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
@@ -70,7 +71,7 @@ public class CustomerOfferInboundServiceImpl extends BaseInboundService {
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
-    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Empty> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
         try {
             switch (cloudEvent.getType()) {

@@ -15,9 +15,7 @@ public class BindingDefinition {
 
     public enum Action {
         query,
-        command,
-        notify,
-        subscription
+        command
     }
 
     private String domainName;

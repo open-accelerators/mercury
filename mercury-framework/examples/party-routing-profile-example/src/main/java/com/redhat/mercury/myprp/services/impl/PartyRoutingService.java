@@ -11,6 +11,8 @@ import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Empty;
+
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -26,7 +28,7 @@ public class PartyRoutingService {
         return partyRoutings.getOrDefault(id, Set.of());
     }
 
-    public Uni<Void> updatePartyRoutingState(String status, String processId) {
+    public Uni<Empty> updatePartyRoutingState(String status, String processId) {
         return Uni.createFrom().item(() -> {
             LOGGER.info("Updating PartyRoutingState ProcessId: {} - Status: {}", processId, status);
             Set<PartyRoutingState> states = partyRoutings.computeIfAbsent(processId, k -> new HashSet<>());

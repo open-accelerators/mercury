@@ -1,6 +1,6 @@
 package com.redhat.mercury.exceptions;
 
-public class DataTransformationException extends Exception {
+public class DataTransformationException extends RuntimeException {
 
     public DataTransformationException(String message) {
         super(message);

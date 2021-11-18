@@ -1,13 +1,9 @@
 package com.redhat.mercury.customeroffer.services.impl;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
-import com.redhat.mercury.events.BianNotificationHandler;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;

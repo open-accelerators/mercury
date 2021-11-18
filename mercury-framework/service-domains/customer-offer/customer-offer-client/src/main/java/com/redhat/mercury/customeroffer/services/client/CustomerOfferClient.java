@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Any;
+import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
@@ -36,25 +37,21 @@ public class CustomerOfferClient extends CustomerOfferService {
     OutboundBindingService outboundBindingService;
 
     @Override
-    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
+    public Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
         return outboundBindingService.command(CloudEvent.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setType(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
-                        .setProtoData(Any.pack(procedure))
-                        .build())
-                .onItem()
-                .transform(e -> null);
+                .setId(UUID.randomUUID().toString())
+                .setType(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
+                .setProtoData(Any.pack(procedure))
+                .build());
     }
 
     @Override
-    public Uni<Message> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
+    public Uni<Empty> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
         return outboundBindingService.command(CloudEvent.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setType(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
-                        .setProtoData(Any.pack(update))
-                        .build())
-                .onItem()
-                .transform(e -> null);
+                .setId(UUID.randomUUID().toString())
+                .setType(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
+                .setProtoData(Any.pack(update))
+                .build());
     }
 
     @Override

@@ -2,21 +2,21 @@ package com.redhat.mercury.customeroffer.services;
 
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 
-import com.google.protobuf.Message;
+import com.google.protobuf.Empty;
 
 import io.smallrye.mutiny.Uni;
 
 public abstract class CustomerOfferNotificationService {
 
-    public Uni<Message> onCustomerOfferInitiated(CustomerOfferNotification notification) {
+    public Uni<Empty> onCustomerOfferInitiated(CustomerOfferNotification notification) {
         return noOpReply();
     }
 
-    public Uni<Message> onCustomerOfferCompleted(CustomerOfferNotification notification) {
+    public Uni<Empty> onCustomerOfferCompleted(CustomerOfferNotification notification) {
         return noOpReply();
     }
 
-    private Uni<Message> noOpReply() {
+    private Uni<Empty> noOpReply() {
         return Uni.createFrom().nullItem();
     }
 

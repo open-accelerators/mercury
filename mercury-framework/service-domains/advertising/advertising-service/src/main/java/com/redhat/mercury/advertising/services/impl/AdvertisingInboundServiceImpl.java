@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.redhat.mercury.advertising.services.AdvertisingService;
@@ -48,7 +49,7 @@ public class AdvertisingInboundServiceImpl extends BaseInboundService {
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
-    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Empty> mapCommandMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             //TODO: Add mappings
         }

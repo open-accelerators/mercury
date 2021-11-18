@@ -1,10 +1,7 @@
 package com.redhat.mercury.binding.services;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -14,21 +11,16 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Header;
 import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.redhat.mercury.binding.model.Binding;
-import com.redhat.mercury.binding.model.BindingDefinition;
-import com.redhat.mercury.binding.model.BindingDefinition.Action;
-import com.redhat.mercury.binding.serialization.CloudEventsDeserializer;
-import com.redhat.mercury.binding.serialization.CloudEventsSerializer;
-import com.redhat.mercury.constants.BianCloudEvent;
 import com.redhat.mercury.api.model.BindingSpec;
 import com.redhat.mercury.api.model.ExposedScopeSpec;
-import com.redhat.mercury.api.model.SubscriptionSpec;
+import com.redhat.mercury.binding.model.Binding;
+import com.redhat.mercury.binding.model.BindingDefinition;
+import com.redhat.mercury.constants.BianCloudEvent;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.runtime.Startup;
@@ -55,9 +47,6 @@ public class ConfigurationService {
 
     private Map<String, Binding> bindings;
 
-    @ConfigProperty(name = "mercury.servicedomain")
-    String serviceDomain;
-
     @PostConstruct
     void initialize() {
         k8sService.registerWatcher(binding -> {
@@ -66,18 +55,12 @@ public class ConfigurationService {
             } else {
                 updateBindings(binding.getSpec().getBindings());
                 updateExposedScopes(binding.getSpec().getExposedScopes());
-                updateSubscriptions(binding.getSpec().getSubscriptions());
             }
         });
     }
 
     public String getBinding(CloudEvent cloudEvent, @Header("CamelGrpcMethodName") String method) {
         LOGGER.debug("getBinding for CloudEvent type {} and method {}", cloudEvent.getType(), method);
-        if (Action.notify.name().equals(method)) {
-            String endpoint = "kafka:" + getTopicName(serviceDomain) + "?brokers={{mercury.kafka.brokers}}&valueSerializer=" + CloudEventsSerializer.class.getCanonicalName();
-            LOGGER.debug("endpoint for CloudEvent type {} and method {} -> {}", cloudEvent.getType(), method, endpoint);
-            return endpoint;
-        }
         String ref = cloudEvent.getType().replace(BianCloudEvent.CE_TYPE_PREFIX, "");
         Binding binding = reduceBinding(ref, method);
         if (binding != null) {
@@ -145,56 +128,6 @@ public class ConfigurationService {
         } catch (Exception e) {
             LOGGER.error("Unable to register {} route", HTTP_ROUTE_NAME, e);
         }
-    }
-
-    public synchronized void updateSubscriptions(Collection<SubscriptionSpec> subscriptions) {
-        if (subscriptions == null || subscriptions.isEmpty()) {
-            LOGGER.debug("Clear subscriptions");
-            clearSubscriptions();
-            return;
-        }
-        Map<String, RouteBuilder> expected = new HashMap<>();
-        subscriptions.forEach(s -> {
-            String routeName = SUBSCRIPTION_ROUTE_PREFIX + s.getServiceDomain();
-            try {
-                expected.put(routeName, new RouteBuilder() {
-                    @Override
-                    public void configure() {
-                        from("kafka:" + getTopicName(s.getServiceDomain())
-                                + "?brokers={{mercury.kafka.brokers}}&valueDeserializer="
-                                + CloudEventsDeserializer.class.getCanonicalName())
-                                .routeId(routeName)
-                                .to("grpc://{{route.grpc.hostService}}/org.bian.protobuf.InboundBindingService?method=receive");
-                    }
-                });
-                LOGGER.debug("Create subscription {}", s);
-            } catch (Exception e) {
-                LOGGER.error("Unable to update subscription for: {}", s.getServiceDomain());
-            }
-        });
-        Set<String> missingRoutes = new HashSet<>();
-        context.getRoutes().forEach(r -> {
-            if (r.getId().startsWith(SUBSCRIPTION_ROUTE_PREFIX) && !expected.containsKey(r.getId())) {
-                missingRoutes.add(r.getId());
-            }
-        });
-        missingRoutes.forEach(r -> {
-            try {
-                context.removeRoute(r);
-            } catch (Exception e) {
-                LOGGER.error("Unable to remove Route: {}", r, e);
-            }
-        });
-        expected.forEach((k, v) -> {
-            if (context.getRoute(k) == null) {
-                try {
-                    context.addRoutes(v);
-                } catch (Exception e) {
-                    LOGGER.error("Unable to add new subscription route: {}", k, e);
-                }
-            }
-        });
-
     }
 
     public synchronized void clearBindings() {

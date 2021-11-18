@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.redhat.mercury.common.services.impl.BaseInboundService;
@@ -60,7 +61,7 @@ public class PartyRoutingProfileInboundServiceImpl extends BaseInboundService {
     }
 
     @Override
-    protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
+    protected Uni<Empty> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }

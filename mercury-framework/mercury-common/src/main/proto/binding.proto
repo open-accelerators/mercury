@@ -3,6 +3,7 @@ syntax = "proto3";
 package org.bian.protobuf;
 
 import "spec.proto";
+import "google/protobuf/empty.proto";
 
 option java_multiple_files = true;
 option java_package = "org.bian.protobuf";
@@ -20,13 +21,13 @@ message ExternalResponse {
 
 service OutboundBindingService {
   rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
-  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (google.protobuf.Empty) {}
   rpc notify (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
 }
 
 service InboundBindingService {
   rpc query (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
-  rpc command (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
+  rpc command (io.cloudevents.v1.CloudEvent) returns (google.protobuf.Empty) {}
   rpc receive (io.cloudevents.v1.CloudEvent) returns (io.cloudevents.v1.CloudEvent) {}
   // In order to avoid having the BindingSvc depending on all types only for external requests
   // this method is used

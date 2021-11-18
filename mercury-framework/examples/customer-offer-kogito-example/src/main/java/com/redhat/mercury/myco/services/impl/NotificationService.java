@@ -6,10 +6,16 @@ import javax.inject.Inject;
 import org.bian.protobuf.customeroffer.BasicReference;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
+import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
+
+import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 
 @ApplicationScoped
 public class NotificationService {

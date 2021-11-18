@@ -4,18 +4,19 @@ import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.bian.protobuf.customeroffer.SDCustomerOffer;
 
+import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
 
 import io.smallrye.mutiny.Uni;
 
 public abstract class CustomerOfferService {
 
-    public Uni<Message> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
-        return Uni.createFrom().item(() -> null);
+    public Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
+        return Uni.createFrom().nullItem();
     }
 
-    public Uni<Message> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
-        return Uni.createFrom().item(() -> null);
+    public Uni<Empty> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
+        return Uni.createFrom().nullItem();
     }
 
     public Uni<Message> retrieveSDCustomerOffer(String sdRefId) {
