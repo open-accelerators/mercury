@@ -23,7 +23,7 @@ import java.util.Objects;
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
 
-    private static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
+    public static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
     private static final String SERVICE_DOMAIN_LABEL = "service-domain";
@@ -40,8 +40,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String INTERNAL = "internal";
     private static final String HTTP_CONTAINER_NAME = "http";
     private static final String TCP_PROTOCOL = "TCP";
-    private static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
-    private static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
 
     @Inject
     KubernetesClient client;
@@ -86,7 +86,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     }
 
     private boolean isKafkaBrokerUrlInCluster(ServiceDomainCluster serviceDomainCluster) {
-        return serviceDomainCluster != null && serviceDomainCluster.getStatus().getKafkaBroker() != null;
+        return serviceDomainCluster != null && serviceDomainCluster.getStatus() != null && serviceDomainCluster.getStatus().getKafkaBroker() != null;
     }
 
     private String createKafkaUser(ServiceDomain sd, String kafkaTopic) {

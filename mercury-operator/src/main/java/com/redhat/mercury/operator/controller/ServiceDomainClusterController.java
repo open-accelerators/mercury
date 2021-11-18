@@ -133,7 +133,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
         if (current == null) {
             LOGGER.debug("{} Role doesn't exist", SERVICE_DOMAIN_ROLE);
             Role role = client.rbac().roles().createOrReplace(expected);
-            LOGGER.info("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
+            LOGGER.debug("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
         } else {
             if (!Objects.equals(current, expected)) {
                 client.rbac().roles().createOrReplace(expected);
@@ -178,6 +178,22 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     private void createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
         final String sdcName = sdc.getMetadata().getName();
 
+        Kafka desiredKafka = createKafkaObj(sdc.getMetadata().getUid(), sdcName);
+
+        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
+
+        if (currentKafka == null) {
+            client.resources(Kafka.class).create(desiredKafka);
+            LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
+        } else {
+            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
+                client.resources(Kafka.class).replace(desiredKafka);
+                LOGGER.debug("{} kafka broker was updated", sdcName);
+            }
+        }
+    }
+
+    Kafka createKafkaObj(String sdcUid, String sdcName) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
                 .withName(sdcName)
@@ -223,21 +239,10 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
         desiredKafka.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sdcName)
-                .withUid(sdc.getMetadata().getUid())
+                .withUid(sdcUid)
                 .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
                 .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
                 .build()));
-
-        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
-
-        if (currentKafka == null) {
-            client.resources(Kafka.class).create(desiredKafka);
-            LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
-        } else {
-            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
-                client.resources(Kafka.class).replace(desiredKafka);
-                LOGGER.debug("{} kafka broker was updated", sdcName);
-            }
-        }
+        return desiredKafka;
     }
 }
