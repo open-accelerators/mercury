@@ -24,7 +24,6 @@ import java.util.Objects;
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
 
     public static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
     private static final String SERVICE_DOMAIN_LABEL = "service-domain";
     private static final String SERVICE_ACCOUNT_NAME = "bian-binding-service-sa";

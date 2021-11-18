@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.redhat.mercury.common.services.impl.BaseInboundService;
+import com.redhat.mercury.exceptions.MappingNotFoundException;
 import com.redhat.mercury.partyroutingprofile.PartyRoutingProfile;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
@@ -55,13 +56,13 @@ public class PartyRoutingProfileInboundServiceImpl extends BaseInboundService {
                 return service.retrievePartyStateStatus(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF), getRef(cloudEvent, CE_BQ_REF));
             //TODO: Add more mappings
         }
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     @Override
     protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     @Override

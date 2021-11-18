@@ -14,6 +14,7 @@ import com.google.protobuf.Message.Builder;
 import com.redhat.mercury.common.services.impl.BaseInboundService;
 import com.redhat.mercury.customercreditrating.CustomerCreditRating;
 import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingService;
+import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.grpc.GrpcService;
@@ -50,12 +51,12 @@ public class CustomerCreditRatingInboundServiceImpl extends BaseInboundService {
                 return service.retrieveCustomerCreditRatingState(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF));
             //TODO: Add more mappings
         }
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     protected Uni<Message> mapCommandMethod(CloudEvent cloudEvent) {
         //TODO: Add more mappings
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     @Override

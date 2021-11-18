@@ -9,7 +9,6 @@ import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
@@ -17,6 +16,7 @@ import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_BQ_REF;
@@ -31,12 +31,12 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyRoutingProfileClient.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
     @Override
     public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
-        return outbound.query(CloudEvent.newBuilder()
+        return outboundBindingService.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_STATUS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()
@@ -52,13 +52,7 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
                                 .setCeString(PARTY_STATE_STATUS_RETRIEVE_ACTION)
                                 .build())
                         .build())
-                .onItem().transform(ce -> {
-                    try {
-                        return ce.getProtoData().unpack(PartyRoutingStateList.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Unable to unpack response", e);
-                        return null;
-                    }
-                });
+                .onItem()
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(PartyRoutingStateList.class)));
     }
 }

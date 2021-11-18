@@ -18,7 +18,7 @@ spec:
       serviceAccountName: bian-binding-service-sa
       containers:
         - name: business-service
-          image: quay.io/ruben/customer-credit-rating-example:latest
+          image: quay.io/ecosystem-appeng/customer-credit-rating-example1.0.0-SNAPSHOT
           ports:
             - containerPort: 10001
               name: inbound
@@ -28,7 +28,7 @@ spec:
             - name: MERCURY_SERVICEDOMAIN
               value: customer-credit-rating
         - name: binding-service
-          image: quay.io/ruben/mercury-binding-service:latest
+          image: quay.io/ecosystem-appeng/mercury-binding-service1.0.0-SNAPSHOT
           env:
             - name: MERCURY_SERVICEDOMAIN
               value: customer-credit-rating
@@ -78,7 +78,7 @@ spec:
       serviceAccountName: bian-binding-service-sa
       containers:
         - name: business-service
-          image: quay.io/ruben/customer-offer-example:latest
+          image: quay.io/ecosystem-appeng/customer-offer-example1.0.0-SNAPSHOT
           ports:
             - containerPort: 10001
               name: inbound
@@ -88,7 +88,7 @@ spec:
             - name: MERCURY_SERVICEDOMAIN
               value: customer-offer
         - name: binding-service
-          image: quay.io/ruben/mercury-binding-service:latest
+          image: quay.io/ecosystem-appeng/mercury-binding-service1.0.0-SNAPSHOT
           env:
             - name: MERCURY_SERVICEDOMAIN
               value: customer-offer
@@ -138,7 +138,7 @@ spec:
       serviceAccountName: bian-binding-service-sa
       containers:
         - name: business-service
-          image: quay.io/ruben/party-routing-profile-example:latest
+          image: quay.io/ecosystem-appeng/party-routing-profile-example1.0.0-SNAPSHOT
           ports:
             - containerPort: 10001
               name: inbound
@@ -148,7 +148,7 @@ spec:
             - name: QUARKUS_HTTP_PORT
               value: "8081"
         - name: binding-service
-          image: quay.io/ruben/mercury-binding-service:latest
+          image: quay.io/ecosystem-appeng/mercury-binding-service1.0.0-SNAPSHOT
           env:
             - name: MERCURY_SERVICEDOMAIN
               value: party-routing-profile

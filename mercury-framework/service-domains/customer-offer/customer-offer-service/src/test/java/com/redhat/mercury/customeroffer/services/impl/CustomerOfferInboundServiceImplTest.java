@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 
 import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
 import org.bian.protobuf.customeroffer.SDCustomerOffer;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -25,6 +26,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 
+import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -43,8 +45,14 @@ class CustomerOfferInboundServiceImplTest {
         String sdRefId = "foo";
         SDCustomerOffer expected = SDCustomerOffer.newBuilder().build();
         Mockito.when(customerOfferService.retrieveSDCustomerOffer(sdRefId)).thenReturn(Uni.createFrom().item(expected));
-        Uni<CloudEvent> response = inboundBindingService.query(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
-                .setType(CUSTOMER_OFFER_RETRIEVE_TYPE).putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue.newBuilder().setCeString(sdRefId).build()).build());
+        Uni<CloudEvent> response = inboundBindingService
+                .query(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
+                        .setType(CUSTOMER_OFFER_RETRIEVE_TYPE)
+                        .putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue
+                                .newBuilder()
+                                .setCeString(sdRefId)
+                                .build())
+                        .build());
         CompletableFuture<CloudEvent> message = new CompletableFuture<>();
         response.subscribe().with(ce -> message.complete(ce));
         CloudEvent ce = message.get(5, TimeUnit.SECONDS);
@@ -54,6 +62,35 @@ class CustomerOfferInboundServiceImplTest {
         assertThat(ce.getProtoData()).isNotNull();
         SDCustomerOffer sdCustomerOffer = ce.getProtoData().unpack(SDCustomerOffer.class);
         assertThat(sdCustomerOffer).isEqualTo(expected);
+    }
+
+    @Test
+    void testQueryProcedureRetrieve() throws ExecutionException, InterruptedException, TimeoutException, InvalidProtocolBufferException {
+        String sdRefId = "foo";
+        String crRefId = "bar";
+        CustomerOfferProcedure expected = CustomerOfferProcedure.newBuilder().build();
+        Mockito.when(customerOfferService.retrieveCustomerOffer(sdRefId, crRefId)).thenReturn(Uni.createFrom().item(expected));
+        Uni<CloudEvent> response = inboundBindingService
+                .query(CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
+                        .setType(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
+                        .putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue
+                                .newBuilder()
+                                .setCeString(sdRefId)
+                                .build())
+                        .putAttributes(BianCloudEvent.CE_CR_REF, CloudEventAttributeValue
+                                .newBuilder()
+                                .setCeString(crRefId)
+                                .build())
+                        .build());
+        CompletableFuture<CloudEvent> message = new CompletableFuture<>();
+        response.subscribe().with(ce -> message.complete(ce));
+        CloudEvent ce = message.get(5, TimeUnit.SECONDS);
+        assertThat(ce.getType()).isEqualTo(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE);
+        assertThat(ce.getId()).isNotBlank();
+        assertThat(ce.getAttributesOrThrow(BianCloudEvent.CE_ACTION).getCeString()).isEqualTo(BianCloudEvent.CE_ACTION_RESPONSE);
+        assertThat(ce.getProtoData()).isNotNull();
+        CustomerOfferProcedure customerOfferProcedure = ce.getProtoData().unpack(CustomerOfferProcedure.class);
+        assertThat(customerOfferProcedure).isEqualTo(expected);
     }
 
     @Test

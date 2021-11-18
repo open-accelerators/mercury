@@ -29,7 +29,7 @@ message FacilityApplicationReference {
   string productCode = 1;
 }
 
-message CustomerOfferProcedure {
+message CustomerOfferProcedureInitiation {
   string servicingSessionReference = 1;
   google.protobuf.Any procedureInitiate = 2;
   string procedureInstanceStatus = 3;
@@ -154,5 +154,42 @@ message SDCustomerOffer {
         string serviceDomainServicePricingandTerms = 3;
       }
     }
+  }
+}
+
+message CustomerOfferProcedure {
+  CustomerOfferProcedureInstanceRecord customerOfferProcedureInstanceRecord = 1;
+  string customerOfferProcedureRetrieveActionTaskReference = 2;
+  google.protobuf.Any customerOfferProcedureRetrieveActionTaskRecord = 3;
+  string customerOfferProcedureRetrieveActionResponse = 4;
+  CustomerOfferProcedureInstanceReportRecord customerOfferProcedureInstanceReportRecord = 5;
+  CustomerOfferProcedureInstanceAnalysis customerOfferProcedureInstanceAnalysis = 6;
+
+  message CustomerOfferProcedureInstanceRecord {
+    string customerReference = 1;
+    string partyReference = 2;
+    string productServiceType = 3;
+    string customerOfferProcessingSchedule = 4;
+    CustomerOfferProcessingTask customerOfferProcessingTask = 5;
+
+    message CustomerOfferProcessingTask {
+      string customerOfferProcessingTaskType = 1;
+      string employeeBusinessUnitReference = 2;
+      string customerOfferProcessingTaskWorkProducts = 3;
+      string customerOfferProcessingTaskResult = 4;
+    }
+
+  }
+
+  message CustomerOfferProcedureInstanceReportRecord {
+    string customerOfferProcedureInstanceReportData = 1;
+    string customerOfferProcedureInstanceReportType = 2;
+    google.protobuf.Any customerOfferProcedureInstanceReport = 3;
+  }
+
+  message CustomerOfferProcedureInstanceAnalysis {
+    string customerOfferProcedureInstanceAnalysisData = 1;
+    string customerOfferProcedureInstanceAnalysisReportType = 2;
+    google.protobuf.Any customerOfferProcedureInstanceAnalysisReport = 3;
   }
 }

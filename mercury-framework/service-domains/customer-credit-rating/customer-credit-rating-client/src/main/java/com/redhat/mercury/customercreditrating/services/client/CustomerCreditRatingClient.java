@@ -16,6 +16,7 @@ import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
@@ -29,12 +30,12 @@ public class CustomerCreditRatingClient extends CustomerCreditRatingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerCreditRatingClient.class);
 
     @GrpcClient
-    OutboundBindingService outbound;
+    OutboundBindingService outboundBindingService;
 
     @Override
     public Uni<Message> retrieveCustomerCreditRatingState(String sd, String cr) {
         LOGGER.info("Received retrieveCustomerCreditRatingState for {}/{}", sd, cr);
-        return outbound.query(CloudEvent.newBuilder()
+        return outboundBindingService.query(CloudEvent.newBuilder()
                         .setSource(CustomerCreditRating.DOMAIN_NAME)
                         .setType(STATE_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()
@@ -47,13 +48,7 @@ public class CustomerCreditRatingClient extends CustomerCreditRatingService {
                                 .setCeString(STATE_RETRIEVE_ACTION)
                                 .build())
                         .build())
-                .onItem().transform(ce -> {
-                    try {
-                        return ce.getProtoData().unpack(Rating.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Unable to unpack Rating response", e);
-                        return null;
-                    }
-                });
+                .onItem()
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(Rating.class)));
     }
 }
