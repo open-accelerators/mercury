@@ -2,7 +2,6 @@ package com.redhat.mercury.customercreditrating.services.impl;
 
 import javax.enterprise.inject.Produces;
 
-import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingNotificationService;
 import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingService;
 
 import io.quarkus.arc.Arc;

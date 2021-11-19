@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.BindingService;
 import org.bian.protobuf.customeroffer.BasicReference;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 class MyCOServiceImplTest {
 
     @GrpcClient
-    InboundBindingService svc;
+    BindingService svc;
 
     @InjectMock
     CustomerOfferNotificationService notificationService;

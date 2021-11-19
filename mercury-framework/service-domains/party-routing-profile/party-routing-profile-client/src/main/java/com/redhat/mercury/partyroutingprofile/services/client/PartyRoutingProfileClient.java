@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.bian.protobuf.OutboundBindingService;
+import org.bian.protobuf.BindingService;
 import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +31,12 @@ public class PartyRoutingProfileClient extends PartyRoutingProfileService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyRoutingProfileClient.class);
 
     @GrpcClient
-    OutboundBindingService outboundBindingService;
+    BindingService bindingService;
 
     @Override
     public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
-        return outboundBindingService.query(CloudEvent.newBuilder()
+        return bindingService.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_STATUS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()

@@ -2,7 +2,7 @@ package com.redhat.mercury.customeroffer.services.client;
 
 import java.util.UUID;
 
-import org.bian.protobuf.OutboundBindingService;
+import org.bian.protobuf.BindingService;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
@@ -23,42 +23,38 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
+import static com.redhat.mercury.constants.BianCloudEvent.CE_SERVICE_DOMAIN;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
+import static com.redhat.mercury.customeroffer.CustomerOffer.DOMAIN_NAME;
 
 
-public class CustomerOfferClient extends CustomerOfferService {
+public class CustomerOfferClient implements CustomerOfferService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferClient.class);
 
     @GrpcClient
-    OutboundBindingService outboundBindingService;
+    BindingService bindingService;
 
     @Override
     public Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
-        return outboundBindingService.command(CloudEvent.newBuilder()
-                .setId(UUID.randomUUID().toString())
-                .setType(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
+        return bindingService.command(builder(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
                 .setProtoData(Any.pack(procedure))
                 .build());
     }
 
     @Override
     public Uni<Empty> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
-        return outboundBindingService.command(CloudEvent.newBuilder()
-                .setId(UUID.randomUUID().toString())
-                .setType(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
+        return bindingService.command(builder(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
                 .setProtoData(Any.pack(update))
                 .build());
     }
 
     @Override
     public Uni<Message> retrieveSDCustomerOffer(String sdRefId) {
-        return outboundBindingService.query(CloudEvent.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setType(CUSTOMER_OFFER_RETRIEVE_TYPE)
+        return bindingService.query(builder(CUSTOMER_OFFER_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
                                 .setCeString(sdRefId)
@@ -70,9 +66,7 @@ public class CustomerOfferClient extends CustomerOfferService {
 
     @Override
     public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
-        return outboundBindingService.query(CloudEvent.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setType(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
+        return bindingService.query(builder(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
                                 .setCeString(sdRefId)
@@ -84,5 +78,14 @@ public class CustomerOfferClient extends CustomerOfferService {
                         .build())
                 .onItem()
                 .transform(Unchecked.function(ce -> ce.getProtoData().unpack(CustomerOfferProcedure.class)));
+    }
+
+    private CloudEvent.Builder builder(String type) {
+        return CloudEvent.newBuilder().setId(UUID.randomUUID().toString())
+                .setType(type)
+                .putAttributes(CE_SERVICE_DOMAIN,
+                        CloudEventAttributeValue.newBuilder()
+                                .setCeString(DOMAIN_NAME)
+                                .build());
     }
 }

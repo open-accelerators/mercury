@@ -23,6 +23,7 @@
         <builder-annotations.version>0.50.1</builder-annotations.version>
         <operator-sdk.version>2.0.0</operator-sdk.version>
         <strimzi-api.version>0.26.0</strimzi-api.version>
+        <archetype.version>3.2.0</archetype.version>
         <!-- Image build properties -->
         <quarkus.native.container-build>true</quarkus.native.container-build>
         <quarkus.container-image.build>true</quarkus.container-image.build>
@@ -34,6 +35,7 @@
         <module>mercury-api</module>
         <module>mercury-framework</module>
         <module>mercury-operator</module>
+        <module>integrations</module>
     </modules>
 
     <dependencyManagement>
@@ -142,6 +144,10 @@
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>${archetype.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

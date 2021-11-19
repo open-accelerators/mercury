@@ -31,7 +31,7 @@ public class NotificationService {
                         BasicReference.newBuilder()
                                 .setId(procedure.getProcedure().getCustomerReference())
                                 .build())
-                .build()).subscribe().with(m -> LOGGER.info("received: {}", m));
+                .build()).subscribe().with(m -> LOGGER.info("received: {}", procedure));
     }
 
 }

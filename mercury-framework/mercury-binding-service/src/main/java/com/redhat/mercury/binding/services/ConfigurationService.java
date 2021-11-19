@@ -1,33 +1,20 @@
 package com.redhat.mercury.binding.services;
 
-import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Header;
-import org.apache.camel.Route;
-import org.apache.camel.builder.RouteBuilder;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.redhat.mercury.api.model.BindingSpec;
-import com.redhat.mercury.api.model.ExposedScopeSpec;
-import com.redhat.mercury.binding.model.Binding;
-import com.redhat.mercury.binding.model.BindingDefinition;
 import com.redhat.mercury.constants.BianCloudEvent;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-
-import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION_COMMAND;
-import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION_QUERY;
 
 @Startup
 @ApplicationScoped
@@ -35,142 +22,22 @@ import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION_QUERY;
 public class ConfigurationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationService.class);
+    private static final Integer DEFAULT_SVC_PORT = 9000;
 
-    public static final String HTTP_ROUTE_NAME = "http-route";
-    public static final String SUBSCRIPTION_ROUTE_PREFIX = "subscription.";
+    @ConfigProperty(name = "mercury.services.overrides")
+    Map<String, String> svcEndpoints;
 
-    @Inject
-    CamelContext context;
+    @ConfigProperty(name = "mercury.business.service.port")
+    Optional<Integer> businessSvcPort;
 
-    @Inject
-    KubernetesResourceService k8sService;
-
-    private Map<String, Binding> bindings;
-
-    @PostConstruct
-    void initialize() {
-        k8sService.registerWatcher(binding -> {
-            if (binding == null) {
-                clearBindings();
-            } else {
-                updateBindings(binding.getSpec().getBindings());
-                updateExposedScopes(binding.getSpec().getExposedScopes());
-            }
-        });
+    public String getBusinessBindingEndpoint(CloudEvent cloudEvent, @Header("CamelGrpcMethodName") String method) {
+        String serviceDomain = cloudEvent.getAttributesOrThrow(BianCloudEvent.CE_SERVICE_DOMAIN).getCeString();
+        String endpoint = serviceDomain + ":" + businessSvcPort.orElse(DEFAULT_SVC_PORT);
+        if (svcEndpoints.containsKey(serviceDomain)) {
+            endpoint = svcEndpoints.get(serviceDomain);
+        }
+        LOGGER.debug("CloudEvent from {} to {} with method {}. Using endpoint: {}", cloudEvent.getSource(), serviceDomain, method, endpoint);
+        return "grpc://" + endpoint + "/org.bian.protobuf.BindingService?synchronous=true&method=" + method;
     }
 
-    public String getBinding(CloudEvent cloudEvent, @Header("CamelGrpcMethodName") String method) {
-        LOGGER.debug("getBinding for CloudEvent type {} and method {}", cloudEvent.getType(), method);
-        String ref = cloudEvent.getType().replace(BianCloudEvent.CE_TYPE_PREFIX, "");
-        Binding binding = reduceBinding(ref, method);
-        if (binding != null) {
-            LOGGER.debug("Redirecting to: {}", binding.getEndpoint());
-            return binding.getEndpoint();
-        }
-        LOGGER.error("No binding found for event type {} and method {}", cloudEvent.getType(), method);
-        throw new IllegalStateException("Unable to calculate a valid QueryRoute");
-    }
-
-    private Binding reduceBinding(String type, String method) {
-        if (type.isBlank()) {
-            return null;
-        }
-        Binding binding = bindings.get(String.join(".", type, method));
-        if (binding != null) {
-            return binding;
-        }
-        return reduceBinding(type.substring(0, type.lastIndexOf(".")), method);
-    }
-
-    public synchronized void updateBindings(Collection<BindingSpec> bindingConfig) {
-        Builder<String, Binding> configBuilder = ImmutableMap.builder();
-        if (bindingConfig == null || bindingConfig.isEmpty()) {
-            LOGGER.info("Empty bindingConfig received, clearing bindings");
-            clearBindings();
-            return;
-        }
-        bindingConfig.forEach(b -> {
-            BindingDefinition def = new BindingDefinition().setDomainName(b.getServiceDomain())
-                    .setScopeRef(b.getScopeRef()).setAction(parseAction(b.getAction()));
-            Binding binding = new Binding().setDefinition(def).setEndpoint(k8sService.getEndpoint(def));
-            if (binding != null || binding.getEndpoint() == null) {
-                configBuilder.put(String.join(".", def.getScopeRef(), def.getAction().name()), binding);
-                LOGGER.info("Added binding {}", binding);
-            } else {
-                LOGGER.warn("Ignoring incorrect binding {}", binding);
-            }
-        });
-        this.bindings = configBuilder.build();
-        LOGGER.info("Registered all bindings");
-    }
-
-    public synchronized void updateExposedScopes(Collection<ExposedScopeSpec> exposedScopes) {
-        if (exposedScopes == null || exposedScopes.isEmpty()) {
-            clearExposedServices();
-            return;
-        }
-        if (context.getRoute(HTTP_ROUTE_NAME) != null) {
-            return;
-        }
-        RouteBuilder definition = new RouteBuilder() {
-            @Override
-            public void configure() {
-                from("platform-http:/{{mercury.servicedomain}}?matchOnUriPrefix=true")
-                        .routeId(HTTP_ROUTE_NAME)
-                        .bean(BianHttpCloudEventMarshaller.class, "toExternalRequest")
-                        .to("grpc://{{route.grpc.hostService}}/org.bian.protobuf.InboundBindingService?synchronous=true&method=external")
-                        .bean(BianHttpCloudEventMarshaller.class, "toHttp");
-            }
-        };
-        try {
-            context.addRoutes(definition);
-            LOGGER.debug("Register {} route", HTTP_ROUTE_NAME);
-        } catch (Exception e) {
-            LOGGER.error("Unable to register {} route", HTTP_ROUTE_NAME, e);
-        }
-    }
-
-    public synchronized void clearBindings() {
-        LOGGER.info("Removing any existing binding");
-        clearExposedServices();
-        clearSubscriptions();
-        ConfigurationService.this.bindings = ImmutableMap.of();
-    }
-
-    public synchronized void clearExposedServices() {
-        LOGGER.debug("Removing exposed services");
-        try {
-            context.removeRoute(HTTP_ROUTE_NAME);
-        } catch (Exception e) {
-            LOGGER.error("Unable to remove ExposedServiceRoute: {}", HTTP_ROUTE_NAME, e);
-        }
-    }
-
-    public synchronized void clearSubscriptions() {
-        LOGGER.debug("Removing subscriptions");
-        for (Route r : context.getRoutes()) {
-            if (r.getId().startsWith(SUBSCRIPTION_ROUTE_PREFIX)) {
-                try {
-                    context.removeRoute(r.getId());
-                } catch (Exception e) {
-                    LOGGER.error("Unable to remove Subscription route: {}", r.getId(), e);
-                }
-            }
-        }
-    }
-
-    private BindingDefinition.Action parseAction(String action) {
-        switch (action) {
-            case CE_ACTION_QUERY:
-                return BindingDefinition.Action.query;
-            case CE_ACTION_COMMAND:
-                return BindingDefinition.Action.command;
-            default:
-                return null;
-        }
-    }
-
-    private String getTopicName(String serviceDomainName) {
-        return serviceDomainName.toUpperCase().replace("-", "_");
-    }
 }

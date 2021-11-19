@@ -1,23 +1,23 @@
 package com.redhat.mercury.advertising.services.impl;
 
-import java.util.UUID;
-
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
-import org.bian.protobuf.OutboundBindingService;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
+import com.redhat.mercury.advertising.Advertising;
 import com.redhat.mercury.advertising.services.AdvertisingNotificationService;
-
-import io.quarkus.grpc.GrpcClient;
 
 @ApplicationScoped
 public class AdvertisingNotificationServiceImpl extends AdvertisingNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdvertisingNotificationServiceImpl.class);
 
-    @GrpcClient("outboundBindingService")
-    OutboundBindingService outbound;
-
+    @Inject
+    @Channel(Advertising.DOMAIN_NAME)
+    Emitter<Message> emitter;
 }

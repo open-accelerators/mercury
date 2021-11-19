@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.bian.protobuf.OutboundBindingService;
+import org.bian.protobuf.BindingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ public class ${sdName}NotificationServiceImpl extends ${sdName}NotificationServi
 
     private static final Logger LOGGER = LoggerFactory.getLogger(${sdName}NotificationServiceImpl.class);
 
-    @GrpcClient("outboundBindingService")
-    OutboundBindingService outbound;
+    @GrpcClient("bindingService")
+    BindingService bindingService;
 
 }

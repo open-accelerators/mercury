@@ -8,7 +8,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
-import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.BindingService;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
 import org.bian.protobuf.customeroffer.SDCustomerOffer;
 import org.junit.jupiter.api.Test;
@@ -29,13 +29,12 @@ import io.smallrye.mutiny.Uni;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
 class CustomerOfferInboundServiceImplTest {
 
     @GrpcClient
-    InboundBindingService inboundBindingService;
+    BindingService inboundBindingService;
 
     @Inject
     CustomerOfferService customerOfferService;

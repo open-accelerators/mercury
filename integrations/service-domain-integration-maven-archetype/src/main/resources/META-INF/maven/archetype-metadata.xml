@@ -1,0 +1,36 @@
+<archetype-descriptor xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 https://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
+                      name="service-domain-integration-maven-archetype">
+    <requiredProperties>
+        <requiredProperty key="sdArtifactId">
+            <defaultValue>${artifactId}</defaultValue>
+        </requiredProperty>
+        <requiredProperty key="sdName"/>
+        <requiredProperty key="sdNameLowerCase">
+            <defaultValue>${sdArtifactId.replace("-","")}</defaultValue>
+        </requiredProperty>
+    </requiredProperties>
+    <modules>
+        <module dir="__rootArtifactId__-integration-camel-rest" id="${rootArtifactId}-integration-camel-rest" name="${rootArtifactId}-integration-camel-rest">
+            <fileSets>
+                <fileSet filtered="true" packaged="true">
+                    <directory>src/main/java</directory>
+                </fileSet>
+                <fileSet>
+                    <directory>src/test/java</directory>
+                </fileSet>
+            </fileSets>
+        </module>
+        <module dir="__rootArtifactId__-integration-model" id="${rootArtifactId}-integration-model" name="${rootArtifactId}-integration-model">
+            <fileSets>
+                <fileSet filtered="true" packaged="true">
+                    <directory>src/main/java</directory>
+                </fileSet>
+                <fileSet>
+                    <directory>src/test/java</directory>
+                </fileSet>
+            </fileSets>
+        </module>
+    </modules>
+</archetype-descriptor>

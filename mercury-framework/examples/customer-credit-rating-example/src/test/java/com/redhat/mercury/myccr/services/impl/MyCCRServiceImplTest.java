@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.bian.protobuf.InboundBindingService;
+import org.bian.protobuf.BindingService;
 import org.bian.protobuf.customercreditrating.Rating;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class MyCCRServiceImplTest {
 
     @GrpcClient
-    InboundBindingService svc;
+    BindingService svc;
 
     @Test
     void testQuery() throws ExecutionException, InterruptedException, TimeoutException {

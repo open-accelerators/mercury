@@ -15,12 +15,8 @@ public class BindingRoutes extends RouteBuilder {
 
     @Override
     public void configure() {
-
-        from("grpc://{{route.grpc.outboundBindingService}}/org.bian.protobuf.OutboundBindingService")
-                .recipientList(method(configSvc, "getBinding"));
-
-        from("grpc://{{route.grpc.internalBindingService}}/org.bian.protobuf.InternalBindingService")
-                .to("grpc://{{route.grpc.hostService}}/org.bian.protobuf.InboundBindingService?method=" + simple("query"));
+        from("grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/org.bian.protobuf.BindingService")
+                .recipientList(method(configSvc, "getBusinessBindingEndpoint"));
     }
 
 }
