@@ -34,8 +34,8 @@ public class PartyRoutingService {
             Set<PartyRoutingState> states = partyRoutings.computeIfAbsent(processId, k -> new HashSet<>());
             states.removeIf(e -> processId.equals(e.getProcessId()));
             states.add(PartyRoutingState.newBuilder().setCustomerOfferStatus(status)
-                    .setProcessId(COMPLETED_STATUS.equals(status) ? null : processId).build());
-            return null;
+                    .setProcessId(COMPLETED_STATUS.equals(status) ? "" : processId).build());
+            return Empty.getDefaultInstance();
         });
 
     }

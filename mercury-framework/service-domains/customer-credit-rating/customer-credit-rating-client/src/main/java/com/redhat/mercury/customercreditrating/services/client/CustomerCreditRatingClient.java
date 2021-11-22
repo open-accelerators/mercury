@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
 import com.redhat.mercury.customercreditrating.CustomerCreditRating;
-import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingService;
+import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingApi;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
@@ -24,17 +24,17 @@ import static com.redhat.mercury.customercreditrating.CustomerCreditRating.STATE
 import static com.redhat.mercury.customercreditrating.CustomerCreditRating.STATE_RETRIEVE_TYPE;
 
 @ApplicationScoped
-public class CustomerCreditRatingClient implements CustomerCreditRatingService {
+public class CustomerCreditRatingClient implements CustomerCreditRatingApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerCreditRatingClient.class);
 
-    @GrpcClient
-    BindingService bindingService;
+    @GrpcClient("customer-credit-rating")
+    BindingService service;
 
     @Override
     public Uni<Message> retrieveCustomerCreditRatingState(String sd, String cr) {
         LOGGER.info("Received retrieveCustomerCreditRatingState for {}/{}", sd, cr);
-        return bindingService.query(CloudEvent.newBuilder()
+        return service.query(CloudEvent.newBuilder()
                         .setSource(CustomerCreditRating.DOMAIN_NAME)
                         .setType(STATE_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()

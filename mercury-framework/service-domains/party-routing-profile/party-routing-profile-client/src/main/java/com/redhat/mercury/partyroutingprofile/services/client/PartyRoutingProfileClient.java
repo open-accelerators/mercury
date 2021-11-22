@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
-import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
+import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileApi;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
@@ -26,17 +26,17 @@ import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_S
 import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE;
 
 @ApplicationScoped
-public class PartyRoutingProfileClient extends PartyRoutingProfileService {
+public class PartyRoutingProfileClient implements PartyRoutingProfileApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyRoutingProfileClient.class);
 
-    @GrpcClient
-    BindingService bindingService;
+    @GrpcClient("party-routing-profile")
+    BindingService service;
 
     @Override
     public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
-        return bindingService.query(CloudEvent.newBuilder()
+        return service.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_STATUS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()

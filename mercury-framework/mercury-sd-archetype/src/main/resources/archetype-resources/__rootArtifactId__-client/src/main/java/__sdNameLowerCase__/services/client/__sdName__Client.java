@@ -6,17 +6,16 @@ import org.bian.protobuf.BindingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ${package}.${sdNameLowerCase}.services.${sdName}Service;
+import ${package}.${sdNameLowerCase}.services.${sdName}Api;
 
 import io.quarkus.grpc.GrpcClient;
-import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-public class ${sdName}Client extends ${sdName}Service {
+public class ${sdName}Client implements ${sdName}Api {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(${sdName}Client.class);
 
-    @GrpcClient
+    @GrpcClient("${sdArtifactId}")
     BindingService bindingService;
 
 }

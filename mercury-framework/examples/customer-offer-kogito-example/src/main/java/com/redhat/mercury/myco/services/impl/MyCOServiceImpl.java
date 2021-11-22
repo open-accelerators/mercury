@@ -14,12 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.services.impl.NoOpCustomerOfferService;
+import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-public class MyCOServiceImpl extends NoOpCustomerOfferService {
+public class MyCOServiceImpl implements CustomerOfferService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCOServiceImpl.class);
 

@@ -2,6 +2,8 @@ package com.redhat.mercury.customeroffer.services.client;
 
 import java.util.UUID;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.bian.protobuf.BindingService;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
@@ -13,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Any;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
-import com.redhat.mercury.customeroffer.services.CustomerOfferService;
+import com.redhat.mercury.customeroffer.services.CustomerOfferApi;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
@@ -30,31 +32,31 @@ import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROC
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.DOMAIN_NAME;
 
-
-public class CustomerOfferClient implements CustomerOfferService {
+@ApplicationScoped
+public class CustomerOfferClient implements CustomerOfferApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferClient.class);
 
-    @GrpcClient
-    BindingService bindingService;
+    @GrpcClient("customer-offer")
+    BindingService service;
 
     @Override
     public Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
-        return bindingService.command(builder(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
+        return service.command(builder(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
                 .setProtoData(Any.pack(procedure))
                 .build());
     }
 
     @Override
     public Uni<Empty> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
-        return bindingService.command(builder(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
+        return service.command(builder(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
                 .setProtoData(Any.pack(update))
                 .build());
     }
 
     @Override
     public Uni<Message> retrieveSDCustomerOffer(String sdRefId) {
-        return bindingService.query(builder(CUSTOMER_OFFER_RETRIEVE_TYPE)
+        return service.query(builder(CUSTOMER_OFFER_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
                                 .setCeString(sdRefId)
@@ -66,7 +68,7 @@ public class CustomerOfferClient implements CustomerOfferService {
 
     @Override
     public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
-        return bindingService.query(builder(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
+        return service.query(builder(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
                                 .setCeString(sdRefId)

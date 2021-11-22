@@ -3,6 +3,7 @@ package com.redhat.mercury.customeroffer.services.impl;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
+import com.redhat.mercury.customeroffer.services.CustomerOfferApi;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
 import io.quarkus.arc.Arc;

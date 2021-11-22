@@ -1,23 +1,23 @@
 package ${package}.${sdNameLowerCase}.services.impl;
 
-import java.util.UUID;
-
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
-import org.bian.protobuf.BindingService;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ${package}.${sdNameLowerCase}.${sdName};
 import ${package}.${sdNameLowerCase}.services.${sdName}NotificationService;
-
-import io.quarkus.grpc.GrpcClient;
 
 @ApplicationScoped
 public class ${sdName}NotificationServiceImpl extends ${sdName}NotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(${sdName}NotificationServiceImpl.class);
 
-    @GrpcClient("bindingService")
-    BindingService bindingService;
+    @Inject
+    @Channel(${sdName}.DOMAIN_NAME)
+    Emitter<com.google.protobuf.Message> emitter;
 
 }

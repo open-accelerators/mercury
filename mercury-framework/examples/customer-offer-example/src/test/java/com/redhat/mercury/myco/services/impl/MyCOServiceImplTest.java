@@ -1,12 +1,12 @@
 package com.redhat.mercury.myco.services.impl;
 
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.bian.protobuf.BindingService;
+import javax.inject.Inject;
+
 import org.bian.protobuf.customeroffer.BasicReference;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
@@ -14,12 +14,9 @@ import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 import org.bian.protobuf.customeroffer.ProcedureInstanceRecord;
 import org.junit.jupiter.api.Test;
 
-import com.google.protobuf.Any;
-import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
+import com.redhat.mercury.customeroffer.services.client.CustomerOfferClient;
 
-import io.cloudevents.v1.proto.CloudEvent;
-import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
 
@@ -29,8 +26,8 @@ import static org.mockito.Mockito.verify;
 @QuarkusTest
 class MyCOServiceImplTest {
 
-    @GrpcClient
-    BindingService svc;
+    @Inject
+    CustomerOfferClient client;
 
     @InjectMock
     CustomerOfferNotificationService notificationService;
@@ -42,13 +39,8 @@ class MyCOServiceImplTest {
                         .setCustomerReference("foo")
                         .build())
                 .build();
-        CloudEvent ce = CloudEvent.newBuilder()
-                .setType(CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
-                .setProtoData(Any.pack(procedure))
-                .setId(UUID.randomUUID().toString())
-                .build();
         CompletableFuture<Void> message = new CompletableFuture<>();
-        svc.command(ce).subscribe().with(reply -> message.complete(null));
+        client.initiateCustomerOfferProcedure(procedure).subscribe().with(reply -> message.complete(null));
         message.get(5, TimeUnit.SECONDS);
         CustomerOfferNotification notification = CustomerOfferNotification.newBuilder()
                 .setCustomerOfferReference(BasicReference.newBuilder()
@@ -64,13 +56,8 @@ class MyCOServiceImplTest {
                         .setCustomerReference("foo")
                         .build())
                 .build();
-        CloudEvent ce = CloudEvent.newBuilder()
-                .setType(CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
-                .setProtoData(Any.pack(procedure))
-                .setId(UUID.randomUUID().toString())
-                .build();
         CompletableFuture<Void> message = new CompletableFuture<>();
-        svc.command(ce).subscribe().with(reply -> message.complete(null));
+        client.updateCustomerOfferProcedure(procedure).subscribe().with(reply -> message.complete(null));
         message.get(5, TimeUnit.SECONDS);
         CustomerOfferNotification notification = CustomerOfferNotification.newBuilder()
                 .setCustomerOfferReference(BasicReference.newBuilder()
