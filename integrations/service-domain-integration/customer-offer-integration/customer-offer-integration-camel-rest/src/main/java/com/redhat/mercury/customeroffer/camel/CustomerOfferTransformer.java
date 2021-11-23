@@ -14,12 +14,14 @@ import com.redhat.mercury.customeroffer.CustomerOffer;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
+@RegisterForReflection
 public class CustomerOfferTransformer {
 
     private static final String EXTERNAL_SOURCE = "external";
 
-    public CloudEvent initiateCustomerOfferProcedure(Message message) throws InvalidProtocolBufferException {
+    public static CloudEvent initiateCustomerOfferProcedure(Message message) throws InvalidProtocolBufferException {
         CustomerOfferProcedureInitiation.Builder builder = CustomerOfferProcedureInitiation.newBuilder();
         JsonFormat.parser().merge(message.getBody(String.class), builder);
         return CloudEvent.newBuilder()
@@ -36,7 +38,7 @@ public class CustomerOfferTransformer {
                 .build();
     }
 
-    public CloudEvent updateCustomerOfferProcedure(Message message) throws InvalidProtocolBufferException {
+    public static CloudEvent updateCustomerOfferProcedure(Message message) throws InvalidProtocolBufferException {
         CustomerOfferProcedureUpdate.Builder builder = CustomerOfferProcedureUpdate.newBuilder();
         JsonFormat.parser().merge(message.getBody(String.class), builder);
         return CloudEvent.newBuilder()
@@ -56,7 +58,7 @@ public class CustomerOfferTransformer {
                 .build();
     }
 
-    public CloudEvent retrieveSDCustomerOffer(Message message) {
+    public static CloudEvent retrieveSDCustomerOffer(Message message) {
         return CloudEvent.newBuilder()
                 .setId(UUID.randomUUID().toString())
                 .setSource(EXTERNAL_SOURCE)
@@ -70,7 +72,7 @@ public class CustomerOfferTransformer {
                 .build();
     }
 
-    public CloudEvent retrieveCustomerOffer(Message message) {
+    public static CloudEvent retrieveCustomerOffer(Message message) {
         return CloudEvent.newBuilder()
                 .setId(UUID.randomUUID().toString())
                 .setSource(EXTERNAL_SOURCE)

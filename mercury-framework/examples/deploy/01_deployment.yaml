@@ -8,6 +8,31 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: customer-offer-http-route
+  labels:
+    app: customer-offer-http-route
+    service-domain: customer-offer
+spec:
+  selector:
+    matchLabels:
+      app: customer-offer-http-route
+  template:
+    metadata:
+      labels:
+        app: customer-offer-http-route
+        service-domain: customer-offer
+    spec:
+      containers:
+        - name: container
+          image: quay.io/ecosystem-appeng/customer-offer-integration-camel-rest:1.0.0-SNAPSHOT
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: customer-offer
   labels:
     app: bian-customer-offer
@@ -22,54 +47,19 @@ spec:
         app: bian-customer-offer
         service-domain: customer-offer
     spec:
-      serviceAccountName: bian-binding-service-sa
       containers:
         - name: business-service
-          image: quay.io/ecosystem-appeng/customer-offer-kogito-example:1.0.0-SNAPSHOT
+          image: quay.io/ecosystem-appeng/customer-offer-example:1.0.0-SNAPSHOT
+          imagePullPolicy: Always
           ports:
-            - containerPort: 10001
-              name: inbound
-            - containerPort: 8080
-              name: http
+            - containerPort: 9000
+              name: grpc
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
                 configMapKeyRef:
                   name: my-sd-cluster-config
                   key: kafka.bootstrap.servers
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: customer-offer-internal
-  labels:
-    app: bian-customer-offer
-    service-domain: customer-offer
-    mercury-binding: internal
-spec:
-  ports:
-    - port: 10101
-      protocol: TCP
-      name: internal
-  selector:
-    app: bian-customer-offer
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: customer-offer-http
-  labels:
-    app: bian-customer-offer
-    service-domain: customer-offer
-    mercury-binding: external
-spec:
-  type: NodePort
-  ports:
-    - port: 8080
-      protocol: TCP
-      name: http
-  selector:
-    app: bian-customer-offer
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -88,15 +78,13 @@ spec:
         app: bian-party-routing-profile
         service-domain: party-routing-profile
     spec:
-      serviceAccountName: bian-binding-service-sa
       containers:
         - name: business-service
           image: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.0-SNAPSHOT
+          imagePullPolicy: Always
           ports:
-            - containerPort: 10001
-              name: inbound
-            - containerPort: 8080
-              name: http
+            - containerPort: 9000
+              name: grpc
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
@@ -107,26 +95,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: party-routing-profile-internal
+  name: customer-offer-http-route
   labels:
-    app: bian-party-routing-profile
-    service-domain: party-routing-profile
-    mercury-binding: internal
-spec:
-  ports:
-    - port: 10101
-      protocol: TCP
-      name: internal
-  selector:
-    app: bian-party-routing-profile
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: party-routing-profile-http
-  labels:
-    app: bian-party-routing-profile
-    service-domain: party-routing-profile
+    app: customer-offer-http-route
+    service-domain: customer-offer
     mercury-binding: external
 spec:
   type: NodePort
@@ -134,5 +106,37 @@ spec:
     - port: 8080
       protocol: TCP
       name: http
+  selector:
+    app: customer-offer-http-route
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-offer
+  labels:
+    app: bian-customer-offer
+    service-domain: customer-offer
+    mercury-binding: internal
+spec:
+  ports:
+    - port: 9000
+      protocol: TCP
+      name: grpc
+  selector:
+    app: bian-customer-offer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: party-routing-profile
+  labels:
+    app: bian-party-routing-profile
+    service-domain: party-routing-profile
+    mercury-binding: internal
+spec:
+  ports:
+    - port: 9000
+      protocol: TCP
+      name: grpc
   selector:
     app: bian-party-routing-profile

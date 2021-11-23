@@ -29,16 +29,19 @@ public class CustomerOfferNotificationHandler implements NotificationHandler<Cus
     @Override
     @Incoming(CustomerOffer.DOMAIN_NAME)
     public Uni<Void> onEvent(Message<CustomerOfferNotification> event) {
-        IncomingCloudEventMetadata metadata = event.getMetadata(IncomingCloudEventMetadata.class)
-                .orElseThrow(() -> new IllegalArgumentException("Expected a Cloud Event"));
-        switch (metadata.getType()) {
-            case CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE:
-                return notificationService.onCustomerOfferInitiated(event.getPayload()).replaceWithVoid();
-            case CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE:
-                return notificationService.onCustomerOfferCompleted(event.getPayload()).replaceWithVoid();
-            default:
-                LOGGER.warn("Ignored Unsupported Customer Offer Notification event of type: {}", metadata.getType());
-                return Uni.createFrom().voidItem();
-        }
+        return Uni.createFrom().item(() -> event.getMetadata(IncomingCloudEventMetadata.class)
+                        .orElseThrow(() -> new IllegalArgumentException("Expected a Cloud Event")))
+                .chain(metadata -> {
+                    switch (metadata.getType()) {
+                        case CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE:
+                            return notificationService.onCustomerOfferInitiated(event.getPayload()).replaceWithVoid();
+                        case CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE:
+                            return notificationService.onCustomerOfferCompleted(event.getPayload()).replaceWithVoid();
+                        default:
+                            LOGGER.warn("Ignored Unsupported Customer Offer Notification event of type: {}", metadata.getType());
+                            return Uni.createFrom().voidItem();
+                    }
+                })
+                .invoke(e -> event.ack()).replaceWithVoid();
     }
 }

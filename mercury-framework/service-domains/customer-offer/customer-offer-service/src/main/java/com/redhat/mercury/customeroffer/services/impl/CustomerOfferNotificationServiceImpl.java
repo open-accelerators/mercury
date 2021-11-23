@@ -17,6 +17,7 @@ import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 
 import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 
 @ApplicationScoped
@@ -26,6 +27,7 @@ public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificat
 
     @Inject
     @Channel(CustomerOffer.DOMAIN_NAME)
+    @Broadcast
     Emitter<com.google.protobuf.Message> emitter;
 
     @Override
