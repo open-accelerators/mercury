@@ -7,7 +7,7 @@ import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Message;
+import com.google.protobuf.Empty;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 
 import io.smallrye.mutiny.Uni;
@@ -25,20 +25,15 @@ public class CustomerOfferEventHandler extends CustomerOfferNotificationService 
     PartyRoutingService svc;
 
     @Override
-    public Uni<Message> onCustomerOfferInitiated(CustomerOfferNotification notification) {
+    public Uni<Empty> onCustomerOfferInitiated(CustomerOfferNotification notification) {
         LOGGER.info("received onCustomerOfferInitiated {}", notification);
-        return svc.updatePartyRoutingState(INITIATED_STATUS, notification.getCustomerOfferReference().getId())
-                .onItem()
-                .transform(x -> null);
+        return svc.updatePartyRoutingState(INITIATED_STATUS, notification.getCustomerOfferReference().getId());
     }
 
     @Override
-    public Uni<Message> onCustomerOfferCompleted(CustomerOfferNotification notification) {
+    public Uni<Empty> onCustomerOfferCompleted(CustomerOfferNotification notification) {
         LOGGER.info("received onCustomerOfferCompleted {}", notification);
-        return Uni.createFrom()
-                .item(() -> svc.updatePartyRoutingState(COMPLETED_STATUS, notification.getCustomerOfferReference().getId()))
-                .onItem()
-                .transform(x -> null);
+        return svc.updatePartyRoutingState(COMPLETED_STATUS, notification.getCustomerOfferReference().getId());
     }
 
 }

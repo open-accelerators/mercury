@@ -13,7 +13,7 @@ import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileServic
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-public class MyPRPServiceImpl extends PartyRoutingProfileService {
+public class MyPRPServiceImpl implements PartyRoutingProfileService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyPRPServiceImpl.class);
 

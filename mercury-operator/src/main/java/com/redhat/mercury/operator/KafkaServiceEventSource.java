@@ -1,13 +1,13 @@
 package com.redhat.mercury.operator;
 
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.javaoperatorsdk.operator.processing.event.AbstractEventSource;
 import io.strimzi.api.kafka.model.Kafka;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getUID;
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getVersion;

@@ -7,7 +7,6 @@ public final class ${sdName} {
     // TODO: Implement
     // QUERIES
     // COMMANDS
-    // EVENTS
 
     private ${sdName}() {
     }

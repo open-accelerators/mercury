@@ -12,7 +12,7 @@ import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingServ
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-public class MyCCRServiceImpl extends CustomerCreditRatingService {
+public class MyCCRServiceImpl implements CustomerCreditRatingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCCRServiceImpl.class);
     private static final Integer FIXED_RATING = 802;

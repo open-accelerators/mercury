@@ -10,6 +10,9 @@
     </parent>
     <artifactId>mercury-operator</artifactId>
     <name>Mercury Operator</name>
+    <properties>
+<!--        <quarkus.operator-sdk.crd.generate>false</quarkus.operator-sdk.crd.generate>-->
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
@@ -97,6 +100,18 @@
             </build>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
+            </properties>
+        </profile>
+        <profile>
+            <id>crd</id>
+            <activation>
+                <property>
+                    <name>crd</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.operator-sdk.crd.generate>true</quarkus.operator-sdk.crd.generate>
+                <quarkus.operator-sdk.generate-csv>true</quarkus.operator-sdk.generate-csv>
             </properties>
         </profile>
     </profiles>

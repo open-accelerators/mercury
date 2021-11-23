@@ -5,6 +5,7 @@ import javax.enterprise.inject.Produces;
 
 import org.mockito.Mockito;
 
+import com.redhat.mercury.customeroffer.services.CustomerOfferApi;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
 import io.quarkus.arc.profile.IfBuildProfile;

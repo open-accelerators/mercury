@@ -9,9 +9,9 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.redhat.mercury.api.model.ServiceDomainCluster;
+import com.redhat.mercury.api.model.ServiceDomainClusterStatus;
 import com.redhat.mercury.operator.KafkaServiceEventSource;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
@@ -100,7 +100,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                     .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
                     .findFirst().orElse(null);
 
-            if(listenerStatus != null){
+            if (listenerStatus != null) {
                 status.setKafkaBroker(listenerStatus.getBootstrapServers());
                 sdc.setStatus(status);
             }

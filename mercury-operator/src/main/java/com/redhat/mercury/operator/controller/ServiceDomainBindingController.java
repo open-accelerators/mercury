@@ -1,13 +1,19 @@
 package com.redhat.mercury.operator.controller;
 
-import com.redhat.mercury.operator.model.ServiceDomainBinding;
-import com.redhat.mercury.operator.model.ServiceDomainBindingStatus;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.javaoperatorsdk.operator.api.*;
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
+import com.redhat.mercury.api.model.ServiceDomainBinding;
+import com.redhat.mercury.api.model.ServiceDomainBindingStatus;
+
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.javaoperatorsdk.operator.api.Context;
+import io.javaoperatorsdk.operator.api.Controller;
+import io.javaoperatorsdk.operator.api.DeleteControl;
+import io.javaoperatorsdk.operator.api.ResourceController;
+import io.javaoperatorsdk.operator.api.UpdateControl;
 
 @Controller
 public class ServiceDomainBindingController implements ResourceController<ServiceDomainBinding> {
