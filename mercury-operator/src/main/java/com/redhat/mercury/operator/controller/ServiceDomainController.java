@@ -1,64 +1,43 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.redhat.mercury.api.model.ServiceDomain;
-import com.redhat.mercury.api.model.ServiceDomainCluster;
-import com.redhat.mercury.api.model.ServiceDomainStatus;
-
-import io.fabric8.kubernetes.api.model.ContainerBuilder;
-import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
-import io.fabric8.kubernetes.api.model.EnvVarBuilder;
-import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
-import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.PodSpecBuilder;
-import io.fabric8.kubernetes.api.model.PodTemplateSpecBuilder;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
-import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
-import io.fabric8.kubernetes.api.model.ServiceBuilder;
-import io.fabric8.kubernetes.api.model.ServicePortBuilder;
+import com.redhat.mercury.operator.model.ServiceDomain;
+import com.redhat.mercury.operator.model.ServiceDomainStatus;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.openshift.api.model.*;
 import io.javaoperatorsdk.operator.api.Context;
-import io.javaoperatorsdk.operator.api.Controller;
-import io.javaoperatorsdk.operator.api.DeleteControl;
-import io.javaoperatorsdk.operator.api.ResourceController;
-import io.javaoperatorsdk.operator.api.UpdateControl;
-import io.strimzi.api.kafka.model.KafkaTopic;
-import io.strimzi.api.kafka.model.KafkaTopicBuilder;
+import io.javaoperatorsdk.operator.api.*;
+import io.strimzi.api.kafka.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
 
-    private static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
-
+    public static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
     private static final String SERVICE_DOMAIN_LABEL = "service-domain";
-    private static final String SERVICE_ACCOUNT_NAME = "bian-binding-service-sa";
+//    private static final String SERVICE_ACCOUNT_NAME = "bian-binding-service-sa";
     private static final String BUSINESS_SERVICE_CONTAINER_NAME = "business-service";
-    private static final String QUARKUS_HTTP_PORT_ENV_VAR = "QUARKUS_HTTP_PORT";
-    private static final String QUARKUS_HTTP_PORT = "8081";
-    private static final String MERCURY_SERVICE_DOMAIN_ENV_VAR = "MERCURY_SERVICEDOMAIN";
-    private static final String CONTAINER_NAME_INBOUND = "inbound";
-    private static final String BINDING_SERVICE_CONTAINER_NAME = "binding-service";
     private static final String APP_LABEL = "app";
-    private static final String CONTAINER_NAME_OUTBOUND = "outbound";
-    private static final String MERCURY_KAFKA_BROKER_ENV_VAR = "MERCURY_KAFKA_BROKERS";
+    private static final String MERCURY_KAFKA_BROKER_ENV_VAR = "KAFKA_BOOTSTRAP_SERVERS";
     private static final String INTERNAL = "internal";
-    private static final String HTTP_CONTAINER_NAME = "http";
     private static final String TCP_PROTOCOL = "TCP";
-    private static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
-    private static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
+    private static final String DEPLOYMENT_CONTAINER_IMAGE_PULL_POLICY = "Always";
+    private static final String GRPC_NAME = "grpc";
+    private static final int GRPC_PORT = 9000;
+    public static final String KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY = "kafka.bootstrap.servers";
+    public static final String MERCURY_BINDING_LABEL = "mercury-binding";
 
     @Inject
     KubernetesClient client;
@@ -72,24 +51,19 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
     @Override
     public UpdateControl<ServiceDomain> createOrUpdateResource(ServiceDomain sd, Context<ServiceDomain> context) {
-        String kafkaBrokerUr;
         ServiceDomainStatus status = new ServiceDomainStatus();
         String sdName = sd.getMetadata().getName();
 
         try {
-            final ServiceDomainCluster serviceDomainCluster = client.resources(ServiceDomainCluster.class)
-                    .inNamespace(client.getNamespace())
-                    .withName(sd.getSpec().getServiceDomainCluster()).get();
+            final ConfigMap configMap = client.configMaps().withName(sd.getSpec().getServiceDomainCluster()).get();
 
-            if (isKafkaBrokerUrlInCluster(serviceDomainCluster)) {
-                kafkaBrokerUr = serviceDomainCluster.getStatus().getKafkaBroker();
-
+            if(configMap != null){
                 createOrUpdateServiceAccount(sd);
-                createOrUpdateDeployment(sd, kafkaBrokerUr);
+                createOrUpdateDeployment(sd);
                 createOrUpdateService(sd);
+                createOrUpdateRoute(sd);
                 String kafkaTopic = createKafkaTopic(sd);
                 String kafkaUser = createKafkaUser(sd, kafkaTopic);
-
                 status.setKafkaTopic(kafkaTopic);
                 status.setKafkaUser(kafkaUser);
             }
@@ -102,58 +76,105 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         return UpdateControl.updateStatusSubResource(sd);
     }
 
-    private boolean isKafkaBrokerUrlInCluster(ServiceDomainCluster serviceDomainCluster) {
-        return serviceDomainCluster != null && serviceDomainCluster.getStatus().getKafkaBroker() != null;
+    private void createOrUpdateRoute(ServiceDomain sd) {
+        final String sdName = sd.getMetadata().getName();
+        Route route = client.resources(Route.class).withName(sdName).get();
+
+        final Route desiredRoute = new RouteBuilder()
+                                        .withNewMetadata()
+                                        .withName(sdName)
+                                        .withNamespace(client.getNamespace())
+                                        .withLabels(Map.of("app", "bian-" + sdName,
+                                                           "com.redhat.mercury/service-domain" , sdName,
+                                                           "com.redhat.mercury/service-domain-binding", INTERNAL,
+                                                           "com.redhat.mercury/service-domain-cluster", sd.getSpec().getServiceDomainCluster()))
+                                        .endMetadata()
+                                        .withSpec(new RouteSpecBuilder().withTo(new RouteTargetReferenceBuilder()
+                                                                                        .withKind("Service")
+                                                                                        .withName(sdName + "-binding")
+                                                                                        .build())
+                                                .withPort(new RoutePortBuilder()
+                                                                .withNewTargetPort()
+                                                                .withStrVal(INTERNAL)
+                                                                .endTargetPort()
+                                                                .build())
+                                                .build())
+                                        .build();
+        desiredRoute.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
+                .withName(sd.getMetadata().getName())
+                .withUid(sd.getMetadata().getUid())
+                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .build()));
+
+        if(route == null){
+            client.resources(Route.class).create(desiredRoute);
+            LOGGER.debug("{} route was missing, creating it", sdName);
+        }else{
+            if(!Objects.equals(route.getSpec(), desiredRoute.getSpec())) {
+                client.resources(Route.class).replace(desiredRoute);
+                LOGGER.debug("{} route was updated", desiredRoute);
+            }
+        }
     }
 
     private String createKafkaUser(ServiceDomain sd, String kafkaTopic) {
         final String kafkaUserName = sd.getMetadata().getName() + "-user";
-//        KafkaUser kafkaUser = client.resources(KafkaUser.class).withName(kafkaUserName).get();
-//
-//        if(kafkaUser == null) {
-//            kafkaUser = new KafkaUserBuilder()
-//                    .withNewMetadata()
-//                    .withName(kafkaUserName)
-//                    .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka"))
-//                    .endMetadata()
-//                    .withNewSpec()
-//                    .withAuthentication(new KafkaUserTlsClientAuthenticationBuilder()
-//                                                .build())
-//                    .withAuthorization(new KafkaUserAuthorizationSimpleBuilder()
-//                                        .withAcls(new AclRuleBuilder()
-//                                                        .withResource(new AclRuleTopicResourceBuilder()
-//                                                                            .withName(kafkaTopic)
-//                                                                            .withPatternType(AclResourcePatternType.LITERAL)
-//                                                                            .build())
-//                                                        .withOperation(AclOperation.READ)
-//                                                        .withHost("'*'")
-//                                                        .build(),
-//                                                  new AclRuleBuilder()
-//                                                        .withResource(new AclRuleTopicResourceBuilder()
-//                                                                .withName(kafkaTopic)
-//                                                                .withPatternType(AclResourcePatternType.LITERAL)
-//                                                                .build())
-//                                                        .withOperation(AclOperation.DESCRIBE)
-//                                                        .withHost("'*'")
-//                                                        .build(),
-//                                                new AclRuleBuilder()
-//                                                        .withResource(new AclRuleTopicResourceBuilder()
-//                                                                .withName(kafkaTopic)
-//                                                                .withPatternType(AclResourcePatternType.LITERAL)
-//                                                                .build())
-//                                                        .withOperation(AclOperation.READ)
-//                                                        .withHost("'*'")
-//                                                        .build())
-//                                        .build())
-//                    .endSpec()
-//                    .build();
-//
-//            kafkaUser.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-//                    .withName(sd.getMetadata().getName())
-//                    .withUid(sd.getMetadata().getUid()).build()));
-//
-//            client.resources(KafkaUser.class).create(kafkaUser);
-//        }
+        KafkaUser kafkaUser = client.resources(KafkaUser.class).withName(kafkaUserName).get();
+
+        KafkaUser desiredKafkaUser = new KafkaUserBuilder()
+                .withNewMetadata()
+                .withName(kafkaUserName)
+                .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka"))
+                .endMetadata()
+                .withNewSpec()
+                .withAuthentication(new KafkaUserTlsClientAuthenticationBuilder()
+                                            .build())
+                .withAuthorization(new KafkaUserAuthorizationSimpleBuilder()
+                                    .withAcls(new AclRuleBuilder()
+                                                    .withResource(new AclRuleTopicResourceBuilder()
+                                                                        .withName(kafkaTopic)
+                                                                        .withPatternType(AclResourcePatternType.LITERAL)
+                                                                        .build())
+                                                    .withOperation(AclOperation.READ)
+                                                    .withHost("*")
+                                                    .build(),
+                                              new AclRuleBuilder()
+                                                    .withResource(new AclRuleTopicResourceBuilder()
+                                                            .withName(kafkaTopic)
+                                                            .withPatternType(AclResourcePatternType.LITERAL)
+                                                            .build())
+                                                    .withOperation(AclOperation.DESCRIBE)
+                                                    .withHost("*")
+                                                    .build(),
+                                            new AclRuleBuilder()
+                                                    .withResource(new AclRuleTopicResourceBuilder()
+                                                            .withName(kafkaTopic)
+                                                            .withPatternType(AclResourcePatternType.LITERAL)
+                                                            .build())
+                                                    .withOperation(AclOperation.READ)
+                                                    .withHost("*")
+                                                    .build())
+                                    .build())
+                .endSpec()
+                .build();
+
+        desiredKafkaUser.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
+                    .withName(sd.getMetadata().getName())
+                    .withUid(sd.getMetadata().getUid())
+                    .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                    .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                    .build()));
+
+        if(kafkaUser == null){
+            client.resources(KafkaUser.class).create(desiredKafkaUser);
+            LOGGER.debug("{} kafka user was missing, creating it", kafkaUserName);
+        }else{
+            if(!Objects.equals(kafkaUser.getSpec(), desiredKafkaUser.getSpec())) {
+                client.resources(KafkaUser.class).replace(desiredKafkaUser);
+                LOGGER.debug("{} kafka topic was updated", desiredKafkaUser);
+            }
+        }
 
         return kafkaUserName;
     }
@@ -181,11 +202,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
 
-        if (kafkaTopic == null) {
+        if(kafkaTopic == null) {
             client.resources(KafkaTopic.class).create(desiredKafkaTopic);
             LOGGER.debug("{} kafka topic was missing, creating it", kafkaTopicName);
         } else {
-            if (!Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
+            if(!Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
                 client.resources(KafkaTopic.class).replace(desiredKafkaTopic);
                 LOGGER.debug("{} kafka topic was updated", kafkaTopicName);
             }
@@ -194,61 +215,47 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         return kafkaTopicName;
     }
 
-    private void createOrUpdateDeployment(ServiceDomain sd, String kafkaBrokerUr) {
+    private void createOrUpdateDeployment(ServiceDomain sd) {
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
 
         Deployment desiredDeployment = new DeploymentBuilder()
+                .withApiVersion("apps/v1")
                 .withNewMetadata()
                 .withName(sdName)
                 .withNamespace(sdNS)
                 .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
-                        .withSelector(new LabelSelectorBuilder()
-                                .withMatchLabels(Map.of(APP_LABEL, "bian-" + sdName))
+                                .withSelector(new LabelSelectorBuilder()
+                                                .withMatchLabels(Map.of(APP_LABEL, "bian-" + sdName))
+                                                .build())
+                                .withTemplate(new PodTemplateSpecBuilder()
+                                                    .withNewMetadata()
+                                                    .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
+                                                    .endMetadata()
+                                                    .withSpec(new PodSpecBuilder()
+//                                                                    .withServiceAccountName(SERVICE_ACCOUNT_NAME)
+                                                                    .withContainers(new ContainerBuilder()
+                                                                                        .withName(BUSINESS_SERVICE_CONTAINER_NAME)
+                                                                                        .withImage(sd.getSpec().getBusinessImage())
+                                                                                        .withImagePullPolicy(DEPLOYMENT_CONTAINER_IMAGE_PULL_POLICY)
+                                                                                        .withPorts(new ContainerPortBuilder()
+                                                                                                .withContainerPort(GRPC_PORT)
+                                                                                                .withName(GRPC_NAME).build())
+                                                                                        .withEnv(new EnvVarBuilder()
+                                                                                                        .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
+                                                                                                        .withValueFrom(new EnvVarSourceBuilder()
+                                                                                                                        .withNewConfigMapKeyRef()
+                                                                                                                        .withName(sd.getSpec().getServiceDomainCluster())
+                                                                                                                        .withKey(KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY)
+                                                                                                                        .endConfigMapKeyRef()
+                                                                                                                        .build())
+                                                                                                        .build())
+                                                                                        .build())
+                                                                    .build())
+                                                    .build())
                                 .build())
-                        .withTemplate(new PodTemplateSpecBuilder()
-                                .withNewMetadata()
-                                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
-                                .endMetadata()
-                                .withSpec(new PodSpecBuilder()
-                                        .withServiceAccountName(SERVICE_ACCOUNT_NAME)
-                                        .withContainers(new ContainerBuilder()
-                                                        .withName(BUSINESS_SERVICE_CONTAINER_NAME)
-                                                        .withImage(sd.getSpec().getBusinessImage())
-                                                        .withPorts(new ContainerPortBuilder()
-                                                                .withContainerPort(10001)
-                                                                .withName(CONTAINER_NAME_INBOUND).build())
-                                                        .withEnv(new EnvVarBuilder()
-                                                                        .withName(QUARKUS_HTTP_PORT_ENV_VAR)
-                                                                        .withValue(QUARKUS_HTTP_PORT).build(),
-                                                                new EnvVarBuilder()
-                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
-                                                                        .withValue(sdName).build())
-                                                        .build(),
-                                                new ContainerBuilder()
-                                                        .withName(BINDING_SERVICE_CONTAINER_NAME)
-                                                        .withImage(sd.getSpec().getBindingServiceImage())
-                                                        .withPorts(new ContainerPortBuilder()
-                                                                        .withContainerPort(10100)
-                                                                        .withName(CONTAINER_NAME_OUTBOUND).build(),
-                                                                new ContainerPortBuilder()
-                                                                        .withContainerPort(10101)
-                                                                        .withName(INTERNAL).build(),
-                                                                new ContainerPortBuilder()
-                                                                        .withContainerPort(8080)
-                                                                        .withName(HTTP_CONTAINER_NAME).build())
-                                                        .withEnv(new EnvVarBuilder()
-                                                                        .withName(MERCURY_SERVICE_DOMAIN_ENV_VAR)
-                                                                        .withValue(sdName).build(),
-                                                                new EnvVarBuilder()
-                                                                        .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
-                                                                        .withValue(kafkaBrokerUr).build())
-                                                        .build())
-                                        .build())
-                                .build())
-                        .build())
                 .build();
 
         desiredDeployment.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
@@ -260,11 +267,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final Deployment sdDeployment = client.apps().deployments().inNamespace(sdNS).withName(sdName).get();
 
-        if (sdDeployment == null) {
+        if(sdDeployment == null) {
             client.apps().deployments().inNamespace(sdNS).create(desiredDeployment);
             LOGGER.debug("{} deployment was missing, creating it", sdName);
         } else {
-            if (!Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec())) {
+            if(!Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec())) {
                 client.apps().deployments().inNamespace(sdNS).replace(desiredDeployment);
                 LOGGER.debug("{} deployment was updated", sdName);
             }
@@ -279,18 +286,15 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         Service desiredService = new ServiceBuilder()
                 .withApiVersion("v1")
                 .withNewMetadata()
-                .withName(serviceName)
+                .withName(sdName)
                 .withNamespace(sdNS)
-                .withLabels(Map.of(APP_LABEL, "bian-" + sdName,
-                        "com.redhat.mercury/service-domain", sdName,
-                        "com.redhat.mercury/service-domain-binding", INTERNAL,
-                        "com.redhat.mercury/service-domain-cluster", sd.getSpec().getServiceDomainCluster()))
+                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName, MERCURY_BINDING_LABEL, INTERNAL))
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(new ServicePortBuilder()
-                        .withPort(10101)
-                        .withProtocol(TCP_PROTOCOL)
-                        .withName(INTERNAL).build())
+                                .withPort(GRPC_PORT)
+                                .withProtocol(TCP_PROTOCOL)
+                                .withName(GRPC_NAME).build())
                 .withSelector(Map.of(APP_LABEL, "bian-" + sdName))
                 .endSpec().build();
 
@@ -303,16 +307,16 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final Service sdService = client.services().inNamespace(sdNS).withName(serviceName).get();
 
-        if (sdService == null) {
+        if(sdService == null) {
             client.services().inNamespace(sdNS).create(desiredService);
             LOGGER.debug("{} service was missing, creating it", serviceName);
         } else {
-            if (!Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
+            if(!Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
                 client.services().inNamespace(sdNS).replace(desiredService);
                 LOGGER.debug("{} service was updated", serviceName);
             }
         }
-    }
+   }
 
     private void createOrUpdateServiceAccount(ServiceDomain sd) {
         String sdNS = sd.getMetadata().getNamespace();
@@ -333,11 +337,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(sdNS).withName(BINDING_SERVICE_SA).get();
 
-        if (serviceAccount == null) {
+        if(serviceAccount == null) {
             client.serviceAccounts().inNamespace(sdNS).create(desiredServiceAccount);
             LOGGER.debug("{} service account was missing, creating it", BINDING_SERVICE_SA);
         } else {
-            if (!Objects.equals(serviceAccount, desiredServiceAccount)) {
+            if(!Objects.equals(serviceAccount, desiredServiceAccount)) {
                 client.serviceAccounts().inNamespace(sdNS).replace(desiredServiceAccount);
                 LOGGER.debug("{} service account was updated", BINDING_SERVICE_SA);
             }
