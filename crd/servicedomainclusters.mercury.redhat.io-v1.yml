@@ -18,6 +18,9 @@ spec:
       openAPIV3Schema:
         properties:
           spec:
+            properties:
+              bindingServiceImage:
+                type: string
             type: object
           status:
             properties:

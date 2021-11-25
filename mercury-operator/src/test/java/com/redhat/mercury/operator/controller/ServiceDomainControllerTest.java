@@ -2,9 +2,7 @@ package com.redhat.mercury.operator.controller;
 
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import io.fabric8.kubernetes.api.model.OwnerReference;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
@@ -61,9 +59,9 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
     public void afterEach(){
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final ServiceDomain sd = client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
-        if(sd != null){
-            client.resources(ServiceDomain.class).withName(SERVICE_DOMAIN_NAME).delete();
+        final KubernetesResourceList<ServiceDomain> sdList = client.resources(ServiceDomain.class).list();
+        if(sdList != null && sdList.getItems() != null && !sdList.getItems().isEmpty()){
+            sdList.getItems().forEach(sd -> client.resources(Service.class).withName(sd.getMetadata().getName()).delete());
         }
 
         ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get();
@@ -78,7 +76,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
 
         Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + "-binding").get();
         if(service != null){
-            client.resources(Service.class).withName(SERVICE_DOMAIN_NAME + "-binding").delete();
+            client.resources(Service.class).withName(SERVICE_DOMAIN_NAME).delete();
         }
 
         KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + "-topic").get();
@@ -128,8 +126,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + "-binding").get() != null);
-        final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + "-binding").get();
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
+        final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
         assertNotNull(service);
 
         ownerReferences = service.getMetadata().getOwnerReferences();
@@ -164,8 +162,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         Deployment sdDeployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
         assertNotNull(sdDeployment);
 
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + "-binding").get() != null);
-        Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + "-binding").get();
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
+        Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
         assertNotNull(service);
 
         await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + "-topic").get() != null);
@@ -184,8 +182,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         sdDeployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + 2).get();
         assertNotNull(sdDeployment);
 
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + 2 + "-binding").get() != null);
-        service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + 2 + "-binding").get();
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + 2).get() != null);
+        service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME + 2).get();
         assertNotNull(service);
 
         await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get() != null);

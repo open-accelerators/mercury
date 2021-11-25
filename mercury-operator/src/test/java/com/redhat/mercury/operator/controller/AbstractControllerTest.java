@@ -65,7 +65,7 @@ public abstract class AbstractControllerTest {
         sd.setSpec(new ServiceDomainSpecBuilder()
                         .withBusinessImage("testImage")
                         .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
-                        .withBindingServiceImage("testBindingServiceImage")
+//                        .withBindingServiceImage("testBindingServiceImage")
                         .build());
         return sd;
     }

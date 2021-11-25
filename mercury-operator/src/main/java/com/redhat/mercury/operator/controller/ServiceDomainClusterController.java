@@ -1,34 +1,14 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.redhat.mercury.operator.KafkaServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
-
+import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
-import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
-import io.fabric8.kubernetes.api.model.rbac.Role;
-import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
-import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
-import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
-import io.fabric8.kubernetes.api.model.rbac.RoleRef;
-import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
-import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
+import io.fabric8.kubernetes.api.model.rbac.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.javaoperatorsdk.operator.api.Context;
-import io.javaoperatorsdk.operator.api.Controller;
-import io.javaoperatorsdk.operator.api.DeleteControl;
-import io.javaoperatorsdk.operator.api.ResourceController;
-import io.javaoperatorsdk.operator.api.UpdateControl;
+import io.javaoperatorsdk.operator.api.*;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
@@ -39,9 +19,17 @@ import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.storage.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.redhat.mercury.operator.KafkaServiceEventSource.MANAGED_BY_LABEL;
 import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
+import static com.redhat.mercury.operator.controller.ServiceDomainController.KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY;
 
 @Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
@@ -77,11 +65,16 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     public UpdateControl<ServiceDomainCluster> createOrUpdateResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
         ServiceDomainClusterStatus status = new ServiceDomainClusterStatus();
         try {
-            updateStatusWithKafkaBrokerUrl(sdc, context, status);
-
             createOrUpdateRole(sdc);
             createOrUpdateRoleBinding(sdc);
             createOrUpdateKafkaBroker(sdc);
+            updateStatusWithKafkaBrokerUrl(sdc, status);
+
+            if(isKafkaBrokerUrlInCluster(sdc)) {
+                String kafkaBrokerUr = sdc.getStatus().getKafkaBroker();
+                createOrUpdateConfigMap(sdc.getMetadata().getName(), kafkaBrokerUr);
+            }
+
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
             return UpdateControl.noUpdate();
@@ -90,7 +83,33 @@ public class ServiceDomainClusterController implements ResourceController<Servic
         return UpdateControl.updateStatusSubResource(sdc);
     }
 
-    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context, ServiceDomainClusterStatus status) {
+    private boolean isKafkaBrokerUrlInCluster(ServiceDomainCluster serviceDomainCluster) {
+        return serviceDomainCluster != null && serviceDomainCluster.getStatus() != null && serviceDomainCluster.getStatus().getKafkaBroker() != null;
+    }
+
+    private void createOrUpdateConfigMap(String sdcName, String kafkaBrokerUr) {
+        final ConfigMap configMap = client.configMaps().withName(sdcName).get();
+
+        final ConfigMap desiredConfigMap = new ConfigMapBuilder()
+                .withApiVersion("v1")
+                .withNewMetadata()
+                .withName(sdcName)
+                .endMetadata()
+                .withData(Map.of(KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY, kafkaBrokerUr))
+                .build();
+
+        if(configMap == null){
+            client.configMaps().create(desiredConfigMap);
+            LOGGER.debug("{} config map was missing, creating it", sdcName);
+        }else{
+            if(!Objects.equals(configMap.getData(), desiredConfigMap.getData())) {
+                client.configMaps().replace(desiredConfigMap);
+                LOGGER.debug("{} config map was updated", desiredConfigMap);
+            }
+        }
+    }
+
+    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, ServiceDomainClusterStatus status) {
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdc.getMetadata().getName()).get();
 
         if (isaKafkaBrokerReady(kafka)) {

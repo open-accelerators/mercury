@@ -1,6 +1,8 @@
 package com.redhat.mercury.operator.controller;
 
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.*;
+import static com.redhat.mercury.operator.controller.ServiceDomainController.KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
@@ -32,14 +35,9 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
     public void afterEach(){
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if(sdc != null){
-            client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
-        }
-
-        sdc = client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME +2).get();
-        if(sdc != null){
-            client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME + 2).delete();
+        final KubernetesResourceList<ServiceDomainCluster> sdcList = client.resources(ServiceDomainCluster.class).list();
+        if(sdcList != null && sdcList.getItems() != null && !sdcList.getItems().isEmpty()){
+            sdcList.getItems().forEach(sdc -> client.resources(ServiceDomainCluster.class).withName(sdc.getMetadata().getName()).delete());
         }
 
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
@@ -55,6 +53,11 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
         final RoleBinding roleBinding = client.resources(RoleBinding.class).withName(ROLE_BINDING).get();
         if(roleBinding != null){
             client.resources(RoleBinding.class).withName(ROLE_BINDING).delete();
+        }
+
+        final ConfigMap configMap = client.configMaps().withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        if(configMap != null){
+            client.configMaps().withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
         }
     }
 
@@ -113,6 +116,13 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
         await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
         final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker();
         assertNotNull(kafkaBrokerUrl);
+
+        await().atMost(2, MINUTES).until(() -> client.configMaps().withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
+        final ConfigMap configMap = client.configMaps().withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        assertNotNull(configMap);
+        assertNotNull(configMap.getData());
+        final String configMapValue = configMap.getData().get(KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY);
+        assertNotNull(configMapValue);
     }
 
     @Test

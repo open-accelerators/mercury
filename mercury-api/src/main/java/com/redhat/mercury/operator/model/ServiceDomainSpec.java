@@ -10,6 +10,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize
@@ -20,8 +21,14 @@ import java.io.Serializable;
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class ServiceDomainSpec implements Serializable {
+    public enum Type {
+        CustomerOffer,
+        CustomerCreditRating,
+        PartyRotingProfile
+    }
+
     private String businessImage;
     private String serviceDomainCluster;
-    private String bindingServiceImage;
-
+    private Type type;
+    private List<Binding> binding;
 }
