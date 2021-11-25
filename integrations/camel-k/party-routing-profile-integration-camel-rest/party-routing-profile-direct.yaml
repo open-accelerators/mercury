@@ -1,0 +1,23 @@
+# camel-k: language=yaml
+# camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-integration-camel:1.0.0-SNAPSHOT
+
+# Missing openapi, defining rest route manually
+- rest:
+    path: /party-routing-profile/{sdReferenceId}/party-state/{crReferenceId}/status/{bqReferenceId}
+    get:
+      - to: direct:retrievePartyStateStatus
+- from:
+    uri: direct:retrievePartyStateStatus
+    steps:
+      - bean:
+          bean-type: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileTransformer
+          method: retrievePartyStateStatus
+      - to: direct:query
+
+## TODO: Refactor into grpc.yaml file
+- from:
+    uri: direct:printQuery
+    steps:
+    - bean:
+        ref: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileTransformer
+        method: toString

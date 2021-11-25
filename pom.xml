@@ -37,6 +37,13 @@
         <module>mercury-operator</module>
         <module>integrations</module>
     </modules>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub open-accelerators Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/open-accelerators/mercury</url>
+        </repository>
+    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
