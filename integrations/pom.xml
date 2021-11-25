@@ -19,6 +19,5 @@
     <modules>
         <module>mercury-camel</module>
         <module>service-domain-integration</module>
-        <module>service-domain-integration-maven-archetype</module>
     </modules>
 </project>
