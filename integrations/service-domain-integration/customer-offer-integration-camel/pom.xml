@@ -26,5 +26,9 @@
             <artifactId>mercury-camel</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
     </dependencies>
 </project>

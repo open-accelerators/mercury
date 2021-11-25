@@ -5,7 +5,7 @@
     uri: direct:printQuery
     steps:
     - bean:
-        ref: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
+        ref: com.redhat.mercury.customeroffer.camel.CustomerOfferResultPrinter
         method: toString
 - from:
     uri: direct:initiateCustomerOfferProcedure

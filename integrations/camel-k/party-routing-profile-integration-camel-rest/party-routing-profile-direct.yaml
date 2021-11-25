@@ -19,5 +19,5 @@
     uri: direct:printQuery
     steps:
     - bean:
-        ref: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileTransformer
+        ref: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileResultPrinter
         method: toString
