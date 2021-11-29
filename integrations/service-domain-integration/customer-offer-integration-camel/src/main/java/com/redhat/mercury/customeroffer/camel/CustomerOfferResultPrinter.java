@@ -7,6 +7,7 @@ import com.redhat.mercury.camel.CloudEventPrinter;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
+//TODO: Try to use CloudEventPrinter only
 @ApplicationScoped
 @RegisterForReflection
 public class CustomerOfferResultPrinter extends CloudEventPrinter {

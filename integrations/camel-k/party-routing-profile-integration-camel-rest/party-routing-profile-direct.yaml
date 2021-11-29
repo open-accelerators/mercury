@@ -15,9 +15,9 @@
       - to: direct:query
 
 ## TODO: Refactor into grpc.yaml file
-- from:
-    uri: direct:printQuery
-    steps:
-    - bean:
-        ref: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileResultPrinter
-        method: toString
+# - from:
+#     uri: direct:printQuery
+#     steps:
+#     - bean:
+#         ref: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileResultPrinter
+#         method: toString

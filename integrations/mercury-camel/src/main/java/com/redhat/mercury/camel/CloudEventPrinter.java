@@ -18,7 +18,7 @@ public class CloudEventPrinter {
             return null;
         }
         return JsonFormat.printer()
-                .usingTypeRegistry(typeRegistry)
+                // .usingTypeRegistry(typeRegistry)
                 .print(event.getProtoData());
     }
 }
