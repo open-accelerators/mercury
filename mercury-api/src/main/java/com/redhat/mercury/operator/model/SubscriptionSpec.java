@@ -1,4 +1,4 @@
-package com.redhat.mercury.api.model;
+package com.redhat.mercury.operator.model;
 
 import java.util.Collection;
 
