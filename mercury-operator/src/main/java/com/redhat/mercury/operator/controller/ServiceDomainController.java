@@ -9,7 +9,6 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
-import io.fabric8.openshift.api.model.*;
 import io.javaoperatorsdk.operator.api.Context;
 import io.javaoperatorsdk.operator.api.*;
 import io.strimzi.api.kafka.model.*;
@@ -67,7 +66,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             createOrUpdateServiceAccount(sd);
             createOrUpdateDeployment(sd);
             createOrUpdateService(sd);
-            createOrUpdateRoute(sd);
             if(ServiceDomainSpec.ExposeType.Http == sd.getSpec().getExpose()) {
                 createOrUpdateCamelKIntegration(sd);
             }
@@ -182,48 +180,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         yamlAsString = yamlAsString.replace("mvn: ", "mvn:");
 
         return yamlAsString;
-    }
-
-    private void createOrUpdateRoute(ServiceDomain sd) {
-        final String sdName = sd.getMetadata().getName();
-        Route route = client.resources(Route.class).withName(sdName).get();
-
-        final Route desiredRoute = new RouteBuilder()
-                                        .withNewMetadata()
-                                        .withName(sdName)
-                                        .withNamespace(client.getNamespace())
-                                        .withLabels(Map.of("app", "bian-" + sdName,
-                                                           "com.redhat.mercury/service-domain" , sdName,
-                                                           "com.redhat.mercury/service-domain-binding", INTERNAL,
-                                                           "com.redhat.mercury/service-domain-cluster", sd.getSpec().getServiceDomainCluster()))
-                                        .endMetadata()
-                                        .withSpec(new RouteSpecBuilder().withTo(new RouteTargetReferenceBuilder()
-                                                                                        .withKind("Service")
-                                                                                        .withName(sdName + "-binding")
-                                                                                        .build())
-                                                .withPort(new RoutePortBuilder()
-                                                                .withNewTargetPort()
-                                                                .withStrVal(INTERNAL)
-                                                                .endTargetPort()
-                                                                .build())
-                                                .build())
-                                        .build();
-        desiredRoute.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid())
-                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
-                .build()));
-
-        if(route == null){
-            client.resources(Route.class).create(desiredRoute);
-            LOGGER.debug("{} route was missing, creating it", sdName);
-        }else{
-            if(!Objects.equals(route.getSpec(), desiredRoute.getSpec())) {
-                client.resources(Route.class).replace(desiredRoute);
-                LOGGER.debug("{} route was updated", desiredRoute);
-            }
-        }
     }
 
     private String createKafkaUser(ServiceDomain sd, String kafkaTopic) {
