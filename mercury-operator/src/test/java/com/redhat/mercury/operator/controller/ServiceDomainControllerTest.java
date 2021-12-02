@@ -15,9 +15,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
-import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.*;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.ROLE_BINDING;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.SERVICE_DOMAIN_ROLE;
 import static com.redhat.mercury.operator.controller.ServiceDomainController.BINDING_SERVICE_SA;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -29,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ServiceDomainControllerTest extends AbstractControllerTest{
 
     @BeforeEach
-    public void beforeEach(){
+    public void beforeEach() throws IOException {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         ServiceDomainCluster cluster = createServiceDomainCluster();
@@ -53,6 +56,16 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         await().atMost(2, MINUTES).until(() -> client.rbac().roleBindings().withName(ROLE_BINDING).get() != null);
         RoleBinding roleBinding = client.rbac().roleBindings().withName(ROLE_BINDING).get();
         assertNotNull(roleBinding);
+
+        try(final InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("sdConfigMap.yaml")) {
+            if(inputStream != null) {
+                final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
+                client.configMaps().load(inputStream).create();
+                await().atMost(2, MINUTES).until(() -> client.configMaps().withName(sdConfigMapName).get() != null);
+                final ConfigMap configMap = client.configMaps().withName(sdConfigMapName).get();
+                assertNotNull(configMap);
+            }
+        }
     }
 
     @AfterEach
@@ -82,6 +95,12 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + "-topic").get();
         if(kafkaTopic != null){
             client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + "-topic").delete();
+        }
+
+        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
+        final ConfigMap configMap = client.configMaps().withName(sdConfigMapName).get();
+        if(configMap != null){
+            client.configMaps().delete(configMap);
         }
     }
 

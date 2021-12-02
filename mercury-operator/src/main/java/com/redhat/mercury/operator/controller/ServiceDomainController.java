@@ -1,23 +1,27 @@
 package com.redhat.mercury.operator.controller;
 
 import com.redhat.mercury.operator.model.ServiceDomain;
+import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.openshift.api.model.*;
 import io.javaoperatorsdk.operator.api.Context;
 import io.javaoperatorsdk.operator.api.*;
 import io.strimzi.api.kafka.model.*;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
@@ -38,6 +42,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final int GRPC_PORT = 9000;
     public static final String KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY = "kafka.bootstrap.servers";
     public static final String MERCURY_BINDING_LABEL = "mercury-binding";
+    private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
+    private static final String INTEGRATION_SUFFIX = "-camelk-rest";
+    public static final String CONFIG_MAP_OPENAPI_JSON_KEY = "openapi.json";
+    public static final String CONFIG_MAP_GRPC_KEY = "grpc.yaml";
+    public static final String CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY = "directs.yaml";
 
     @Inject
     KubernetesClient client;
@@ -55,18 +64,17 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdName = sd.getMetadata().getName();
 
         try {
-            final ConfigMap configMap = client.configMaps().withName(sd.getSpec().getServiceDomainCluster()).get();
-
-            if(configMap != null){
-                createOrUpdateServiceAccount(sd);
-                createOrUpdateDeployment(sd);
-                createOrUpdateService(sd);
-                createOrUpdateRoute(sd);
-                String kafkaTopic = createKafkaTopic(sd);
-                String kafkaUser = createKafkaUser(sd, kafkaTopic);
-                status.setKafkaTopic(kafkaTopic);
-                status.setKafkaUser(kafkaUser);
+            createOrUpdateServiceAccount(sd);
+            createOrUpdateDeployment(sd);
+            createOrUpdateService(sd);
+            createOrUpdateRoute(sd);
+            if(ServiceDomainSpec.ExposeType.Http == sd.getSpec().getExpose()) {
+                createOrUpdateCamelKIntegration(sd);
             }
+            String kafkaTopic = createKafkaTopic(sd);
+            String kafkaUser = createKafkaUser(sd, kafkaTopic);
+            status.setKafkaTopic(kafkaTopic);
+            status.setKafkaUser(kafkaUser);
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
             return UpdateControl.noUpdate();
@@ -74,6 +82,106 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         sd.setStatus(status);
         return UpdateControl.updateStatusSubResource(sd);
+    }
+
+    private void createOrUpdateCamelKIntegration(ServiceDomain sd) {
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        final String sdConfigMapName = "integration-" + sd.getSpec().getType().getTypeAsString() + "-http";
+
+        final ConfigMap configMap = client.configMaps().withName(sdConfigMapName).get();
+
+        validateSdConfigMap(sd, sdConfigMapName, configMap);
+
+        String sdCamelRouteYaml = configMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
+        String grpcYaml = configMap.getData().get(CONFIG_MAP_GRPC_KEY);
+        String sdOpenAPIYaml = configMap.getData().get(CONFIG_MAP_OPENAPI_JSON_KEY);
+
+        String yamlString = mergeCamelYamls(sd, integrationName, sdOpenAPIYaml, sdCamelRouteYaml, grpcYaml);
+
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
+
+        if(integration == null) {
+            final InputStream inputStream = IOUtils.toInputStream(yamlString, StandardCharsets.UTF_8);
+            client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).load(inputStream).create();
+            LOGGER.debug("{} integration was missing, creating it", integrationName);
+        } else {
+            if(!Objects.equals(integration.getAdditionalProperties().get("spec"), yamlString)) {
+                client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).edit(object -> {
+                    object.getAdditionalProperties().put("spec", yamlString);
+                    return object;
+                });
+                LOGGER.debug("{} integration was updated", integrationName);
+            }
+        }
+    }
+
+    private boolean validateSdConfigMap(ServiceDomain sd, String sdConfigMapName, ConfigMap configMap){
+        final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
+        final String sdTypeAsString = sdType.getTypeAsString();
+
+        if(configMap == null){
+            LOGGER.error("{} config map is missing ", sdConfigMapName);
+            return false;
+        }
+
+        String sdCamelRouteYaml = configMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
+        String grpcYaml = configMap.getData().get(CONFIG_MAP_GRPC_KEY);
+        if(sdCamelRouteYaml == null || grpcYaml == null) {
+            if(sdCamelRouteYaml == null) {
+                LOGGER.error("{} config map value is missing", sdTypeAsString + "-direct.yaml");
+            }
+
+            if(grpcYaml == null) {
+                LOGGER.error("{} config map value is missing", "grpc.yaml");
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdOpenAPIYaml, String sdCamelRouteYaml, String grpcYaml){
+        final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
+        final String sdTypeAsString = sdType.getTypeAsString();
+
+        sdCamelRouteYaml = sdCamelRouteYaml.replaceAll(COMMENT_LINE_REGEX, "").trim();
+        grpcYaml = grpcYaml.replaceAll(COMMENT_LINE_REGEX, "").trim();
+
+        Yaml yaml = new Yaml();
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("apiVersion", "camel.apache.org/v1");
+        data.put("kind", "Integration");
+        data.put("metadata", Map.of("name", integrationName,
+                "namespace", client.getNamespace(),
+                "ownerReferences", List.of(new TreeMap<>(Map.of("apiVersion", SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION,
+                                                                    "kind", SERVICE_DOMAIN_OWNER_REFERENCES_KIND,
+                                                                    "name", sd.getMetadata().getName(),
+                                                                    "uid", sd.getMetadata().getUid())))));
+        final Map<String, Object> specMap = new TreeMap<>(Map.of("configuration", List.of(new TreeMap<>(Map.of("type", "env", "value", "MERCURY_BINDING_SERVICE_HOST=" + sdTypeAsString)),
+                                                                                             new TreeMap<>(Map.of("type", "env", "value", "MERCURY_BINDING_SERVICE_PORT=" + GRPC_PORT))),
+                "dependencies", List.of(Map.of("mvn", "com.redhat.mercury:" + sdTypeAsString + "-integration-camel:1.0.0-SNAPSHOT"),
+                        Map.of("mvn", "com.redhat.mercury:mercury-camel:1.0.0-SNAPSHOT")),
+                "flows", yaml.load(sdCamelRouteYaml + "\n" + grpcYaml)));
+
+        if(sdOpenAPIYaml != null){
+            specMap.put("resources", List.of(new TreeMap<>(Map.of("content", sdOpenAPIYaml, "name", sd.getSpec().getType().name() + ".json", "type", "openapi"))));
+        }
+
+        data.put("spec", specMap);
+
+        String yamlAsString = yaml.dumpAsMap(data);
+        //Workaround since snakeyaml is putting a space after : and in the spec.dependencies section that is invalid
+        yamlAsString = yamlAsString.replace("mvn: ", "mvn:");
+
+        return yamlAsString;
     }
 
     private void createOrUpdateRoute(ServiceDomain sd) {

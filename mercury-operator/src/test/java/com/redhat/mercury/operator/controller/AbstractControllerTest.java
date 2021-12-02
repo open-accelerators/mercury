@@ -1,12 +1,9 @@
 package com.redhat.mercury.operator.controller;
 
-import com.redhat.mercury.operator.model.ServiceDomain;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import com.redhat.mercury.operator.model.*;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
-import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
-import com.redhat.mercury.operator.model.ServiceDomainSpecBuilder;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
@@ -21,7 +18,7 @@ import static com.redhat.mercury.operator.controller.ServiceDomainClusterControl
 public abstract class AbstractControllerTest {
 
     protected static final String SERVICE_DOMAIN_CLUSTER_NAME = "service-domain-cluster";
-    protected static final String SERVICE_DOMAIN_NAME = "service-domain";
+    protected static final String SERVICE_DOMAIN_NAME = "customer-offer";
 
     @KubernetesTestServer
     protected KubernetesServer mockServer;
@@ -65,7 +62,8 @@ public abstract class AbstractControllerTest {
         sd.setSpec(new ServiceDomainSpecBuilder()
                         .withBusinessImage("testImage")
                         .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
-//                        .withBindingServiceImage("testBindingServiceImage")
+                        .withType(ServiceDomainSpec.Type.CustomerOffer)
+                        .withExpose(ServiceDomainSpec.ExposeType.Http)
                         .build());
         return sd;
     }

@@ -19,6 +19,10 @@ spec:
         properties:
           spec:
             properties:
+              expose:
+                enum:
+                - Http
+                type: string
               binding:
                 items:
                   properties:
@@ -107,9 +111,10 @@ spec:
                 type: string
               type:
                 enum:
+                - PartyRoutingProfile
+                - typeAsString
                 - CustomerOffer
                 - CustomerCreditRating
-                - PartyRotingProfile
                 type: string
             type: object
           status:
