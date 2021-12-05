@@ -53,18 +53,32 @@ public abstract class AbstractControllerTest {
     }
 
     protected ServiceDomain createServiceDomain() {
-        return createServiceDomain(SERVICE_DOMAIN_NAME);
+        return createServiceDomain(SERVICE_DOMAIN_NAME, true);
     }
 
     protected ServiceDomain createServiceDomain(String sdName) {
+        return createServiceDomain(sdName, true);
+    }
+
+    protected ServiceDomain createServiceDomain(String sdName, boolean withHttpExpose) {
         final ServiceDomain sd = new ServiceDomain();
         sd.setMetadata(new ObjectMetaBuilder().withName(sdName).withNamespace(mockServer.getClient().getNamespace()).build());
-        sd.setSpec(new ServiceDomainSpecBuilder()
-                        .withBusinessImage("testImage")
-                        .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
-                        .withType(ServiceDomainSpec.Type.CustomerOffer)
-                        .withExpose(ServiceDomainSpec.ExposeType.Http)
-                        .build());
+
+        if(withHttpExpose) {
+            sd.setSpec(new ServiceDomainSpecBuilder()
+                    .withBusinessImage("testImage")
+                    .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
+                    .withType(ServiceDomainSpec.Type.CustomerOffer)
+                    .withExpose(ServiceDomainSpec.ExposeType.Http)
+                    .build());
+        } else {
+            sd.setSpec(new ServiceDomainSpecBuilder()
+                    .withBusinessImage("testImage")
+                    .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
+                    .withType(ServiceDomainSpec.Type.CustomerOffer)
+                    .build());
+        }
+
         return sd;
     }
 

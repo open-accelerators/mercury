@@ -42,7 +42,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     public static final String KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY = "kafka.bootstrap.servers";
     public static final String MERCURY_BINDING_LABEL = "mercury-binding";
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
-    private static final String INTEGRATION_SUFFIX = "-camelk-rest";
+    public static final String INTEGRATION_SUFFIX = "-camelk-rest";
     public static final String CONFIG_MAP_OPENAPI_JSON_KEY = "openapi.json";
     public static final String CONFIG_MAP_GRPC_KEY = "grpc.yaml";
     public static final String CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY = "directs.yaml";
