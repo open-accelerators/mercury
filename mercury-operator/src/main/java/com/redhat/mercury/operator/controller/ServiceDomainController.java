@@ -75,6 +75,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             createOrUpdateService(sd);
             if(ServiceDomainSpec.ExposeType.Http == sd.getSpec().getExpose()) {
                 createOrUpdateCamelKIntegration(sd);
+            } else {
+                deleteCamelIntegration(sd);
             }
             String kafkaTopic = createKafkaTopic(sd);
             String kafkaUser = createKafkaUser(sd, kafkaTopic);
@@ -89,6 +91,21 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         return UpdateControl.updateStatusSubResource(sd);
     }
 
+    private void deleteCamelIntegration(ServiceDomain sd){
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
+        if(integration != null){
+            client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).delete();
+        }
+    }
     private void createOrUpdateCamelKIntegration(ServiceDomain sd) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
         final String sdConfigMapName = "integration-" + sd.getSpec().getType().getTypeAsString() + "-http";
