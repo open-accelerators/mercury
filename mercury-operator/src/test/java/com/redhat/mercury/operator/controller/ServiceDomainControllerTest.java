@@ -206,6 +206,126 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
     }
 
     @Test
+    public void addServiceDomainWithNoClusterTest(){
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
+
+        ServiceDomain sd = createServiceDomain();
+
+        sd = client.resources(ServiceDomain.class).createOrReplace(sd);
+
+        //Test service account data
+        await().atMost(2, MINUTES).until(() -> client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get() != null);
+        final ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get();
+        assertNotNull(serviceAccount);
+
+        List<OwnerReference> ownerReferences = serviceAccount.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        OwnerReference ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        //Test deployment data
+        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
+        final Deployment deployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
+        assertNotNull(deployment);
+
+        ownerReferences = deployment.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        //Test Service data
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
+        final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
+        assertNotNull(service);
+
+        ownerReferences = service.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        //Test Integration data
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get() != null);
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
+        assertNotNull(integration);
+
+        ownerReferences = service.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+    }
+
+    @Test
+    public void addServiceDomainWithNoClusterConfigMapTest(){
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        client.configMaps().withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
+        await().atMost(2, MINUTES).until(() -> client.configMaps().withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
+
+        ServiceDomain sd = createServiceDomain();
+
+        sd = client.resources(ServiceDomain.class).createOrReplace(sd);
+
+        //Test service account data
+        final ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get();
+        assertNull(serviceAccount);
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
+        assertNull(deployment);
+
+        //Test Service data
+        final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
+        assertNull(service);
+
+        //Test Integration data
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
+        assertNull(integration);
+    }
+
+    @Test
     public void addServiceDomainWithoutExposeHttpTest(){
         ServiceDomain sd = createServiceDomain(SERVICE_DOMAIN_NAME, false);
 

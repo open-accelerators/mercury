@@ -61,6 +61,13 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     public UpdateControl<ServiceDomain> createOrUpdateResource(ServiceDomain sd, Context<ServiceDomain> context) {
         ServiceDomainStatus status = new ServiceDomainStatus();
         String sdName = sd.getMetadata().getName();
+        final String sdcName = sd.getSpec().getServiceDomainCluster();
+
+        final ConfigMap configMap = client.configMaps().withName(sdcName).get();
+        if(configMap == null){
+            LOGGER.error("{} service domain cluster configMap not found", sdcName);
+            return UpdateControl.noUpdate();
+        }
 
         try {
             createOrUpdateServiceAccount(sd);
