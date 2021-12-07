@@ -1,6 +1,5 @@
 package com.redhat.mercury.operator;
 
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;

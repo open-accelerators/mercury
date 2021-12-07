@@ -1,6 +1,11 @@
 package com.redhat.mercury.operator.controller;
 
-import com.redhat.mercury.operator.model.*;
+import com.redhat.mercury.operator.model.ServiceDomain;
+import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
+import com.redhat.mercury.operator.model.ServiceDomainClusterStatusBuilder;
+import com.redhat.mercury.operator.model.ServiceDomainSpec;
+import com.redhat.mercury.operator.model.ServiceDomainSpecBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
@@ -13,7 +18,7 @@ import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import javax.inject.Inject;
 import java.util.List;
 
-import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.*;
+import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
 
 public abstract class AbstractControllerTest {
 
@@ -45,6 +50,7 @@ public abstract class AbstractControllerTest {
         final ServiceDomainCluster cluster = new ServiceDomainCluster();
         cluster.setMetadata(new ObjectMetaBuilder().withName(sdcName).withNamespace(mockServer.getClient().getNamespace()).build());
         cluster.setSpec(new ServiceDomainClusterSpecBuilder().build());
+        cluster.setStatus(new ServiceDomainClusterStatusBuilder().withKafkaBroker("111.111.111.111:9200").build());
         return cluster;
     }
 

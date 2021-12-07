@@ -6,9 +6,21 @@ import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.rbac.*;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.Role;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
+import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.RoleRef;
+import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
+import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.javaoperatorsdk.operator.api.*;
+import io.javaoperatorsdk.operator.api.Context;
+import io.javaoperatorsdk.operator.api.Controller;
+import io.javaoperatorsdk.operator.api.DeleteControl;
+import io.javaoperatorsdk.operator.api.ResourceController;
+import io.javaoperatorsdk.operator.api.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
@@ -154,7 +166,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             Role role = client.rbac().roles().createOrReplace(expected);
             LOGGER.debug("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
         } else {
-            if (!Objects.equals(current, expected)) {
+            if (!Objects.equals(current, expected) || !Objects.equals(current.getMetadata().getOwnerReferences(), expected.getMetadata().getOwnerReferences())) {
                 client.rbac().roles().createOrReplace(expected);
                 LOGGER.debug("{} Role was updated", SERVICE_DOMAIN_ROLE);
             }
@@ -187,7 +199,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.rbac().roleBindings().create(desiredRoleBinding);
             LOGGER.debug("{} role binding was missing, creating it", ROLE_BINDING);
         } else {
-            if (!Objects.equals(roleBinding, desiredRoleBinding)) {
+            if (!Objects.equals(roleBinding, desiredRoleBinding) || !Objects.equals(roleBinding.getMetadata().getOwnerReferences(), desiredRoleBinding.getMetadata().getOwnerReferences())) {
                 client.rbac().roleBindings().replace(desiredRoleBinding);
                 LOGGER.debug("{} role binding was updated", ROLE_BINDING);
             }
@@ -202,11 +214,11 @@ public class ServiceDomainClusterController implements ResourceController<Servic
         final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
 
         if (currentKafka == null) {
-            client.resources(Kafka.class).create(desiredKafka);
+            client.resources(Kafka.class).inNamespace(client.getNamespace()).create(desiredKafka);
             LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
         } else {
-            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
-                client.resources(Kafka.class).replace(desiredKafka);
+            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec()) || !Objects.equals(currentKafka.getMetadata().getOwnerReferences(), desiredKafka.getMetadata().getOwnerReferences())) {
+                client.resources(Kafka.class).inNamespace(client.getNamespace()).replace(desiredKafka);
                 LOGGER.debug("{} kafka broker was updated", sdcName);
             }
         }
