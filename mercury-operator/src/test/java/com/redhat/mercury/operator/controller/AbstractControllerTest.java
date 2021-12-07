@@ -1,11 +1,14 @@
 package com.redhat.mercury.operator.controller;
 
+import javax.inject.Inject;
+
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatusBuilder;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainSpecBuilder;
+
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
@@ -15,7 +18,6 @@ import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 
-import javax.inject.Inject;
 import java.util.List;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
@@ -75,7 +77,7 @@ public abstract class AbstractControllerTest {
                     .withBusinessImage("testImage")
                     .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
                     .withType(ServiceDomainSpec.Type.CustomerOffer)
-                    .withExpose(ServiceDomainSpec.ExposeType.Http)
+                    .withExpose(ServiceDomainSpec.ExposeType.http)
                     .build());
         } else {
             sd.setSpec(new ServiceDomainSpecBuilder()

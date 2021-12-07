@@ -1,6 +1,10 @@
 package com.redhat.mercury.operator.controller;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
+
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.OwnerReference;
@@ -10,9 +14,6 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 import io.strimzi.api.kafka.model.Kafka;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -36,10 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 @WithKubernetesTestServer
 public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
-
-    @BeforeEach
-    public void beforeEach(){
-    }
 
     @AfterEach
     public void afterEach(){

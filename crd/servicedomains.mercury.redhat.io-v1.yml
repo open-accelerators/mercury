@@ -21,7 +21,7 @@ spec:
             properties:
               expose:
                 enum:
-                - Http
+                - http
                 type: string
               binding:
                 items:
@@ -112,7 +112,6 @@ spec:
               type:
                 enum:
                 - PartyRoutingProfile
-                - typeAsString
                 - CustomerOffer
                 - CustomerCreditRating
                 type: string

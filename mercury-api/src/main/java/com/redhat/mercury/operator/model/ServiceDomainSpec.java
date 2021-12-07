@@ -22,23 +22,13 @@ import java.util.List;
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class ServiceDomainSpec implements Serializable {
     public enum Type {
-        CustomerOffer("customer-offer"),
-        CustomerCreditRating("customer-credit-rating"),
-        PartyRoutingProfile("party-routing-profile");
-
-        private String typeAsString;
-
-        Type(String typeAsString){
-            this.typeAsString = typeAsString;
-        }
-
-        public String getTypeAsString(){
-            return typeAsString;
-        }
+        CustomerOffer(),
+        CustomerCreditRating(),
+        PartyRoutingProfile()
     }
 
     public enum ExposeType{
-        Http
+        http
     }
 
     private String businessImage;

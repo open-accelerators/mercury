@@ -1,8 +1,17 @@
 package com.redhat.mercury.operator.controller;
 
+import javax.inject.Inject;
+
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
+
+import com.google.common.base.CaseFormat;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
+
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
@@ -38,12 +47,7 @@ import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserAuthorizationSimpleBuilder;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthenticationBuilder;
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
 
-import javax.inject.Inject;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -103,8 +107,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             createOrUpdateServiceAccount(sd);
             createOrUpdateDeployment(sd);
             createOrUpdateService(sd);
-            if(ServiceDomainSpec.ExposeType.Http == sd.getSpec().getExpose()) {
-                final String sdConfigMapName = "integration-" + sd.getSpec().getType().getTypeAsString() + "-http";
+            if(ServiceDomainSpec.ExposeType.http == sd.getSpec().getExpose()) {
+                final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN,sd.getSpec().getType().toString()) + "-http";
                 ConfigMap sdConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(sdConfigMapName).get();
 
                 final boolean validateSdConfigMap = validateSdConfigMap(sd, sdConfigMapName, sdConfigMap);
@@ -117,9 +121,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 deleteCamelIntegration(sd);
             }
             String kafkaTopic = createKafkaTopic(sd);
-//            String kafkaUser = createKafkaUser(sd, kafkaTopic);
             status.setKafkaTopic(kafkaTopic);
-//            status.setKafkaUser(kafkaUser);
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
             return UpdateControl.noUpdate();
@@ -178,7 +180,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
     private boolean validateSdConfigMap(ServiceDomain sd, String sdConfigMapName, ConfigMap configMap){
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-        final String sdTypeAsString = sdType.getTypeAsString();
+        final String sdTypeAsString = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sdType.toString());
 
         if(configMap == null){
             LOGGER.error("{} config map is missing ", sdConfigMapName);
@@ -204,7 +206,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
     private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdOpenAPIYaml, String sdCamelRouteYaml, String grpcYaml){
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-        final String sdTypeAsString = sdType.getTypeAsString();
+        final String sdTypeAsString = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sdType.toString());
 
         sdCamelRouteYaml = sdCamelRouteYaml.replaceAll(COMMENT_LINE_REGEX, "").trim();
         grpcYaml = grpcYaml.replaceAll(COMMENT_LINE_REGEX, "").trim();
