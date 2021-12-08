@@ -92,7 +92,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
-            return UpdateControl.noUpdate();
+            status.setError(e.getMessage());
         }
 
         return UpdateControl.updateStatusSubResource(sdc);
@@ -169,7 +169,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             Role role = client.rbac().roles().createOrReplace(expected);
             LOGGER.debug("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
         } else {
-            if (!Objects.equals(current, expected) || !Objects.equals(current.getMetadata().getOwnerReferences(), expected.getMetadata().getOwnerReferences())) {
+            if (!Objects.equals(current.getRules(), expected.getRules())) {
                 client.rbac().roles().createOrReplace(expected);
                 LOGGER.debug("{} Role was updated", SERVICE_DOMAIN_ROLE);
             }
@@ -202,7 +202,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.rbac().roleBindings().create(desiredRoleBinding);
             LOGGER.debug("{} role binding was missing, creating it", ROLE_BINDING);
         } else {
-            if (!Objects.equals(roleBinding, desiredRoleBinding) || !Objects.equals(roleBinding.getMetadata().getOwnerReferences(), desiredRoleBinding.getMetadata().getOwnerReferences())) {
+            if (!Objects.equals(roleBinding.getRoleRef(), desiredRoleBinding.getRoleRef()) || !Objects.equals(roleBinding.getSubjects(), desiredRoleBinding.getSubjects())) {
                 client.rbac().roleBindings().replace(desiredRoleBinding);
                 LOGGER.debug("{} role binding was updated", ROLE_BINDING);
             }
@@ -220,7 +220,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.resources(Kafka.class).inNamespace(client.getNamespace()).create(desiredKafka);
             LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
         } else {
-            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec()) || !Objects.equals(currentKafka.getMetadata().getOwnerReferences(), desiredKafka.getMetadata().getOwnerReferences())) {
+            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
                 client.resources(Kafka.class).inNamespace(client.getNamespace()).replace(desiredKafka);
                 LOGGER.debug("{} kafka broker was updated", sdcName);
             }

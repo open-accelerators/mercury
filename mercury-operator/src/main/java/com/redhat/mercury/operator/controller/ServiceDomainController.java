@@ -107,7 +107,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             createOrUpdateServiceAccount(sd);
             createOrUpdateDeployment(sd);
             createOrUpdateService(sd);
-            if(ServiceDomainSpec.ExposeType.http == sd.getSpec().getExpose()) {
+            if(sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN,sd.getSpec().getType().toString()) + "-http";
                 ConfigMap sdConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(sdConfigMapName).get();
 
@@ -116,22 +116,25 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                     return UpdateControl.noUpdate();
                 }
 
-                createOrUpdateCamelKIntegration(sd, sdConfigMap);
+                createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
+            } else if (sd.getSpec().getExpose() == null || !sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)){
+                deleteCamelHttpIntegration(sd);
             } else {
-                deleteCamelIntegration(sd);
+
             }
+
             String kafkaTopic = createKafkaTopic(sd);
             status.setKafkaTopic(kafkaTopic);
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
-            return UpdateControl.noUpdate();
+            status.setError(e.getMessage());
         }
 
         sd.setStatus(status);
         return UpdateControl.updateStatusSubResource(sd);
     }
 
-    private void deleteCamelIntegration(ServiceDomain sd){
+    private void deleteCamelHttpIntegration(ServiceDomain sd){
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
 
         ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
@@ -146,7 +149,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).delete();
         }
     }
-    private void createOrUpdateCamelKIntegration(ServiceDomain sd, ConfigMap configMap) {
+    private void createOrUpdateCamelKHttpIntegration(ServiceDomain sd, ConfigMap configMap) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
         String sdCamelRouteYaml = configMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
         String grpcYaml = configMap.getData().get(CONFIG_MAP_GRPC_KEY);

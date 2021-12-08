@@ -34,6 +34,6 @@ public class ServiceDomainSpec implements Serializable {
     private String businessImage;
     private String serviceDomainCluster;
     private Type type;
-    private ExposeType expose;
+    private List<ExposeType> expose;
     private List<Binding> binding;
 }

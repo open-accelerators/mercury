@@ -176,7 +176,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         OwnerReference ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -192,7 +191,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -208,7 +206,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -237,7 +234,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
     }
@@ -250,15 +246,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
 
         sd = client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).create(sd);
 
-//        final OwnerReference ownerReference = new OwnerReferenceBuilder().withUid(sd.getMetadata().getUid())
-//                                                                   .withName(sd.getMetadata().getName())
-//                                                                   .withKind(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-//                                                                   .withApiVersion(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
-//                                                                   .build();
-
         //Test service account data
-        await().atMost(2, MINUTES).until(() -> client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get() != null/*
-                                                        && client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get().getMetadata().getOwnerReferences().get(0).equals(ownerReference)*/);
+        await().atMost(2, MINUTES).until(() -> client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get() != null);
         final ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get();
         assertNotNull(serviceAccount);
 
@@ -269,13 +258,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         OwnerReference ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
         //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null/*
-                                                        && client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get().getMetadata().getOwnerReferences().get(0).equals(ownerReference)*/);
+        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
         final Deployment deployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
         assertNotNull(deployment);
 
@@ -286,13 +273,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null/*
-                                                        && client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get().getMetadata().getOwnerReferences().get(0).equals(ownerReference)*/);
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
         final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
         assertNotNull(service);
 
@@ -303,7 +288,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -321,8 +305,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
                 .withNamespaced(true)
                 .build();
 
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get() != null/*
-                                                        && client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get().getMetadata().getOwnerReferences().get(0).equals(ownerReference)*/);
+        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get() != null);
         GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
         assertNotNull(integration);
 
@@ -333,7 +316,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -368,7 +350,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         OwnerReference ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -384,7 +365,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -400,7 +380,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -424,7 +403,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
     }
@@ -485,7 +463,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         OwnerReference ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -501,7 +478,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -517,7 +493,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(sd.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 

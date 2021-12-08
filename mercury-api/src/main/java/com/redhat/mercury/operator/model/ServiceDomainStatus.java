@@ -20,4 +20,5 @@ import lombok.experimental.Accessors;
 public class ServiceDomainStatus {
     private String kafkaTopic;
     private String kafkaUser;
+    private String error;
 }

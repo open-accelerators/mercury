@@ -20,9 +20,11 @@ spec:
           spec:
             properties:
               expose:
-                enum:
-                - http
-                type: string
+                items:
+                  enum:
+                  - http
+                  type: string
+                type: array
               binding:
                 items:
                   properties:
@@ -121,6 +123,8 @@ spec:
               kafkaUser:
                 type: string
               kafkaTopic:
+                type: string
+              error:
                 type: string
             type: object
         type: object

@@ -97,7 +97,6 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
         OwnerReference ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(cluster.getMetadata().getName(), ownerReference.getName());
-        assertEquals(cluster.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainClusterController.SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainClusterController.SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
@@ -113,7 +112,6 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
         ownerReference = ownerReferences.get(0);
         assertNotNull(ownerReference);
         assertEquals(cluster.getMetadata().getName(), ownerReference.getName());
-        assertEquals(cluster.getMetadata().getUid(), ownerReference.getUid());
         assertEquals(ServiceDomainClusterController.SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainClusterController.SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
         assertEquals(ROLE_REF, roleBinding.getRoleRef().getName());
