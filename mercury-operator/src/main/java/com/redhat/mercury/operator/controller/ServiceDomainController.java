@@ -9,6 +9,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
 import com.redhat.mercury.operator.model.ServiceDomain;
+import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
 
@@ -16,7 +17,6 @@ import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
-import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
@@ -73,7 +73,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String DEPLOYMENT_CONTAINER_IMAGE_PULL_POLICY = "Always";
     private static final String GRPC_NAME = "grpc";
     private static final int GRPC_PORT = 9000;
-    public static final String KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY = "kafka.bootstrap.servers";
     public static final String MERCURY_BINDING_LABEL = "mercury-binding";
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     public static final String INTEGRATION_SUFFIX = "-camelk-rest";
@@ -97,15 +96,24 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdName = sd.getMetadata().getName();
         final String sdcName = sd.getSpec().getServiceDomainCluster();
 
-        ConfigMap sdcConfigMap = client.configMaps().withName(sdcName).get();
-        if(sdcConfigMap == null){
-            LOGGER.error("{} service domain cluster configMap not found", sdcName);
-            return UpdateControl.noUpdate();
+        ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).withName(sdcName).get();
+        if(sdc == null){
+            LOGGER.error("{} service domain cluster not found", sdcName);
+            status.setError(sdcName + " service domain cluster not found");
+            sd.setStatus(status);
+            return UpdateControl.updateStatusSubResource(sd);
+        }
+
+        if(sdc.getStatus() == null || sdc.getStatus().getKafkaBroker() == null){
+            LOGGER.error("kafka broker url not found");
+            status.setError("kafka broker url not found");
+            sd.setStatus(status);
+            return UpdateControl.updateStatusSubResource(sd);
         }
 
         try {
             createOrUpdateServiceAccount(sd);
-            createOrUpdateDeployment(sd);
+            createOrUpdateDeployment(sd, sdc.getStatus().getKafkaBroker());
             createOrUpdateService(sd);
             if(sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN,sd.getSpec().getType().toString()) + "-http";
@@ -340,7 +348,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         return kafkaTopicName;
     }
 
-    private void createOrUpdateDeployment(ServiceDomain sd) {
+    private void createOrUpdateDeployment(ServiceDomain sd, String kafkaBrokerUrl) {
         String sdNS = sd.getMetadata().getNamespace();
         String sdName = sd.getMetadata().getName();
 
@@ -369,14 +377,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                                                                                                 .withContainerPort(GRPC_PORT)
                                                                                                 .withName(GRPC_NAME).build())
                                                                                         .withEnv(new EnvVarBuilder()
-                                                                                                        .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
-                                                                                                        .withValueFrom(new EnvVarSourceBuilder()
-                                                                                                                        .withNewConfigMapKeyRef()
-                                                                                                                        .withName(sd.getSpec().getServiceDomainCluster())
-                                                                                                                        .withKey(KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY)
-                                                                                                                        .endConfigMapKeyRef()
-                                                                                                                        .build())
-                                                                                                        .build())
+                                                                                                .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
+                                                                                                .withValue(kafkaBrokerUrl).build())
                                                                                         .build())
                                                                     .build())
                                                     .build())

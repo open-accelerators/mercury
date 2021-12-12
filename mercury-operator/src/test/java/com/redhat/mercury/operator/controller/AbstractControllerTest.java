@@ -5,7 +5,6 @@ import javax.inject.Inject;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
-import com.redhat.mercury.operator.model.ServiceDomainClusterStatusBuilder;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainSpecBuilder;
 
@@ -33,8 +32,8 @@ public abstract class AbstractControllerTest {
     @Inject
     protected ServiceDomainClusterController serviceDomainClusterController;
 
-    public Kafka getExpectedKafKa(String sdcUid, String sdcName){
-        final Kafka kafka = serviceDomainClusterController.createKafkaObj(sdcUid,sdcName);
+    public Kafka getExpectedKafKa(String sdcUid, String sdcName, String sdcNamespace){
+        final Kafka kafka = serviceDomainClusterController.createKafkaObj(sdcUid, sdcName, sdcNamespace);
 
         final KafkaStatus status = new KafkaStatusBuilder().withListeners(new ListenerStatusBuilder()
                         .withType(KAFKA_LISTENER_TYPE_PLAIN)
@@ -52,7 +51,7 @@ public abstract class AbstractControllerTest {
         final ServiceDomainCluster cluster = new ServiceDomainCluster();
         cluster.setMetadata(new ObjectMetaBuilder().withName(sdcName).withNamespace(mockServer.getClient().getNamespace()).build());
         cluster.setSpec(new ServiceDomainClusterSpecBuilder().build());
-        cluster.setStatus(new ServiceDomainClusterStatusBuilder().withKafkaBroker("111.111.111.111:9200").build());
+//        cluster.setStatus(new ServiceDomainClusterStatusBuilder().withKafkaBroker("111.111.111.111:9200").build());
         return cluster;
     }
 

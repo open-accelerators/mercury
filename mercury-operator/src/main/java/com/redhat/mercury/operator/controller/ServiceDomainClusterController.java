@@ -9,8 +9,6 @@ import com.redhat.mercury.operator.KafkaServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 
-import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
@@ -44,7 +42,6 @@ import java.util.Objects;
 
 import static com.redhat.mercury.operator.KafkaServiceEventSource.MANAGED_BY_LABEL;
 import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
-import static com.redhat.mercury.operator.controller.ServiceDomainController.KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY;
 
 @Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
@@ -84,44 +81,12 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             createOrUpdateRoleBinding(sdc);
             createOrUpdateKafkaBroker(sdc);
             updateStatusWithKafkaBrokerUrl(sdc, status);
-
-            if(isKafkaBrokerUrlInCluster(sdc)) {
-                String kafkaBrokerUr = sdc.getStatus().getKafkaBroker();
-                createOrUpdateConfigMap(sdc.getMetadata().getName(), kafkaBrokerUr);
-            }
-
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
             status.setError(e.getMessage());
         }
 
         return UpdateControl.updateStatusSubResource(sdc);
-    }
-
-    private boolean isKafkaBrokerUrlInCluster(ServiceDomainCluster serviceDomainCluster) {
-        return serviceDomainCluster != null && serviceDomainCluster.getStatus() != null && serviceDomainCluster.getStatus().getKafkaBroker() != null;
-    }
-
-    private void createOrUpdateConfigMap(String sdcName, String kafkaBrokerUr) {
-        final ConfigMap configMap = client.configMaps().withName(sdcName).get();
-
-        final ConfigMap desiredConfigMap = new ConfigMapBuilder()
-                .withApiVersion("v1")
-                .withNewMetadata()
-                .withName(sdcName)
-                .endMetadata()
-                .withData(Map.of(KAFKA_BOOTSTRAP_SERVERS_CONFIG_MAP_PROPERTY, kafkaBrokerUr))
-                .build();
-
-        if(configMap == null){
-            client.configMaps().create(desiredConfigMap);
-            LOGGER.debug("{} config map was missing, creating it", sdcName);
-        }else{
-            if(!Objects.equals(configMap.getData(), desiredConfigMap.getData())) {
-                client.configMaps().replace(desiredConfigMap);
-                LOGGER.debug("{} config map was updated", desiredConfigMap);
-            }
-        }
     }
 
     private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, ServiceDomainClusterStatus status) {
@@ -211,8 +176,9 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
     private void createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
         final String sdcName = sdc.getMetadata().getName();
+        final String sdcNamespace = sdc.getMetadata().getNamespace();
 
-        Kafka desiredKafka = createKafkaObj(sdc.getMetadata().getUid(), sdcName);
+        Kafka desiredKafka = createKafkaObj(sdc.getMetadata().getUid(), sdcName, sdcNamespace);
 
         final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
 
@@ -227,11 +193,11 @@ public class ServiceDomainClusterController implements ResourceController<Servic
         }
     }
 
-    Kafka createKafkaObj(String sdcUid, String sdcName) {
+    Kafka createKafkaObj(String sdcUid, String sdcName, String sdcNamespace) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
                 .withName(sdcName)
-                .withNamespace(client.getNamespace())
+                .withNamespace(sdcNamespace)
                 .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()

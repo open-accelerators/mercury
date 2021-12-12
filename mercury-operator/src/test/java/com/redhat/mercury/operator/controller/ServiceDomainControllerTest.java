@@ -61,7 +61,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         }
 
         //Hack so that the cluster will already have a kafka broker
-        Kafka expectedKafka = getExpectedKafKa("", SERVICE_DOMAIN_CLUSTER_NAME);
+        Kafka expectedKafka = getExpectedKafKa("", SERVICE_DOMAIN_CLUSTER_NAME, client.getNamespace());
         Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
         if(fetchedKafka == null) {
             client.resources(Kafka.class).inNamespace(client.getNamespace()).create(expectedKafka);
@@ -78,7 +78,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
         }
 
         //update the kafka broker owner with the cluster uid
-        expectedKafka = getExpectedKafKa(fetchedCluster.getMetadata().getUid(), SERVICE_DOMAIN_CLUSTER_NAME);
+        expectedKafka = getExpectedKafKa(fetchedCluster.getMetadata().getUid(), SERVICE_DOMAIN_CLUSTER_NAME, client.getNamespace());
         fetchedKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
         if(fetchedKafka != null) {
             client.resources(Kafka.class).inNamespace(client.getNamespace()).replace(expectedKafka);
@@ -336,111 +336,35 @@ public class ServiceDomainControllerTest extends AbstractControllerTest{
 
         ServiceDomain sd = createServiceDomain();
 
-        sd = client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).create(sd);
+        client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).create(sd);
 
-        //Test service account data
-        await().atMost(2, MINUTES).until(() -> client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get() != null);
-        final ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get();
-        assertNotNull(serviceAccount);
-
-        List<OwnerReference> ownerReferences = serviceAccount.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        OwnerReference ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
-
-        //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Deployment deployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(deployment);
-
-        ownerReferences = deployment.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
-
-        //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(service);
-
-        ownerReferences = service.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get() != null);
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
-        assertNotNull(integration);
-
-        ownerReferences = integration.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get().getStatus().getError() != null);
+        sd = client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
+        assertNotNull(sd.getStatus().getError());
     }
 
     @Test
-    public void addServiceDomainWithNoClusterConfigMapTest(){
+    public void addServiceDomainWithNoKafkaBrokerUrlTest(){
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        client.configMaps().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
-        await().atMost(2, MINUTES).until(() -> client.configMaps().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
+        client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
+
+        final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        client.resources(Kafka.class).delete(kafka);
+        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
+
+        ServiceDomainCluster desiredCluster = createServiceDomainCluster();
+        client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).create(desiredCluster);
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
 
         ServiceDomain sd = createServiceDomain();
 
-        sd = client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).create(sd);
+        client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).create(sd);
 
-        //Test service account data
-        final ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(client.getNamespace()).withName(BINDING_SERVICE_SA).get();
-        assertNull(serviceAccount);
-
-        //Test deployment data
-        final Deployment deployment = client.apps().deployments().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
-        assertNull(deployment);
-
-        //Test Service data
-        final Service service = client.services().inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
-        assertNull(service);
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).get();
-        assertNull(integration);
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get().getStatus() != null);
+        sd = client.resources(ServiceDomain.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_NAME).get();
+        assertNotNull(sd.getStatus().getError());
     }
 
     @Test
