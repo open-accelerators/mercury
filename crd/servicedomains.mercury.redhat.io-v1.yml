@@ -19,11 +19,103 @@ spec:
         properties:
           spec:
             properties:
+              expose:
+                items:
+                  enum:
+                  - http
+                  type: string
+                type: array
+              binding:
+                items:
+                  properties:
+                    env:
+                      items:
+                        properties:
+                          value:
+                            type: string
+                          valueFrom:
+                            properties:
+                              configMapKeyRef:
+                                properties:
+                                  optional:
+                                    type: boolean
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
+                                type: object
+                              fieldRef:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  fieldPath:
+                                    type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
+                                type: object
+                              resourceFieldRef:
+                                properties:
+                                  containerName:
+                                    type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
+                                  divisor:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
+                                  resource:
+                                    type: string
+                                type: object
+                              secretKeyRef:
+                                properties:
+                                  optional:
+                                    type: boolean
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
+                                type: object
+                              additionalProperties:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
+                          name:
+                            type: string
+                          additionalProperties:
+                            additionalProperties:
+                              type: string
+                            type: object
+                        type: object
+                      type: array
+                    endpoint:
+                      type: string
+                    type:
+                      type: string
+                  type: object
+                type: array
               businessImage:
                 type: string
-              bindingServiceImage:
-                type: string
               serviceDomainCluster:
+                type: string
+              type:
+                enum:
+                - PartyRoutingProfile
+                - CustomerOffer
+                - CustomerCreditRating
                 type: string
             type: object
           status:
@@ -31,6 +123,8 @@ spec:
               kafkaUser:
                 type: string
               kafkaTopic:
+                type: string
+              error:
                 type: string
             type: object
         type: object

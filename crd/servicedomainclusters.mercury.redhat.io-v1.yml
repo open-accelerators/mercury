@@ -23,6 +23,8 @@ spec:
             properties:
               kafkaBroker:
                 type: string
+              error:
+                type: string
             type: object
         type: object
     served: true

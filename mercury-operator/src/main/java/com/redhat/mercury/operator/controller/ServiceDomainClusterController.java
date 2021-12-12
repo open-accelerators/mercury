@@ -1,17 +1,13 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.api.model.ServiceDomainCluster;
-import com.redhat.mercury.api.model.ServiceDomainClusterStatus;
 import com.redhat.mercury.operator.KafkaServiceEventSource;
+import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
@@ -39,6 +35,10 @@ import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.storage.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.redhat.mercury.operator.KafkaServiceEventSource.MANAGED_BY_LABEL;
 import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
@@ -77,20 +77,19 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     public UpdateControl<ServiceDomainCluster> createOrUpdateResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
         ServiceDomainClusterStatus status = new ServiceDomainClusterStatus();
         try {
-            updateStatusWithKafkaBrokerUrl(sdc, context, status);
-
             createOrUpdateRole(sdc);
             createOrUpdateRoleBinding(sdc);
             createOrUpdateKafkaBroker(sdc);
+            updateStatusWithKafkaBrokerUrl(sdc, status);
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
-            return UpdateControl.noUpdate();
+            status.setError(e.getMessage());
         }
 
         return UpdateControl.updateStatusSubResource(sdc);
     }
 
-    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context, ServiceDomainClusterStatus status) {
+    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, ServiceDomainClusterStatus status) {
         final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdc.getMetadata().getName()).get();
 
         if (isaKafkaBrokerReady(kafka)) {
@@ -100,7 +99,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                     .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
                     .findFirst().orElse(null);
 
-            if (listenerStatus != null) {
+            if(listenerStatus != null){
                 status.setKafkaBroker(listenerStatus.getBootstrapServers());
                 sdc.setStatus(status);
             }
@@ -133,9 +132,9 @@ public class ServiceDomainClusterController implements ResourceController<Servic
         if (current == null) {
             LOGGER.debug("{} Role doesn't exist", SERVICE_DOMAIN_ROLE);
             Role role = client.rbac().roles().createOrReplace(expected);
-            LOGGER.info("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
+            LOGGER.debug("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
         } else {
-            if (!Objects.equals(current, expected)) {
+            if (!Objects.equals(current.getRules(), expected.getRules())) {
                 client.rbac().roles().createOrReplace(expected);
                 LOGGER.debug("{} Role was updated", SERVICE_DOMAIN_ROLE);
             }
@@ -168,7 +167,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
             client.rbac().roleBindings().create(desiredRoleBinding);
             LOGGER.debug("{} role binding was missing, creating it", ROLE_BINDING);
         } else {
-            if (!Objects.equals(roleBinding, desiredRoleBinding)) {
+            if (!Objects.equals(roleBinding.getRoleRef(), desiredRoleBinding.getRoleRef()) || !Objects.equals(roleBinding.getSubjects(), desiredRoleBinding.getSubjects())) {
                 client.rbac().roleBindings().replace(desiredRoleBinding);
                 LOGGER.debug("{} role binding was updated", ROLE_BINDING);
             }
@@ -177,11 +176,28 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
     private void createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
         final String sdcName = sdc.getMetadata().getName();
+        final String sdcNamespace = sdc.getMetadata().getNamespace();
 
+        Kafka desiredKafka = createKafkaObj(sdc.getMetadata().getUid(), sdcName, sdcNamespace);
+
+        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
+
+        if (currentKafka == null) {
+            client.resources(Kafka.class).inNamespace(client.getNamespace()).create(desiredKafka);
+            LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
+        } else {
+            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
+                client.resources(Kafka.class).inNamespace(client.getNamespace()).replace(desiredKafka);
+                LOGGER.debug("{} kafka broker was updated", sdcName);
+            }
+        }
+    }
+
+    Kafka createKafkaObj(String sdcUid, String sdcName, String sdcNamespace) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
                 .withName(sdcName)
-                .withNamespace(client.getNamespace())
+                .withNamespace(sdcNamespace)
                 .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
@@ -223,21 +239,10 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
         desiredKafka.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sdcName)
-                .withUid(sdc.getMetadata().getUid())
+                .withUid(sdcUid)
                 .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
                 .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
                 .build()));
-
-        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
-
-        if (currentKafka == null) {
-            client.resources(Kafka.class).create(desiredKafka);
-            LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
-        } else {
-            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
-                client.resources(Kafka.class).replace(desiredKafka);
-                LOGGER.debug("{} kafka broker was updated", sdcName);
-            }
-        }
+        return desiredKafka;
     }
 }

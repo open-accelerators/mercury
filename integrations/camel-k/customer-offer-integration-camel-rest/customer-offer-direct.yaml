@@ -1,0 +1,37 @@
+# camel-k: language=yaml
+# camel-k: open-api=CustomerOffer.json
+# camel-k: dependency=mvn:com.redhat.mercury:customer-offer-integration-camel:1.0.0-SNAPSHOT
+- from:
+    uri: direct:printQuery
+    steps:
+    - bean:
+        ref: com.redhat.mercury.customeroffer.camel.CustomerOfferResultPrinter
+        method: toString
+- from:
+    uri: direct:initiateCustomerOfferProcedure
+    steps:
+      - bean:
+          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
+          method: initiateCustomerOfferProcedure
+      - to: direct:command
+- from:
+    uri: direct:updateCustomerOfferProcedure
+    steps:
+      - bean:
+          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
+          method: updateCustomerOfferProcedure
+      - to: direct:command
+- from:
+    uri: direct:retrieveSDCustomerOffer
+    steps:
+      - bean:
+          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
+          method: retrieveSDCustomerOffer
+      - to: direct:query
+- from:
+    uri: direct:retrieveCustomerOffer
+    steps:
+      - bean:
+          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
+          method: retrieveCustomerOffer
+      - to: direct:query            
