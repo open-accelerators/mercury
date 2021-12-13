@@ -1,21 +1,25 @@
 package com.redhat.mercury.customeroffer.camel;
 
-import javax.enterprise.context.ApplicationScoped;
-
-import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.redhat.mercury.camel.CloudEventPrinter;
+import com.redhat.mercury.customeroffer.CustomerOffer;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
+import org.bian.protobuf.customeroffer.SDCustomerOffer;
 
-//TODO: Try to use CloudEventPrinter only
-@ApplicationScoped
-@RegisterForReflection
+import io.cloudevents.v1.proto.CloudEvent;
+
 public class CustomerOfferResultPrinter extends CloudEventPrinter {
 
-    private static final TypeRegistry TYPE_REGISTRY = TypeRegistry.newBuilder().build();
-
-    public CustomerOfferResultPrinter() {
-        super(TYPE_REGISTRY);
+    @Override
+    public String toJson(CloudEvent event) throws InvalidProtocolBufferException {
+        switch(event.getType()) {
+            case CustomerOffer.CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE:
+                return print(event, CustomerOfferProcedure.class);
+            case CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE:
+                return print(event, SDCustomerOffer.class);
+        }
+        return null;
     }
 
 }

@@ -14,4 +14,4 @@
     uri: direct:query
     steps:
     - to: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/org.bian.protobuf.BindingService?synchronous=true&method=query
-    - to: bean:com.redhat.mercury.camel.CloudEventPrinter?method=toString
+    - to: direct:print

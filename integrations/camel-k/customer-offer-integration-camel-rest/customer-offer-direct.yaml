@@ -2,11 +2,11 @@
 # camel-k: open-api=CustomerOffer.json
 # camel-k: dependency=mvn:com.redhat.mercury:customer-offer-integration-camel:1.0.0-SNAPSHOT
 - from:
-    uri: direct:printQuery
+    uri: direct:print
     steps:
     - bean:
         ref: com.redhat.mercury.customeroffer.camel.CustomerOfferResultPrinter
-        method: toString
+        method: toJson
 - from:
     uri: direct:initiateCustomerOfferProcedure
     steps:

@@ -1,25 +1,22 @@
 package com.redhat.mercury.partyroutingprofile.camel;
 
-import javax.enterprise.context.ApplicationScoped;
-
 import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 
-import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.redhat.mercury.camel.CloudEventPrinter;
+import com.redhat.mercury.partyroutingprofile.PartyRoutingProfile;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.cloudevents.v1.proto.CloudEvent;
 
-//TODO: Try to use CloudEventPrinter only
-@ApplicationScoped
-@RegisterForReflection
 public class PartyRoutingProfileResultPrinter extends CloudEventPrinter {
 
-    private static final TypeRegistry TYPE_REGISTRY = TypeRegistry.newBuilder()
-            .add(PartyRoutingStateList.getDescriptor())
-            .build();
-
-    public PartyRoutingProfileResultPrinter() {
-        super(TYPE_REGISTRY);
+    @Override
+    public String toJson(CloudEvent event) throws InvalidProtocolBufferException {
+        switch(event.getType()) {
+            case PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE:
+                return print(event, PartyRoutingStateList.class);
+        }
+        return null;
     }
 
 }
