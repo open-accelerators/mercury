@@ -1,14 +1,13 @@
 # Mercury Operator (Beta)
+##Prerequisites:
 
-Prerequisites:
+- Kafka operator installed (minimum strimzi version 0.26.0)
 
-**- Kafka operator installed (minimum strimzi version 0.26.0)**
+- Camel-K operator installed (version 1.7.0)
 
-**- Camel-K operator installed (version 1.7.0)**
-
-**- A ConfigMap per service domain that exposes an http route
+- A ConfigMap per service domain that exposes an http route
 (with the name integration-<service-domain-name>-http e.g integration-customer-offer-http)
-containing definitions of camel routes(e.g directs.yaml, grpc.yaml, openapi.json)**
+containing definitions of camel routes(e.g directs.yaml, grpc.yaml, openapi.json)
 
 ## Functionality:
 This operator is the one responsible for the deployment of the Mercury clusters by creating the necessary objects.
