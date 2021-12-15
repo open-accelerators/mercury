@@ -9,5 +9,7 @@ public interface PartyRoutingProfileService extends PartyRoutingProfileApi {
     default Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         return Uni.createFrom().nullItem();
     }
-
+    default Uni<Message> retrievePartyStateStatuses() {
+        return Uni.createFrom().nullItem();
+    }
 }

@@ -38,6 +38,8 @@ public class PartyRoutingProfileBindingServiceImpl extends BaseBindingService {
         switch (cloudEvent.getType()) {
             case PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE:
                 return service.retrievePartyStateStatus(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF), getRef(cloudEvent, CE_BQ_REF));
+            case PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_TYPE:
+                return service.retrievePartyStateStatuses();
             //TODO: Add more mappings
         }
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));

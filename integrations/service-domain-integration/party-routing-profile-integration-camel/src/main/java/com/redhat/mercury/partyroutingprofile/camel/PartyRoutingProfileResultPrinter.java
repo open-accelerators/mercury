@@ -15,6 +15,8 @@ public class PartyRoutingProfileResultPrinter extends CloudEventPrinter {
         switch(event.getType()) {
             case PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE:
                 return print(event, PartyRoutingStateList.class);
+            case PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_TYPE:
+                return print(event, PartyRoutingStateList.class);
         }
         return null;
     }
