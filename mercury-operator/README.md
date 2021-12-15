@@ -1,5 +1,5 @@
 # Mercury Operator (Beta)
-##Prerequisites:
+## Prerequisites:
 
 - Kafka operator installed (minimum strimzi version 0.26.0)
 
