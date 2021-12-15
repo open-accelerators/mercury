@@ -9,6 +9,7 @@
 (with the name integration-<service-domain-name>-http e.g integration-customer-offer-http)
 containing definitions of camel routes(e.g directs.yaml, grpc.yaml, openapi.json)**
 
+## Functionality:
 This operator is the one responsible for the deployment of the Mercury clusters by creating the necessary objects.
 * When a Service Domain Cluster object is created the operator will try to create a Role, RoleBinding a Kafka broker in case they do not exist already.
 * When the Kafka broker is deployed successfully its url will be displayed in the Service Domain Cluster status.
