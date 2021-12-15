@@ -15,7 +15,7 @@
       - to: direct:query
 
 - rest:
-    path: /party-routing-profile/party-state/all
+    path: /party-routing-profile/{sdReferenceId}/party-state
     get:
       - to: direct:retrievePartyStateStatuses
 - from:
