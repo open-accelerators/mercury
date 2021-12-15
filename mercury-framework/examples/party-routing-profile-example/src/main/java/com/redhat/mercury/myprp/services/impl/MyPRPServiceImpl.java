@@ -4,11 +4,9 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
-import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
@@ -23,7 +21,7 @@ public class MyPRPServiceImpl implements PartyRoutingProfileService {
     PartyRoutingService svc;
 
     @Override
-    public Uni<Message> retrievePartyStateStatuses() {
+    public Uni<Message> retrievePartyStateStatuses(String sdRef) {
         return Uni.createFrom().item(() -> svc.getAll());
     }
 
@@ -37,7 +35,7 @@ public class MyPRPServiceImpl implements PartyRoutingProfileService {
                     return state;
                 }
             }
-            return Empty.getDefaultInstance();
+            return null;
         });
     }
 

@@ -7,5 +7,5 @@ import io.smallrye.mutiny.Uni;
 public interface PartyRoutingProfileApi {
 
     Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef);
-    Uni<Message> retrievePartyStateStatuses();
+    Uni<Message> retrievePartyStateStatuses(String sdRef);
 }

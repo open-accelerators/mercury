@@ -9,6 +9,7 @@ import javax.inject.Inject;
 
 import org.bian.protobuf.customeroffer.BasicReference;
 import org.bian.protobuf.customeroffer.CustomerOfferNotification;
+import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
 import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.junit.jupiter.api.Test;
 
@@ -38,11 +39,15 @@ class MyPRPServiceImplTest {
                         .setId(crRefId)
                         .build()).setStatus(PartyRoutingService.COMPLETED_STATUS)
                 .build()).await().indefinitely();
-        CompletableFuture<PartyRoutingStateList> message = new CompletableFuture<>();
+        CompletableFuture<PartyRoutingState> message = new CompletableFuture<>();
         client.retrievePartyStateStatus("some-sd", crRefId, "some-bq").subscribe().with(reply -> {
-            message.complete((PartyRoutingStateList) reply);
+            message.complete((PartyRoutingState) reply);
         });
-        assertThat(message.get(5, TimeUnit.SECONDS).getPartyRoutingStatesCount()).isEqualTo(1);
+        assertThat(message.get(5, TimeUnit.SECONDS))
+                .isEqualTo(PartyRoutingState.newBuilder()
+                        .setProcessId("kermit")
+                        .setCustomerOfferStatus("1")
+                        .build());
     }
 
 }

@@ -5,6 +5,7 @@ import java.util.UUID;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.bian.protobuf.BindingService;
+import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
 import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,13 +56,16 @@ public class PartyRoutingProfileClient implements PartyRoutingProfileApi {
                                 .build())
                         .build())
                 .onItem()
-                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(PartyRoutingStateList.class)));
+                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(PartyRoutingState.class)));
     }
     @Override
-    public Uni<Message> retrievePartyStateStatuses() {
+    public Uni<Message> retrievePartyStateStatuses(String sdRef) {
         return service.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(PARTY_STATE_ALL_RETRIEVE_TYPE)
+                        .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()
+                                .setCeString(sdRef)
+                                .build())
                         .putAttributes(CE_ACTION, CloudEventAttributeValue.newBuilder()
                                 .setCeString(PARTY_STATE_ALL_RETRIEVE_ACTION)
                                 .build())
