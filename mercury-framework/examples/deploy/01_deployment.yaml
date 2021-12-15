@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
         - name: business-service
-          image: quay.io/ishishov/party-routing-profile-example:latest
+          image: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.0-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 9000
