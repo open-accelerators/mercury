@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.redhat.mercury</groupId>
         <artifactId>mercury-integration-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>mercury-camel</artifactId>
     <packaging>jar</packaging>

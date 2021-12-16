@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.redhat.mercury</groupId>
         <artifactId>mercury-framework-examples</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>party-routing-profile-example</artifactId>
     <name>Examples :: Party Routing Profile</name>
