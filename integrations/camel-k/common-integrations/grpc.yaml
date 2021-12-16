@@ -15,3 +15,10 @@
     steps:
     - to: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/org.bian.protobuf.BindingService?synchronous=true&method=query
     - to: direct:print
+    - choice:
+        when:
+            - simple: "${body} == null"
+              steps:
+                - set-header:
+                    name: CamelHttpResponseCode
+                    constant: "404"

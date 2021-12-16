@@ -41,7 +41,9 @@ public class PartyRoutingProfileTransformer {
                 .putAttributes(BianCloudEvent.CE_SERVICE_DOMAIN, CloudEventAttributeValue.newBuilder()
                         .setCeString(PartyRoutingProfile.DOMAIN_NAME)
                         .build())
-
+                .putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue.newBuilder()
+                        .setCeString(message.getHeader("sdReferenceId", String.class))
+                        .build())
                 .build();
     }
 }
