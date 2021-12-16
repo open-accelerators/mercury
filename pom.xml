@@ -7,7 +7,7 @@
     <packaging>pom</packaging>
     <name>Mercury Parent</name>
     <scm>
-        <developerConnection>scm:git:ssh://github.com/open-accelerators/mercury.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/open-accelerators/mercury.git</developerConnection>
     </scm>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
