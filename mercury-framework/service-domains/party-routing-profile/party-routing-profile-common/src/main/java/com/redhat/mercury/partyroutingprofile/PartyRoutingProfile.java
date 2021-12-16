@@ -7,6 +7,8 @@ public final class PartyRoutingProfile {
     // QUERIES
     public static final String PARTY_STATE_STATUS_RETRIEVE_TYPE = "org.bian.partyroutingprofile.partystate.status.retrieve";
     public static final String PARTY_STATE_STATUS_RETRIEVE_ACTION = "retrievePartyStateStatus";
+    public static final String PARTY_STATE_ALL_RETRIEVE_TYPE = "org.bian.partyroutingprofile.partystate.all.retrieve";
+    public static final String PARTY_STATE_ALL_RETRIEVE_ACTION = "retrievePartyStateStatuses";
 
     // COMMANDS
     // TODO: Implement
