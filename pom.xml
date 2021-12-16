@@ -8,6 +8,7 @@
     <name>Mercury Parent</name>
     <scm>
         <developerConnection>scm:git:ssh://git@github.com/open-accelerators/mercury.git</developerConnection>
+        <tag>HEAD</tag>
     </scm>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
