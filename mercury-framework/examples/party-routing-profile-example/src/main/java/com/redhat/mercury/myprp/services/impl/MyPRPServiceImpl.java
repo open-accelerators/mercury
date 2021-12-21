@@ -3,7 +3,6 @@ package com.redhat.mercury.myprp.services.impl;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,14 +20,18 @@ public class MyPRPServiceImpl implements PartyRoutingProfileService {
     PartyRoutingService svc;
 
     @Override
+    public Uni<Message> retrievePartyStateStatuses(String sdRef) {
+        return Uni.createFrom().item(() -> svc.getAll());
+    }
+
+    @Override
     public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         return Uni.createFrom().item(() -> {
             LOGGER.info("Retrieving party state status for {}/{}/{}", sdRef, crRef, bqRef);
-            PartyRoutingStateList.Builder resultBuilder = PartyRoutingStateList.newBuilder();
             if (crRef != null) {
-                resultBuilder.addAllPartyRoutingStates(svc.getState(crRef));
+                return svc.getState(crRef);
             }
-            return resultBuilder.build();
+            return null;
         });
     }
 

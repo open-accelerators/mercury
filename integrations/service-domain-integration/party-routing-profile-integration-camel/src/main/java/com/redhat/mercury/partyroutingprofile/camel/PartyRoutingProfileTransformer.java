@@ -33,5 +33,17 @@ public class PartyRoutingProfileTransformer {
                         .build())
                 .build();
     }
-
+    public static CloudEvent retrievePartyStateStatuses(Message message) {
+        return CloudEvent.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setSource(EXTERNAL_SOURCE)
+                .setType(PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_TYPE)
+                .putAttributes(BianCloudEvent.CE_SERVICE_DOMAIN, CloudEventAttributeValue.newBuilder()
+                        .setCeString(PartyRoutingProfile.DOMAIN_NAME)
+                        .build())
+                .putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue.newBuilder()
+                        .setCeString(message.getHeader("sdReferenceId", String.class))
+                        .build())
+                .build();
+    }
 }

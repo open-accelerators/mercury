@@ -1,5 +1,6 @@
 package com.redhat.mercury.partyroutingprofile.camel;
 
+import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
 import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -14,6 +15,8 @@ public class PartyRoutingProfileResultPrinter extends CloudEventPrinter {
     public String toJson(CloudEvent event) throws InvalidProtocolBufferException {
         switch(event.getType()) {
             case PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE:
+                return print(event, PartyRoutingState.class);
+            case PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_TYPE:
                 return print(event, PartyRoutingStateList.class);
         }
         return null;
