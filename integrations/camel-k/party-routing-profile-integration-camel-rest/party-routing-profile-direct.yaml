@@ -1,5 +1,5 @@
 # camel-k: language=yaml
-# camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-integration-camel:1.0.0-SNAPSHOT
+# camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-integration-camel:1.0.1-SNAPSHOT
 
 # Missing openapi, defining rest route manually
 - rest:

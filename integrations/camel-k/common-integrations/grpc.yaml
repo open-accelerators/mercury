@@ -1,5 +1,5 @@
 # camel-k: language=yaml
-# camel-k: dependency=mvn:com.redhat.mercury:mercury-camel:1.0.0-SNAPSHOT
+# camel-k: dependency=mvn:com.redhat.mercury:mercury-camel:1.0.1-SNAPSHOT
 
 - from:
     uri: direct:command

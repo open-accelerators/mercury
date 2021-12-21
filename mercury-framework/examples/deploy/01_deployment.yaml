@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: container
-          image: quay.io/ecosystem-appeng/customer-offer-integration-camel-rest:1.0.0-SNAPSHOT
+          image: quay.io/ecosystem-appeng/customer-offer-integration-camel-rest:1.0.1-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
         - name: business-service
-          image: quay.io/ecosystem-appeng/customer-offer-example:1.0.0-SNAPSHOT
+          image: quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 9000
@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
         - name: business-service
-          image: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.0-SNAPSHOT
+          image: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.1-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 9000

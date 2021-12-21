@@ -1,6 +1,6 @@
 # camel-k: language=yaml
 # camel-k: open-api=CustomerOffer.json
-# camel-k: dependency=mvn:com.redhat.mercury:customer-offer-integration-camel:1.0.0-SNAPSHOT
+# camel-k: dependency=mvn:com.redhat.mercury:customer-offer-integration-camel:1.0.1-SNAPSHOT
 - from:
     uri: direct:print
     steps:

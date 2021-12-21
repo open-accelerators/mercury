@@ -9,6 +9,7 @@ import java.util.TreeMap;
 
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -59,6 +60,14 @@ import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthenticationBuilder;
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
 
     public static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
+    public static final String MERCURY_BINDING_LABEL = "mercury-binding";
+    public static final String INTEGRATION_SUFFIX = "-camelk-rest";
+    public static final String CONFIG_MAP_OPENAPI_JSON_KEY = "openapi.json";
+    public static final String CONFIG_MAP_GRPC_KEY = "grpc.yaml";
+    public static final String CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY = "directs.yaml";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
     private static final String SERVICE_DOMAIN_LABEL = "service-domain";
     private static final String BUSINESS_SERVICE_CONTAINER_NAME = "business-service";
@@ -66,20 +75,16 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String MERCURY_KAFKA_BROKER_ENV_VAR = "KAFKA_BOOTSTRAP_SERVERS";
     private static final String INTERNAL = "internal";
     private static final String TCP_PROTOCOL = "TCP";
-    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
-    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
     private static final String DEPLOYMENT_CONTAINER_IMAGE_PULL_POLICY = "Always";
     private static final String GRPC_NAME = "grpc";
     private static final int GRPC_PORT = 9000;
-    public static final String MERCURY_BINDING_LABEL = "mercury-binding";
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
-    public static final String INTEGRATION_SUFFIX = "-camelk-rest";
-    public static final String CONFIG_MAP_OPENAPI_JSON_KEY = "openapi.json";
-    public static final String CONFIG_MAP_GRPC_KEY = "grpc.yaml";
-    public static final String CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY = "directs.yaml";
 
     @Inject
     KubernetesClient client;
+
+    @ConfigProperty(name = "application.version")
+    String version;
 
     @Override
     public DeleteControl deleteResource(ServiceDomain sd, Context<ServiceDomain> context) {
@@ -233,8 +238,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                         "uid", sd.getMetadata().getUid())))));
         final Map<String, Object> specMap = new TreeMap<>(Map.of("configuration", List.of(new TreeMap<>(Map.of("type", "env", "value", "MERCURY_BINDING_SERVICE_HOST=" + sdTypeAsString)),
                         new TreeMap<>(Map.of("type", "env", "value", "MERCURY_BINDING_SERVICE_PORT=" + GRPC_PORT))),
-                "dependencies", List.of(Map.of("mvn", "com.redhat.mercury:" + sdTypeAsString + "-integration-camel:1.0.0-SNAPSHOT"),
-                        Map.of("mvn", "com.redhat.mercury:mercury-camel:1.0.0-SNAPSHOT")),
+                "dependencies", List.of(Map.of("mvn", "com.redhat.mercury:" + sdTypeAsString + "-integration-camel:" + version),
+                        Map.of("mvn", "com.redhat.mercury:mercury-camel:" + version)),
                 "flows", yaml.load(sdCamelRouteYaml + "\n" + grpcYaml)));
 
         if (sdOpenAPIYaml != null) {

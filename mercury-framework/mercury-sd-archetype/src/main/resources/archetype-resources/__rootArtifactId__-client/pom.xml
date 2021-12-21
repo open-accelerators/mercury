@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.redhat.mercury</groupId>
         <artifactId>${rootArtifactId}</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${version}</version>
     </parent>
     <artifactId>${artifactId}</artifactId>
     <name>Service Domains :: ${sdName} :: Client</name>
