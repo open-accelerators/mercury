@@ -11,6 +11,20 @@ The provided reference implementation can serve as an example. While some result
 
 We invite the collaboration of technology experts and experienced business practitioners across the financial services industry to join and participate in co-creation.
 
+## Components
+
+### Integrations
+
+The Integrations component generates routes between the different components of each Service Domain in order to promote the free flow of data across the system.
+
+### Mercury Framework
+
+The Mercury Framework contains the core structure of all Service Domains and their implementations of behavior as well as a collection of libraries and tools to facilitate the integration between them.
+
+### Mercury Operator
+
+The Mercury Operator manages the deployment of the Service Domain Clusters by creating infrastructure components essential for service domains to function and communicate.
+
 ## Get involved with the community
 __(Under construction)__
 
