@@ -62,5 +62,5 @@ spec:
 
 To create a service domain run the following command
 ```shell
-oc create -f customer-offer-service-domain.yaml
+kubectl create -f customer-offer-service-domain.yaml
 ```
