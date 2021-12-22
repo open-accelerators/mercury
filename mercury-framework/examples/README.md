@@ -72,6 +72,3 @@ Credit Rating)
     * For all Customer References
    
       ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/&{SD_REFERENCE}/party-state``    
-
-7. Complete the Customer Offer
-8. Confirm the Party Routing Profile has been updated
