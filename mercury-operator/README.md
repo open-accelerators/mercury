@@ -36,7 +36,7 @@ metadata:
 A cluster of service domains consists of a single service domain cluster cr.
 To create a service domain cluster run the following command
 ```shell
-oc create -f service-domain-cluster.yaml
+kubectl create -f service-domain-cluster.yaml
 ```
 
 ##### Service Domain
