@@ -40,7 +40,8 @@ kubectl create -f service-domain-cluster.yaml
 ```
 
 ##### Service Domain
-The service domain custom resource represents a service.
+The service domain custom resource represents a service, a gRPC service will be created by default for inter service domain communication. 
+If external access is required then use the expose parameter.
 ```yaml
 apiVersion: mercury.redhat.io/v1alpha1
 kind: ServiceDomain
