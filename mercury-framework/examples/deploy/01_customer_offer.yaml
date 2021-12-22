@@ -1,0 +1,12 @@
+apiVersion: mercury.redhat.io/v1alpha1
+kind: ServiceDomain
+metadata:
+  name: customer-offer
+  labels:
+    service-domain: customer-offer
+spec:
+  businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT
+  serviceDomainCluster: coreless-cluster
+  type: CustomerOffer
+  expose:
+    - http
