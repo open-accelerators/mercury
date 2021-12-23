@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.apache.camel.Message;
 import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
+import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -29,7 +30,7 @@ public class CustomerOfferTransformer {
     }
 
     public static CloudEvent updateCustomerOfferProcedure(Message message) throws InvalidProtocolBufferException {
-        CustomerOfferProcedureInitiation.Builder builder = CustomerOfferProcedureInitiation.newBuilder();
+        CustomerOfferProcedureUpdate.Builder builder = CustomerOfferProcedureUpdate.newBuilder();
         JsonFormat.parser().merge(message.getBody(String.class), builder);
         return buildEvent(message, CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
                 .setProtoData(Any.pack(builder.build()))
