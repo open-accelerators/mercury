@@ -20,7 +20,7 @@
         <quarkus.platform.version>2.4.1.Final</quarkus.platform.version>
         <jandex.version>1.2.1</jandex.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-        <cloudevents.version>2.2.0</cloudevents.version>
+        <cloudevents.version>2.3.0</cloudevents.version>
         <testcontainers.version>1.6.0</testcontainers.version>
         <lombok.version>1.18.16</lombok.version>
         <builder-annotations.version>0.50.1</builder-annotations.version>

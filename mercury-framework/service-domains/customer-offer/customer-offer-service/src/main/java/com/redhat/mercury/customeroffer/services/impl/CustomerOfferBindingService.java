@@ -12,6 +12,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.redhat.mercury.common.services.impl.BaseBindingService;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
+import com.redhat.mercury.exceptions.DataTransformationException;
 import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -54,10 +55,11 @@ public class CustomerOfferBindingService extends BaseBindingService {
                 case CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE:
                     return service.updateCustomerOfferProcedure(cloudEvent.getProtoData().unpack(CustomerOfferProcedureUpdate.class));
             }
+            return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
         } catch (InvalidProtocolBufferException e) {
             LOGGER.error("Unable to convert to the expected data type", e);
+            return Uni.createFrom().failure(new DataTransformationException(e));
         }
-        return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
     }
 
     @Override
