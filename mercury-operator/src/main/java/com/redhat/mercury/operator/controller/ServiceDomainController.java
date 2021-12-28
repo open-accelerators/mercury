@@ -40,6 +40,7 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import io.fabric8.kubernetes.model.Scope;
 import io.javaoperatorsdk.operator.api.Context;
 import io.javaoperatorsdk.operator.api.Controller;
 import io.javaoperatorsdk.operator.api.DeleteControl;
@@ -173,6 +174,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withGroup("camel.apache.org")
                 .withVersion("v1")
                 .withPlural("integrations")
+                .withScope(Scope.NAMESPACED.toString())
                 .build();
 
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();

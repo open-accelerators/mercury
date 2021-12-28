@@ -202,7 +202,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                 .endMetadata()
                 .withNewSpec()
                 .withKafka(new KafkaClusterSpecBuilder()
-                        .withVersion("3.0.0")
+                        .withVersion("2.8.0")
                         .withReplicas(3)
                         .withListeners(new GenericKafkaListenerBuilder()
                                         .withName("plain")
@@ -217,8 +217,8 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                         .withConfig(Map.of("offsets.topic.replication.factor", 3,
                                 "transaction.state.log.replication.factor", 3,
                                 "transaction.state.log.min.isr", 2,
-                                "log.message.format.version", "3.0",
-                                "inter.broker.protocol.version", "3.0"))
+                                "log.message.format.version", "2.8.0",
+                                "inter.broker.protocol.version", "2.8.0"))
                         .withStorage(new JbodStorageBuilder()
                                 .withVolumes(new PersistentClaimStorageBuilder()
                                         .withId(0)
