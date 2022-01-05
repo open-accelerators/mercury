@@ -2,24 +2,16 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  annotations:
-    app.quarkus.io/commit-id: 1e8d182abe77f327a462bc45afd486fa28cdbbdf
-    app.quarkus.io/build-timestamp: 2021-12-30 - 08:25:33 +0000
   labels:
     app.kubernetes.io/name: mercury-operator
-    app.kubernetes.io/version: 1.0.1-SNAPSHOT
   name: mercury-operator
   namespace: mercury
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    app.quarkus.io/commit-id: 1e8d182abe77f327a462bc45afd486fa28cdbbdf
-    app.quarkus.io/build-timestamp: 2021-12-30 - 08:25:33 +0000
   labels:
     app.kubernetes.io/name: mercury-operator
-    app.kubernetes.io/version: 1.0.1-SNAPSHOT
   name: mercury-operator
   namespace: mercury
 spec:
@@ -29,7 +21,6 @@ spec:
       targetPort: 8080
   selector:
     app.kubernetes.io/name: mercury-operator
-    app.kubernetes.io/version: 1.0.1-SNAPSHOT
   type: ClusterIP
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -77,21 +68,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: josdk-crd-validating-cluster-role
-  namespace: mercury
-rules:
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
-    verbs:
-      - get
-      - list
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: servicedomainclustercontroller-cluster-role
+  name: mercury-operator-cluster-role
   namespace: mercury
 rules:
   - apiGroups:
@@ -99,65 +76,26 @@ rules:
     resources:
       - servicedomainclusters
       - servicedomainclusters/status
+      - servicedomains
+      - servicedomains/status
     verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-      - patch
-      - update
+      - "*"
   - apiGroups:
       - apiextensions.k8s.io
     resources:
       - customresourcedefinitions
     verbs:
-      - "get"
-      - "list"
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: servicedomaincontroller-cluster-role
-  namespace: mercury
-rules:
-  - apiGroups:
-      - mercury.redhat.io
-    resources:
-      - servicedomains
-      - servicedomains/status
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-      - patch
-      - update
+      - "*"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: servicedomainclustercontroller-cluster-role-binding
+  name: mercury-operator-cluster-role-binding
   namespace: mercury
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: servicedomainclustercontroller-cluster-role
-subjects:
-  - kind: ServiceAccount
-    name: mercury-operator
-    namespace: mercury
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: servicedomaincontroller-cluster-role-binding
-  namespace: mercury
-roleRef:
-  kind: ClusterRole
-  apiGroup: rbac.authorization.k8s.io
-  name: servicedomaincontroller-cluster-role
+  name: mercury-operator-cluster-role
 subjects:
   - kind: ServiceAccount
     name: mercury-operator
@@ -166,12 +104,8 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    app.quarkus.io/commit-id: 1e8d182abe77f327a462bc45afd486fa28cdbbdf
-    app.quarkus.io/build-timestamp: 2021-12-30 - 08:25:33 +0000
   labels:
     app.kubernetes.io/name: mercury-operator
-    app.kubernetes.io/version: 1.0.1-SNAPSHOT
   name: mercury-operator
   namespace: mercury
 spec:
@@ -179,15 +113,10 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: mercury-operator
-      app.kubernetes.io/version: 1.0.1-SNAPSHOT
   template:
     metadata:
-      annotations:
-        app.quarkus.io/commit-id: 1e8d182abe77f327a462bc45afd486fa28cdbbdf
-        app.quarkus.io/build-timestamp: 2021-12-30 - 08:25:33 +0000
       labels:
         app.kubernetes.io/name: mercury-operator
-        app.kubernetes.io/version: 1.0.1-SNAPSHOT
       namespace: mercury
     spec:
       containers:
