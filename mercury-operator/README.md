@@ -9,6 +9,18 @@
 (with the name integration-<service-domain-name>-http e.g integration-customer-offer-http)
 containing definitions of camel routes(e.g directs.yaml, grpc.yaml, openapi.json)
 
+- A namespace named mercury should be created if it doesn't already exist.
+
+## Installation
+
+The operator will be created in the mercury namespace.
+
+To install the operator run:
+
+```shell
+kubectl create -f ./install/mercury-operator.yml
+```
+
 ## Functionality:
 This operator is the one responsible for the deployment of the Mercury clusters by creating the necessary objects.
 * On Service Domain Cluster object creation the operator will create a Role, a RoleBinding and a Kafka broker in case they do not exist already.
@@ -64,4 +76,18 @@ spec:
 To create a service domain run the following command
 ```shell
 kubectl create -f customer-offer-service-domain.yaml
+```
+
+When exposing an http endpoint for a SD, it is mandatory that
+a config map with the following name exists: integration-<service-domain-name-in-lower-case-seperated-by-hyphen>-http.
+
+It has two mandatory properties and one optional:
+* directs.yaml (mandatory) - The yaml of the specific SD, can be found under integrations/camel-k/<sd-name>
+* grpc.yaml (mandatory) - The yaml containing the grpc handling in mercury, can be found under integrations/camel-k/common-integrations
+* openapi.json (optional) - The SD BIAN OpenAPI yaml, can be found under integrations/camel-k/<sd-name>
+
+An example of how to create a config map:
+
+```shell
+kubectl create configmap integration-customer-offer-http --from-file=directs.yaml=customer-offer-direct.yaml --from-file=grpc.yaml=grpc.yaml --from-file=openapi.json=CustomerOffer.json
 ```
