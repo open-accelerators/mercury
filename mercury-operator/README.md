@@ -85,6 +85,13 @@ It has two mandatory properties and one optional:
 * directs.yaml (mandatory) - The yaml of the specific SD, can be found under integrations/camel-k/<sd-name>
 * grpc.yaml (mandatory) - The yaml containing the grpc handling in mercury, can be found under integrations/camel-k/common-integrations
 * openapi.json (optional) - The SD BIAN OpenAPI yaml, can be found under integrations/camel-k/<sd-name>
+  
+*Note: openapi.json is mandatory only when the directs.yaml depends on the open-api trait*
+
+*An example:*
+```yaml
+# camel-k: open-api=CustomerOffer.json
+```
 
 An example of how to create a config map:
 
