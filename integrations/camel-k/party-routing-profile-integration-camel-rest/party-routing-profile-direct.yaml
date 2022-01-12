@@ -1,34 +1,24 @@
 # camel-k: language=yaml
-# camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-integration-camel:1.0.1-SNAPSHOT
+# camel-k: open-api=PartyRoutingProfile.json
 
-# Missing openapi, defining rest route manually
-- rest:
-    path: /party-routing-profile/{sdReferenceId}/party-state/{crReferenceId}/status/{bqReferenceId}
-    get:
-      - to: direct:retrievePartyStateStatus
 - from:
     uri: direct:retrievePartyStateStatus
     steps:
-      - bean:
-          bean-type: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileTransformer
-          method: retrievePartyStateStatus
-      - to: direct:query
-
-- rest:
-    path: /party-routing-profile/{sdReferenceId}/party-state
-    get:
-      - to: direct:retrievePartyStateStatuses
-- from:
-    uri: direct:retrievePartyStateStatuses
-    steps:
-      - bean:
-          bean-type: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileTransformer
-          method: retrievePartyStateStatuses
+      - set-header:
+          name: serviceDomainName
+          constant: party-routing-profile
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.partyroutingprofile.partystate.status.retrieve
       - to: direct:query
 
 - from:
-    uri: direct:print
+    uri: direct:retrievePartyRoutingProfileReferenceIds
     steps:
-    - bean:
-        ref: com.redhat.mercury.partyroutingprofile.camel.PartyRoutingProfileResultPrinter
-        method: toJson
+      - set-header:
+          name: serviceDomainName
+          constant: party-routing-profile
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.partyroutingprofile.partystate.ids.retrieve
+      - to: direct:query

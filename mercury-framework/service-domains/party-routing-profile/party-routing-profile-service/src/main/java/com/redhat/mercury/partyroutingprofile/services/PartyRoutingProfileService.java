@@ -1,15 +1,19 @@
 package com.redhat.mercury.partyroutingprofile.services;
 
-import com.google.protobuf.Message;
+import java.util.Collection;
+
+import com.redhat.mercury.partyroutingprofile.model.BQStatusRetrieveOutputModel;
+import com.redhat.mercury.partyroutingprofile.model.SDPartyRoutingProfileRetrieveOutputModel;
 
 import io.smallrye.mutiny.Uni;
 
 public interface PartyRoutingProfileService extends PartyRoutingProfileApi {
 
-    default Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
+    default Uni<BQStatusRetrieveOutputModel> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         return Uni.createFrom().nullItem();
     }
-    default Uni<Message> retrievePartyStateStatuses(String sdRef) {
+
+    default Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef) {
         return Uni.createFrom().nullItem();
     }
 }

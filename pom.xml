@@ -17,7 +17,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.version>2.4.1.Final</quarkus.platform.version>
+        <quarkus.platform.version>2.6.1.Final</quarkus.platform.version>
         <jandex.version>1.2.1</jandex.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <cloudevents.version>2.3.0</cloudevents.version>

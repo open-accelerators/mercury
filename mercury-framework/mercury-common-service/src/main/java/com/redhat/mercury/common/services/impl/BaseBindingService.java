@@ -6,10 +6,8 @@ import org.bian.protobuf.BindingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import com.google.protobuf.Message;
-import com.redhat.mercury.constants.BianCloudEvent;
 import com.redhat.mercury.exceptions.MappingNotFoundException;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -18,8 +16,7 @@ import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
-
-import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
+import io.vertx.core.json.Json;
 
 public abstract class BaseBindingService implements BindingService {
 
@@ -52,14 +49,13 @@ public abstract class BaseBindingService implements BindingService {
         return mapCommandMethod(request);
     }
 
-    private CloudEvent transformAction(Message message, CloudEvent request) {
+    private CloudEvent transformAction(Object object, CloudEvent request) {
         Builder ceBuilder = CloudEvent.newBuilder()
                 .setId(UUID.randomUUID().toString())
                 .setType(request.getType())
-                .setSource(getDomainName())
-                .putAttributes(CE_ACTION, CloudEventAttributeValue.newBuilder().setCeString(BianCloudEvent.CE_ACTION_RESPONSE).build());
-        if (message != null) {
-            ceBuilder.setProtoData(Any.pack(message));
+                .setSource(getDomainName());
+        if (object != null) {
+            ceBuilder.setBinaryData(ByteString.copyFromUtf8(Json.encode(object)));
         }
         return ceBuilder.build();
     }
@@ -74,7 +70,7 @@ public abstract class BaseBindingService implements BindingService {
 
     protected abstract String getDomainName();
 
-    protected abstract Uni<Message> mapQueryMethod(CloudEvent cloudEvent);
+    protected abstract Uni<? extends Object> mapQueryMethod(CloudEvent cloudEvent);
 
     protected abstract Uni<Empty> mapCommandMethod(CloudEvent cloudEvent);
 

@@ -1,0 +1,15 @@
+package com.redhat.mercury.customercreditrating.reflection;
+
+import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModel;
+import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1;
+import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord;
+
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection(targets = {
+        CRCustomerCreditRatingStateRetrieveOutputModel.class,
+        CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1.class,
+        CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord.class
+})
+public class CustomerCreditRatingReflectionConfiguration {
+}

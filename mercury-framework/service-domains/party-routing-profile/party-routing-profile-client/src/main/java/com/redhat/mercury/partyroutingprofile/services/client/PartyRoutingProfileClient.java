@@ -1,31 +1,27 @@
 package com.redhat.mercury.partyroutingprofile.services.client;
 
+import java.util.Collection;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 
 import org.bian.protobuf.BindingService;
-import org.bian.protobuf.partyroutingprofile.PartyRoutingState;
-import org.bian.protobuf.partyroutingprofile.PartyRoutingStateList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Message;
+import com.redhat.mercury.partyroutingprofile.model.BQStatusRetrieveOutputModel;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileApi;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
+import io.vertx.core.json.Json;
 
-import static com.redhat.mercury.constants.BianCloudEvent.CE_ACTION;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_BQ_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
-import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_ACTION;
-import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_TYPE;
-import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_ACTION;
+import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_REFERENCE_IDS_RETRIEVE_TYPE;
 import static com.redhat.mercury.partyroutingprofile.PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE;
 
 @ApplicationScoped
@@ -37,7 +33,7 @@ public class PartyRoutingProfileClient implements PartyRoutingProfileApi {
     BindingService service;
 
     @Override
-    public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
+    public Uni<BQStatusRetrieveOutputModel> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         LOGGER.info("Received retrievePartyStateStatus for {}/{}/{}", sdRef, crRef, bqRef);
         return service.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
@@ -51,26 +47,21 @@ public class PartyRoutingProfileClient implements PartyRoutingProfileApi {
                         .putAttributes(CE_BQ_REF, CloudEventAttributeValue.newBuilder()
                                 .setCeString(bqRef)
                                 .build())
-                        .putAttributes(CE_ACTION, CloudEventAttributeValue.newBuilder()
-                                .setCeString(PARTY_STATE_STATUS_RETRIEVE_ACTION)
-                                .build())
                         .build())
                 .onItem()
-                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(PartyRoutingState.class)));
+                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), BQStatusRetrieveOutputModel.class));
     }
+
     @Override
-    public Uni<Message> retrievePartyStateStatuses(String sdRef) {
+    public Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef) {
         return service.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
-                        .setType(PARTY_STATE_ALL_RETRIEVE_TYPE)
+                        .setType(PARTY_REFERENCE_IDS_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue.newBuilder()
                                 .setCeString(sdRef)
                                 .build())
-                        .putAttributes(CE_ACTION, CloudEventAttributeValue.newBuilder()
-                                .setCeString(PARTY_STATE_ALL_RETRIEVE_ACTION)
-                                .build())
                         .build())
                 .onItem()
-                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(PartyRoutingStateList.class)));
+                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), Collection.class));
     }
 }

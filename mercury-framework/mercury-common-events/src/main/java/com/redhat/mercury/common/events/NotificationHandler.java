@@ -1,11 +1,9 @@
 package com.redhat.mercury.common.events;
 
-import com.google.protobuf.Message;
-
 import io.smallrye.mutiny.Uni;
 
-public interface NotificationHandler<T extends Message> {
+public interface NotificationHandler {
 
-    Uni<Void> onEvent(org.eclipse.microprofile.reactive.messaging.Message<T> event);
+    Uni<Void> onEvent(org.eclipse.microprofile.reactive.messaging.Message<String> event);
 
 }

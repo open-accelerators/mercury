@@ -6,7 +6,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
 import org.kie.kogito.Model;
 import org.kie.kogito.process.Process;
 import org.kie.kogito.process.ProcessInstance;
@@ -14,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Empty;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
 import io.smallrye.mutiny.Uni;
@@ -28,7 +29,7 @@ public class MyCOServiceImpl implements CustomerOfferService {
     Process<? extends Model> process;
 
     @Override
-    public Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
+    public Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure) {
         LOGGER.info("initiateCustomerOfferProcedure received");
         return Uni.createFrom().nullItem().onItem().transform(i -> {
             Model model = process.createModel();
@@ -39,4 +40,9 @@ public class MyCOServiceImpl implements CustomerOfferService {
         });
     }
 
+    @Override
+    public Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel update) {
+        return Uni.createFrom()
+                .failure(new UnsupportedOperationException("Not implemented"));
+    }
 }

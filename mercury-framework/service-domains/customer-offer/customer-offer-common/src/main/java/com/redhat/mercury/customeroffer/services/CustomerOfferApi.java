@@ -1,22 +1,22 @@
 package com.redhat.mercury.customeroffer.services;
 
-import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
-import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
-
 import com.google.protobuf.Empty;
-import com.google.protobuf.Message;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModel;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
+import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
 
 import io.smallrye.mutiny.Uni;
 
 public interface CustomerOfferApi {
 
-    Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure);
+    Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure);
 
-    Uni<Empty> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update);
+    Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel update);
 
-    Uni<Message> retrieveSDCustomerOffer(String sdRefId);
+    Uni<SDCustomerOfferRetrieveOutputModel> retrieveSDCustomerOffer(String sdRefId);
 
-    Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId);
+    Uni<CRCustomerOfferProcedureRetrieveOutputModel> retrieveCustomerOffer(String sdRefId, String crRefId);
 
     //TODO: Implement other queries and commands
 }

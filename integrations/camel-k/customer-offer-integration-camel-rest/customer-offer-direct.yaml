@@ -1,37 +1,43 @@
 # camel-k: language=yaml
 # camel-k: open-api=CustomerOffer.json
-# camel-k: dependency=mvn:com.redhat.mercury:customer-offer-integration-camel:1.0.1-SNAPSHOT
-- from:
-    uri: direct:print
-    steps:
-    - bean:
-        ref: com.redhat.mercury.customeroffer.camel.CustomerOfferResultPrinter
-        method: toJson
+
 - from:
     uri: direct:initiateCustomerOfferProcedure
     steps:
-      - bean:
-          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
-          method: initiateCustomerOfferProcedure
+      - set-header:
+          name: serviceDomainName
+          constant: customer-offer
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.customeroffer.procedure.initiation
       - to: direct:command
 - from:
     uri: direct:updateCustomerOfferProcedure
     steps:
-      - bean:
-          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
-          method: updateCustomerOfferProcedure
+      - set-header:
+          name: serviceDomainName
+          constant: customer-offer
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.customeroffer.procedure.update
       - to: direct:command
 - from:
     uri: direct:retrieveSDCustomerOffer
     steps:
-      - bean:
-          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
-          method: retrieveSDCustomerOffer
+      - set-header:
+          name: serviceDomainName
+          constant: customer-offer
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.customeroffer.retrieve
       - to: direct:query
 - from:
     uri: direct:retrieveCustomerOffer
     steps:
-      - bean:
-          bean-type: com.redhat.mercury.customeroffer.camel.CustomerOfferTransformer
-          method: retrieveCustomerOffer
-      - to: direct:query            
+      - set-header:
+          name: serviceDomainName
+          constant: customer-offer
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.customeroffer.procedure.retrieve
+      - to: direct:query

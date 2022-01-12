@@ -3,7 +3,6 @@ package com.redhat.mercury.customeroffer.events;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
@@ -19,7 +18,7 @@ import io.smallrye.reactive.messaging.ce.IncomingCloudEventMetadata;
 
 @ApplicationScoped
 @Unremovable
-public class CustomerOfferNotificationHandler implements NotificationHandler<CustomerOfferNotification> {
+public class CustomerOfferNotificationHandler implements NotificationHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferNotificationHandler.class);
 
@@ -28,7 +27,7 @@ public class CustomerOfferNotificationHandler implements NotificationHandler<Cus
 
     @Override
     @Incoming(CustomerOffer.DOMAIN_NAME)
-    public Uni<Void> onEvent(Message<CustomerOfferNotification> event) {
+    public Uni<Void> onEvent(Message<String> event) {
         return Uni.createFrom().item(() -> event.getMetadata(IncomingCloudEventMetadata.class)
                         .orElseThrow(() -> new IllegalArgumentException("Expected a Cloud Event")))
                 .chain(metadata -> {

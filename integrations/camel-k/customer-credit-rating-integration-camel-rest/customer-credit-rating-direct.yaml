@@ -1,0 +1,13 @@
+# camel-k: language=yaml
+# camel-k: open-api=CustomerCreditRating.json
+
+- from:
+    uri: direct:retrieveCustomerCreditRating
+    steps:
+      - set-header:
+          name: serviceDomainName
+          constant: customer-credit-rating
+      - set-header:
+          name: cloudEventType
+          constant: org.bian.customercreditrating.state.retrieve
+      - to: direct:query

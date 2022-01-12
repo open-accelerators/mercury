@@ -8,9 +8,6 @@
     </parent>
     <artifactId>customer-offer-common</artifactId>
     <name>Service Domains :: Customer Offer :: Common</name>
-    <properties>
-        <quarkus.generate-code.grpc.scan-for-imports>all</quarkus.generate-code.grpc.scan-for-imports>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
@@ -18,9 +15,28 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-restdsl-openapi-plugin</artifactId>
+                <configuration>
+                    <specificationUri>${project.basedir}/src/main/resources/CustomerOffer.json</specificationUri>
+                    <modelPackage>com.redhat.mercury.customeroffer.model</modelPackage>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

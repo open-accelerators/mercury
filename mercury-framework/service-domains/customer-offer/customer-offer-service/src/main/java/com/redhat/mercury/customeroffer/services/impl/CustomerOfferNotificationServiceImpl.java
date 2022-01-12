@@ -5,7 +5,6 @@ import java.net.URI;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -28,31 +27,31 @@ public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificat
     @Inject
     @Channel(CustomerOffer.DOMAIN_NAME)
     @Broadcast
-    Emitter<com.google.protobuf.Message> emitter;
+    Emitter<String> emitter;
 
     @Override
-    public Uni<Empty> onCustomerOfferInitiated(CustomerOfferNotification notification) {
+    public Uni<Empty> onCustomerOfferInitiated(String referenceId) {
         return Uni.createFrom().nullItem().onItem().transform(o -> {
             emitter.send(onCustomerOfferEvent(
-                    notification,
+                    referenceId,
                     CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE));
             return Empty.getDefaultInstance();
         });
     }
 
     @Override
-    public Uni<Empty> onCustomerOfferCompleted(CustomerOfferNotification notification) {
+    public Uni<Empty> onCustomerOfferCompleted(String referenceId) {
         return Uni.createFrom().nullItem().onItem().transform(o -> {
             emitter.send(onCustomerOfferEvent(
-                    notification,
+                    referenceId,
                     CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE));
             return Empty.getDefaultInstance();
         });
     }
 
-    private Message<? extends com.google.protobuf.Message> onCustomerOfferEvent(CustomerOfferNotification notification, String eventType) {
-        LOGGER.info("Notify CustomerOffer type: {} - Event: {}", eventType, notification);
-        return Message.of(notification)
+    private Message<String> onCustomerOfferEvent(String referenceId, String eventType) {
+        LOGGER.info("Notify CustomerOffer type: {} - Event: {}", eventType, referenceId);
+        return Message.of(referenceId)
                 .addMetadata(OutgoingCloudEventMetadata.builder()
                         .withSource(URI.create(CustomerOffer.DOMAIN_NAME))
                         .withType(eventType)

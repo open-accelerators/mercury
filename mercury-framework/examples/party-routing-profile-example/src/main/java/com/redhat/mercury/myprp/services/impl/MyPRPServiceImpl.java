@@ -1,12 +1,16 @@
 package com.redhat.mercury.myprp.services.impl;
 
+import java.util.Collection;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Message;
+import com.redhat.mercury.myprp.model.PartyRoutingState;
+import com.redhat.mercury.partyroutingprofile.model.BQStatusRetrieveOutputModel;
+import com.redhat.mercury.partyroutingprofile.model.PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
 import io.smallrye.mutiny.Uni;
@@ -20,16 +24,25 @@ public class MyPRPServiceImpl implements PartyRoutingProfileService {
     PartyRoutingService svc;
 
     @Override
-    public Uni<Message> retrievePartyStateStatuses(String sdRef) {
+    public Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef) {
         return Uni.createFrom().item(() -> svc.getAll());
     }
 
     @Override
-    public Uni<Message> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
+    public Uni<BQStatusRetrieveOutputModel> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
         return Uni.createFrom().item(() -> {
             LOGGER.info("Retrieving party state status for {}/{}/{}", sdRef, crRef, bqRef);
             if (crRef != null) {
-                return svc.getState(crRef);
+                PartyRoutingState state = svc.getState(crRef);
+                if (state == null) {
+                    return null;
+                }
+                BQStatusRetrieveOutputModel output = new BQStatusRetrieveOutputModel();
+                output.setStatusRetrieveActionTaskReference(state.getProcessId());
+                PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord record = new PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord();
+                record.setCustomerRelationshipStatus(state.getStatus());
+                output.setStatusInstanceRecord(record);
+                return output;
             }
             return null;
         });

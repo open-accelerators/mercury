@@ -15,16 +15,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.redhat.mercury</groupId>
-            <artifactId>customer-credit-rating-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.redhat.mercury</groupId>
-            <artifactId>party-routing-profile-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
