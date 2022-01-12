@@ -25,6 +25,7 @@ public abstract class AbstractControllerTest {
 
     protected static final String SERVICE_DOMAIN_CLUSTER_NAME = "service-domain-cluster";
     protected static final String SERVICE_DOMAIN_NAME = "customer-offer";
+    protected static final String SERVICE_DOMAIN_CLUSTER_NAMESPACE = "test-service-domains";
 
     @KubernetesTestServer
     protected KubernetesServer mockServer;
@@ -49,9 +50,8 @@ public abstract class AbstractControllerTest {
 
     protected ServiceDomainCluster createServiceDomainCluster(String sdcName) {
         final ServiceDomainCluster cluster = new ServiceDomainCluster();
-        cluster.setMetadata(new ObjectMetaBuilder().withName(sdcName).withNamespace(mockServer.getClient().getNamespace()).build());
+        cluster.setMetadata(new ObjectMetaBuilder().withName(sdcName).withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).build());
         cluster.setSpec(new ServiceDomainClusterSpecBuilder().build());
-//        cluster.setStatus(new ServiceDomainClusterStatusBuilder().withKafkaBroker("111.111.111.111:9200").build());
         return cluster;
     }
 
@@ -69,7 +69,7 @@ public abstract class AbstractControllerTest {
 
     protected ServiceDomain createServiceDomain(String sdName, boolean withHttpExpose) {
         final ServiceDomain sd = new ServiceDomain();
-        sd.setMetadata(new ObjectMetaBuilder().withName(sdName).withNamespace(mockServer.getClient().getNamespace()).build());
+        sd.setMetadata(new ObjectMetaBuilder().withName(sdName).withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).build());
 
         if(withHttpExpose) {
             sd.setSpec(new ServiceDomainSpecBuilder()
@@ -90,8 +90,8 @@ public abstract class AbstractControllerTest {
     }
 
     protected boolean isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(String sdcName) {
-        return mockServer.getClient().resources(ServiceDomainCluster.class).withName(sdcName).get() != null
-                && mockServer.getClient().resources(ServiceDomainCluster.class).withName(sdcName).get().getStatus() != null
-                && mockServer.getClient().resources(ServiceDomainCluster.class).withName(sdcName).get().getStatus().getKafkaBroker() != null;
+        return mockServer.getClient().resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sdcName).get() != null
+                && mockServer.getClient().resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sdcName).get().getStatus() != null
+                && mockServer.getClient().resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sdcName).get().getStatus().getKafkaBroker() != null;
     }
 }

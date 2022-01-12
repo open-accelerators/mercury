@@ -100,7 +100,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdName = sd.getMetadata().getName();
         final String sdcName = sd.getSpec().getServiceDomainCluster();
 
-        ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).withName(sdcName).get();
+        ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).inNamespace(sd.getMetadata().getNamespace()).withName(sdcName).get();
         if (sdc == null) {
             LOGGER.error("{} service domain cluster not found", sdcName);
             status.setError(sdcName + " service domain cluster not found");
@@ -121,7 +121,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             createOrUpdateService(sd);
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sd.getSpec().getType().toString()) + "-http";
-                ConfigMap sdConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(sdConfigMapName).get();
+                ConfigMap sdConfigMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
 
                 final boolean validateSdConfigMap = validateSdConfigMap(sd, sdConfigMapName, sdConfigMap);
                 if (!validateSdConfigMap) {
@@ -177,16 +177,17 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withScope(Scope.NAMESPACED.toString())
                 .build();
 
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
 
         if (integration == null) {
             final Map<String, Object> resource = new Yaml().load(yamlString);
             // GenericKubernetesResource doesn't work because it uses Random underneath
-            client.customResource(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).create(resource);
+            client.customResource(resourceDefinitionContext).inNamespace(sdNamespace).create(resource);
             LOGGER.debug("{} integration was missing, creating it", integrationName);
         } else {
             if (!Objects.equals(integration.getMetadata().getOwnerReferences().get(0).getUid(), sd.getMetadata().getUid())) {
-                client.genericKubernetesResources(resourceDefinitionContext).inNamespace(client.getNamespace()).withName(integrationName).edit(object -> {
+                client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).edit(object -> {
                     object.getMetadata().getOwnerReferences().get(0).setUid(sd.getMetadata().getUid());
                     return object;
                 });
