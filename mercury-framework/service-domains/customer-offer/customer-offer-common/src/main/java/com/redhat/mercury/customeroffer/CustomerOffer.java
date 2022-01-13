@@ -7,6 +7,7 @@ public final class CustomerOffer {
     // QUERIES
     public static final String CUSTOMER_OFFER_RETRIEVE_TYPE = "org.bian.customeroffer.retrieve";
     public static final String CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE = "org.bian.customeroffer.procedure.retrieve";
+    public static final String CUSTOMER_OFFER_REFERENCE_RETRIEVE_TYPE = "org.bian.customeroffer.reference.retrieve";
     // TODO: Implement
 
     // COMMANDS
@@ -15,9 +16,9 @@ public final class CustomerOffer {
     // TODO: Implement
 
     // EVENTS
-    //TODO: Only for demo. Implement appropriately
     public static final String CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE = "org.bian.customeroffer.procedure.initiated";
     public static final String CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE = "org.bian.customeroffer.procedure.completed";
+    // TODO: Implement
 
     private CustomerOffer() {
     }

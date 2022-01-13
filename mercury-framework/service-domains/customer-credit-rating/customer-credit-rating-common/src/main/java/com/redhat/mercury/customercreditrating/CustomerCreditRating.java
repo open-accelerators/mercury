@@ -5,7 +5,6 @@ public final class CustomerCreditRating {
     public static final String DOMAIN_NAME = "customer-credit-rating";
 
     // QUERIES
-    public static final String STATE_RETRIEVE_ACTION = "retrieveCustomerCreditRatingState";
     public static final String STATE_RETRIEVE_TYPE = "org.bian.customercreditrating.state.retrieve";
 
     // COMMANDS

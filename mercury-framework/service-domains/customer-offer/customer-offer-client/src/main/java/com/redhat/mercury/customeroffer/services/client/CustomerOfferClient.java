@@ -5,23 +5,22 @@ import java.util.UUID;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.bian.protobuf.BindingService;
-import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
-import org.bian.protobuf.customeroffer.CustomerOfferProcedureInitiation;
-import org.bian.protobuf.customeroffer.CustomerOfferProcedureUpdate;
-import org.bian.protobuf.customeroffer.SDCustomerOffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import com.google.protobuf.Message;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModel;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
+import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
 import com.redhat.mercury.customeroffer.services.CustomerOfferApi;
 
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
+import io.vertx.core.json.Json;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
@@ -41,21 +40,21 @@ public class CustomerOfferClient implements CustomerOfferApi {
     BindingService service;
 
     @Override
-    public Uni<Empty> initiateCustomerOfferProcedure(CustomerOfferProcedureInitiation procedure) {
+    public Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure) {
         return service.command(builder(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
-                .setProtoData(Any.pack(procedure))
+                .setBinaryData(ByteString.copyFromUtf8(Json.encode(procedure)))
                 .build());
     }
 
     @Override
-    public Uni<Empty> updateCustomerOfferProcedure(CustomerOfferProcedureUpdate update) {
+    public Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel update) {
         return service.command(builder(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
-                .setProtoData(Any.pack(update))
+                .setBinaryData(ByteString.copyFromUtf8(Json.encode(update)))
                 .build());
     }
 
     @Override
-    public Uni<Message> retrieveSDCustomerOffer(String sdRefId) {
+    public Uni<SDCustomerOfferRetrieveOutputModel> retrieveSDCustomerOffer(String sdRefId) {
         return service.query(builder(CUSTOMER_OFFER_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
@@ -63,11 +62,11 @@ public class CustomerOfferClient implements CustomerOfferApi {
                                 .build())
                         .build())
                 .onItem()
-                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(SDCustomerOffer.class)));
+                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), SDCustomerOfferRetrieveOutputModel.class));
     }
 
     @Override
-    public Uni<Message> retrieveCustomerOffer(String sdRefId, String crRefId) {
+    public Uni<CRCustomerOfferProcedureRetrieveOutputModel> retrieveCustomerOffer(String sdRefId, String crRefId) {
         return service.query(builder(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
                         .putAttributes(CE_SD_REF, CloudEventAttributeValue
                                 .newBuilder()
@@ -79,7 +78,7 @@ public class CustomerOfferClient implements CustomerOfferApi {
                                 .build())
                         .build())
                 .onItem()
-                .transform(Unchecked.function(ce -> ce.getProtoData().unpack(CustomerOfferProcedure.class)));
+                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), CRCustomerOfferProcedureRetrieveOutputModel.class));
     }
 
     private CloudEvent.Builder builder(String type) {

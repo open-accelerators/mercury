@@ -7,12 +7,11 @@ import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
-import org.bian.protobuf.customeroffer.CustomerOfferProcedure;
-import org.bian.protobuf.customeroffer.SDCustomerOffer;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.protobuf.Message;
+import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModel;
+import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 import com.redhat.mercury.customeroffer.services.client.CustomerOfferClient;
 
@@ -33,12 +32,12 @@ class CustomerOfferBindingServiceImplTest {
     @Test
     void testQuerySDRetrieve() throws ExecutionException, InterruptedException, TimeoutException {
         String sdRefId = "foo";
-        SDCustomerOffer expected = SDCustomerOffer.newBuilder().build();
+        SDCustomerOfferRetrieveOutputModel expected = new SDCustomerOfferRetrieveOutputModel();
         Mockito.when(service.retrieveSDCustomerOffer(sdRefId)).thenReturn(Uni.createFrom().item(expected));
-        Uni<Message> response = client.retrieveSDCustomerOffer(sdRefId);
-        CompletableFuture<SDCustomerOffer> message = new CompletableFuture<>();
-        response.subscribe().with(m -> message.complete((SDCustomerOffer) m));
-        SDCustomerOffer sdCustomerOffer = message.get(5, TimeUnit.SECONDS);
+        Uni<SDCustomerOfferRetrieveOutputModel> response = client.retrieveSDCustomerOffer(sdRefId);
+        CompletableFuture<SDCustomerOfferRetrieveOutputModel> message = new CompletableFuture<>();
+        response.subscribe().with(m -> message.complete(m));
+        SDCustomerOfferRetrieveOutputModel sdCustomerOffer = message.get(5, TimeUnit.SECONDS);
         assertThat(sdCustomerOffer).isEqualTo(expected);
     }
 
@@ -46,12 +45,12 @@ class CustomerOfferBindingServiceImplTest {
     void testQueryProcedureRetrieve() throws ExecutionException, InterruptedException, TimeoutException {
         String sdRefId = "foo";
         String crRefId = "bar";
-        CustomerOfferProcedure expected = CustomerOfferProcedure.newBuilder().build();
+        CRCustomerOfferProcedureRetrieveOutputModel expected = new CRCustomerOfferProcedureRetrieveOutputModel();
         Mockito.when(service.retrieveCustomerOffer(sdRefId, crRefId)).thenReturn(Uni.createFrom().item(expected));
-        Uni<Message> response = client.retrieveCustomerOffer(sdRefId, crRefId);
-        CompletableFuture<CustomerOfferProcedure> message = new CompletableFuture<>();
-        response.subscribe().with(m -> message.complete((CustomerOfferProcedure) m));
-        CustomerOfferProcedure procedure = message.get(5, TimeUnit.SECONDS);
+        Uni<CRCustomerOfferProcedureRetrieveOutputModel> response = client.retrieveCustomerOffer(sdRefId, crRefId);
+        CompletableFuture<CRCustomerOfferProcedureRetrieveOutputModel> message = new CompletableFuture<>();
+        response.subscribe().with(m -> message.complete(m));
+        CRCustomerOfferProcedureRetrieveOutputModel procedure = message.get(5, TimeUnit.SECONDS);
         assertThat(procedure).isEqualTo(expected);
     }
 

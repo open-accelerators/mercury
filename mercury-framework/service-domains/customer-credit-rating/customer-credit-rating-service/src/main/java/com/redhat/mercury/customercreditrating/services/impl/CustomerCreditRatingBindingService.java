@@ -32,10 +32,10 @@ public class CustomerCreditRatingBindingService extends BaseBindingService {
         return CustomerCreditRating.DOMAIN_NAME;
     }
 
-    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<? extends Object> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             case CustomerCreditRating.STATE_RETRIEVE_TYPE:
-                return service.retrieveCustomerCreditRatingState(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF));
+                return service.retrieveCustomerCreditRating(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF));
             //TODO: Add more mappings
         }
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));

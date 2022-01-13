@@ -7,9 +7,9 @@ import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
-import org.bian.protobuf.customercreditrating.Rating;
 import org.junit.jupiter.api.Test;
 
+import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModel;
 import com.redhat.mercury.customercreditrating.services.client.CustomerCreditRatingClient;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -25,12 +25,15 @@ class MyCCRServiceImplTest {
     @Test
     void testRetrieveCustomerCreditRatingState() throws ExecutionException, InterruptedException, TimeoutException {
         assertThat(client).isNotNull();
-        CompletableFuture<Rating> message = new CompletableFuture<>();
-        client.retrieveCustomerCreditRatingState("some-sd", "some-cr").subscribe().with(reply -> {
-            message.complete((Rating) reply);
+        CompletableFuture<CRCustomerCreditRatingStateRetrieveOutputModel> message = new CompletableFuture<>();
+        client.retrieveCustomerCreditRating("some-sd", "some-cr").subscribe().with(reply -> {
+            message.complete(reply);
         });
-        assertThat(message.get(5, TimeUnit.SECONDS).getRating())
-                .isEqualTo(802);
+        assertThat(message.get(5, TimeUnit.SECONDS)
+                .getCustomerCreditRatingStateInstanceRecord()
+                .getCustomerCreditRatingAssessmentRecord()
+                .getCreditRatingAssessmentResult())
+                .isEqualTo("802");
     }
 
 }

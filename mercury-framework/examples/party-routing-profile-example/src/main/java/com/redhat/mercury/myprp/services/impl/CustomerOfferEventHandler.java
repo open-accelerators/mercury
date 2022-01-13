@@ -3,7 +3,6 @@ package com.redhat.mercury.myprp.services.impl;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.bian.protobuf.customeroffer.CustomerOfferNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +24,15 @@ public class CustomerOfferEventHandler extends CustomerOfferNotificationService 
     PartyRoutingService svc;
 
     @Override
-    public Uni<Empty> onCustomerOfferInitiated(CustomerOfferNotification notification) {
-        LOGGER.info("received onCustomerOfferInitiated {}", notification);
-        return svc.updatePartyRoutingState(INITIATED_STATUS, notification.getCustomerOfferReference().getId());
+    public Uni<Empty> onCustomerOfferInitiated(String referenceId) {
+        LOGGER.info("received onCustomerOfferInitiated {}", referenceId);
+        return svc.updatePartyRoutingState(INITIATED_STATUS, referenceId);
     }
 
     @Override
-    public Uni<Empty> onCustomerOfferCompleted(CustomerOfferNotification notification) {
-        LOGGER.info("received onCustomerOfferCompleted {}", notification);
-        return svc.updatePartyRoutingState(COMPLETED_STATUS, notification.getCustomerOfferReference().getId());
+    public Uni<Empty> onCustomerOfferCompleted(String referenceId) {
+        LOGGER.info("received onCustomerOfferCompleted {}", referenceId);
+        return svc.updatePartyRoutingState(COMPLETED_STATUS, referenceId);
     }
 
 }

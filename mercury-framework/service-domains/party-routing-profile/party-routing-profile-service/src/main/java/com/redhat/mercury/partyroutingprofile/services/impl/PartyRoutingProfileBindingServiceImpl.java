@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Empty;
-import com.google.protobuf.Message;
 import com.redhat.mercury.common.services.impl.BaseBindingService;
 import com.redhat.mercury.exceptions.MappingNotFoundException;
 import com.redhat.mercury.partyroutingprofile.PartyRoutingProfile;
@@ -34,12 +33,12 @@ public class PartyRoutingProfileBindingServiceImpl extends BaseBindingService {
         return DOMAIN_NAME;
     }
 
-    protected Uni<Message> mapQueryMethod(CloudEvent cloudEvent) {
+    protected Uni<? extends Object> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             case PartyRoutingProfile.PARTY_STATE_STATUS_RETRIEVE_TYPE:
                 return service.retrievePartyStateStatus(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF), getRef(cloudEvent, CE_BQ_REF));
-            case PartyRoutingProfile.PARTY_STATE_ALL_RETRIEVE_TYPE:
-                return service.retrievePartyStateStatuses(getRef(cloudEvent, CE_SD_REF));
+            case PartyRoutingProfile.PARTY_REFERENCE_IDS_RETRIEVE_TYPE:
+                return service.retrieveCustomerProfileReferenceIds(getRef(cloudEvent, CE_SD_REF));
             //TODO: Add more mappings
         }
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
