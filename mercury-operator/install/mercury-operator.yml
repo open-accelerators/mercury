@@ -72,56 +72,27 @@ metadata:
   namespace: mercury
 rules:
   - apiGroups:
+      - ""
       - mercury.redhat.io
+      - apiextensions.k8s.io
+      - rbac.authorization.k8s.io
+      - kafka.strimzi.io
+      - apps
+      - extensions
+      - camel.apache.org
     resources:
       - servicedomainclusters
       - servicedomainclusters/status
       - servicedomains
       - servicedomains/status
-    verbs:
-      - "*"
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
       - customresourcedefinitions
-    verbs:
-      - "*"
-  - apiGroups:
-      - rbac.authorization.k8s.io
-    resources:
       - roles
       - rolebindings
-    verbs:
-      - "*"
-  - apiGroups:
-      - kafka.strimzi.io
-    resources:
       - kafkas
       - kafkatopics
-    verbs:
-      - "*"
-  - apiGroups:
-      - ""
-    resources:
       - serviceaccounts
       - services
-    verbs:
-      - "*"
-  - apiGroups:
-      - apps
-    resources:
       - deployments
-    verbs:
-      - "*"
-  - apiGroups:
-      - extensions
-    resources:
-      - deployments
-    verbs:
-      - "*"
-  - apiGroups:
-      - camel.apache.org
-    resources:
       - integrations
     verbs:
       - "*"
