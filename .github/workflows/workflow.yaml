@@ -17,10 +17,18 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
           cache: maven
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
 
-      - name: Publish package
+      - name: Run tests and publish packages
         run: mvn -B deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Quay
+        uses: docker/login-action@v1.12.0
+        with:
+          registry: 'quay.io'
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Push image into Quay
+        run: docker push quay.io/ecosystem-appeng/mercury-operator:1.0.1-SNAPSHOT
