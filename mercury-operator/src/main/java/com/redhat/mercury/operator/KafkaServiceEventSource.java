@@ -14,7 +14,6 @@ import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.get
 
 public class KafkaServiceEventSource extends AbstractEventSource implements Watcher<Kafka> {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaServiceEventSource.class);
-    private static final String SDC_LABEL = "com.redhat.mercury/service-domain-cluster";
     public static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     public static final String OPERATOR_NAME = "service-domain-cluster-operator";
 
@@ -32,7 +31,7 @@ public class KafkaServiceEventSource extends AbstractEventSource implements Watc
 
     private void registerWatch() {
         client.resources(Kafka.class)
-                .inNamespace(client.getNamespace())
+                .inAnyNamespace()
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
                 .watch(this);
     }

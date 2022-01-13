@@ -1,11 +1,14 @@
 package com.redhat.mercury.operator.controller;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.Namespace;
+import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
@@ -36,18 +39,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @WithKubernetesTestServer
 public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
 
+    @BeforeEach
+    public void beforeEach(){
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        final Namespace namespace = client.namespaces().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).get();
+        if(namespace == null) {
+            client.namespaces().create(new NamespaceBuilder().withNewMetadata().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).endMetadata().build());
+        }
+    }
+
     @AfterEach
     public void afterEach(){
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final KubernetesResourceList<ServiceDomainCluster> sdcList = client.resources(ServiceDomainCluster.class).list();
+        final KubernetesResourceList<ServiceDomainCluster> sdcList = client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).list();
         if(sdcList != null && sdcList.getItems() != null && !sdcList.getItems().isEmpty()){
-            sdcList.getItems().forEach(sdc -> client.resources(ServiceDomainCluster.class).delete(sdc));
+            sdcList.getItems().forEach(sdc -> client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sdc));
         }
 
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
         if(kafka != null){
-            client.resources(Kafka.class).delete(kafka);
+            client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafka);
         }
 
         final Role role = client.resources(Role.class).withName(SERVICE_DOMAIN_ROLE).get();
@@ -64,20 +77,21 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
     @Test
     public void addServiceDomainClusterTest(){
         ServiceDomainCluster cluster = createServiceDomainCluster();
+        final String sdcNamespace = cluster.getMetadata().getNamespace();
 
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        Kafka expectedKafka = getExpectedKafKa("", SERVICE_DOMAIN_CLUSTER_NAME, cluster.getMetadata().getNamespace());
-        client.resources(Kafka.class).inNamespace(client.getNamespace()).create(expectedKafka);
-        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
-        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        Kafka expectedKafka = getExpectedKafKa("", SERVICE_DOMAIN_CLUSTER_NAME, sdcNamespace);
+        client.resources(Kafka.class).inNamespace(sdcNamespace).create(expectedKafka);
+        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
+        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
         assertNotNull(fetchedKafka);
 
-        cluster = client.resources(ServiceDomainCluster.class).inNamespace(client.getNamespace()).create(cluster);
+        cluster = client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).create(cluster);
 
-        expectedKafka = getExpectedKafKa(cluster.getMetadata().getUid(), SERVICE_DOMAIN_CLUSTER_NAME, cluster.getMetadata().getNamespace());
-        client.resources(Kafka.class).inNamespace(client.getNamespace()).replace(expectedKafka);
-        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
+        expectedKafka = getExpectedKafKa(cluster.getMetadata().getUid(), SERVICE_DOMAIN_CLUSTER_NAME, sdcNamespace);
+        client.resources(Kafka.class).inNamespace(sdcNamespace).replace(expectedKafka);
+        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
 
         await().atMost(2, MINUTES).until(() -> client.rbac().roles().withName(SERVICE_DOMAIN_ROLE).get() != null);
         final Role role = client.rbac().roles().withName(SERVICE_DOMAIN_ROLE).get();
@@ -114,17 +128,18 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
         assertEquals(SUBJECT_KIND, roleBinding.getSubjects().get(0).getKind());
 
         await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
-        final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker();
+        final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker();
         assertNotNull(kafkaBrokerUrl);
     }
 
     @Test
     public void addMultipleServiceDomainClusterTest(){
         ServiceDomainCluster cluster = createServiceDomainCluster();
+        final String sdcNamespace = cluster.getMetadata().getNamespace();
 
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        client.resources(ServiceDomainCluster.class).inNamespace(client.getNamespace()).create(cluster);
+        client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).create(cluster);
 
         await().atMost(2, MINUTES).until(() -> client.rbac().roles().withName(SERVICE_DOMAIN_ROLE).get() != null);
         Role role = client.rbac().roles().withName(SERVICE_DOMAIN_ROLE).get();
@@ -143,7 +158,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest{
         assertNull(cluster);
 
         cluster = createServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME + 2);
-        client.resources(ServiceDomainCluster.class).inNamespace(client.getNamespace()).create(cluster);
+        client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).create(cluster);
 
         await().atMost(2, MINUTES).until(() -> client.rbac().roles().withName(SERVICE_DOMAIN_ROLE).get() != null);
         role = client.rbac().roles().withName(SERVICE_DOMAIN_ROLE).get();

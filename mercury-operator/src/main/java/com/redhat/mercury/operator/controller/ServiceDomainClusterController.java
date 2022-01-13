@@ -90,7 +90,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     }
 
     private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, ServiceDomainClusterStatus status) {
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdc.getMetadata().getName()).get();
+        final Kafka kafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
 
         if (isaKafkaBrokerReady(kafka)) {
             final List<ListenerStatus> listeners = kafka.getStatus().getListeners();
@@ -180,14 +180,14 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
         Kafka desiredKafka = createKafkaObj(sdc.getMetadata().getUid(), sdcName, sdcNamespace);
 
-        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(client.getNamespace()).withName(sdcName).get();
+        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(sdcNamespace).withName(sdcName).get();
 
         if (currentKafka == null) {
-            client.resources(Kafka.class).inNamespace(client.getNamespace()).create(desiredKafka);
+            client.resources(Kafka.class).inNamespace(sdcNamespace).create(desiredKafka);
             LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
         } else {
             if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
-                client.resources(Kafka.class).inNamespace(client.getNamespace()).replace(desiredKafka);
+                client.resources(Kafka.class).inNamespace(sdcNamespace).replace(desiredKafka);
                 LOGGER.debug("{} kafka broker was updated", sdcName);
             }
         }
