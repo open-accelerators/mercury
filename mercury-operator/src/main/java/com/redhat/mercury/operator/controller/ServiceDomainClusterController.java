@@ -1,25 +1,23 @@
 package com.redhat.mercury.operator.controller;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.operator.KafkaServiceEventSource;
+import com.redhat.mercury.operator.event.KafkaServiceEventSource;
+import com.redhat.mercury.operator.model.KafkaConfig;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
-import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
-import io.fabric8.kubernetes.api.model.rbac.Role;
-import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
-import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
-import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
-import io.fabric8.kubernetes.api.model.rbac.RoleRef;
-import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
-import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.javaoperatorsdk.operator.api.Context;
 import io.javaoperatorsdk.operator.api.Controller;
 import io.javaoperatorsdk.operator.api.DeleteControl;
@@ -33,30 +31,22 @@ import io.strimzi.api.kafka.model.ZookeeperClusterSpecBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
-import io.strimzi.api.kafka.model.storage.JbodStorageBuilder;
+import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
+import io.strimzi.api.kafka.model.storage.SingleVolumeStorage;
+import io.strimzi.api.kafka.model.storage.Storage;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import static com.redhat.mercury.operator.KafkaServiceEventSource.MANAGED_BY_LABEL;
-import static com.redhat.mercury.operator.KafkaServiceEventSource.OPERATOR_NAME;
+import static com.redhat.mercury.operator.event.KafkaServiceEventSource.MANAGED_BY_LABEL;
+import static com.redhat.mercury.operator.event.KafkaServiceEventSource.OPERATOR_NAME;
 
 @Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
 
-    public static final String SERVICE_DOMAIN_ROLE = "service-domain-role";
-    public static final String ROLE_BINDING = "service-domain-role-binding";
-    public static final String SUBJECT_NAME = "bian-binding-service-sa";
-    public static final String SUBJECT_KIND = "ServiceAccount";
-    public static final String ROLE_REF = "service-domain-role";
-    public static final String ROLE_REF_KIND = "Role";
-    public static final String ROLE_REF_API_GROUP = "rbac.authorization.k8s.io";
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainClusterController.class);
     public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND = "ServiceDomainCluster";
     public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
     public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
+    private static final String DEFAULT_PERSISTENT_STORAGE = "10Gi";
 
     @Inject
     KubernetesClient client;
@@ -69,7 +59,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     @Override
     public DeleteControl deleteResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
         String sdName = sdc.getMetadata().getName();
-        LOGGER.info("{} service domain cluster deleted successfully", sdName);
+        LOGGER.debug("{} service domain cluster deleted successfully", sdName);
         return DeleteControl.DEFAULT_DELETE;
     }
 
@@ -77,8 +67,6 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     public UpdateControl<ServiceDomainCluster> createOrUpdateResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
         ServiceDomainClusterStatus status = new ServiceDomainClusterStatus();
         try {
-            createOrUpdateRole(sdc);
-            createOrUpdateRoleBinding(sdc);
             createOrUpdateKafkaBroker(sdc);
             updateStatusWithKafkaBrokerUrl(sdc, status);
         } catch (Exception e) {
@@ -90,120 +78,68 @@ public class ServiceDomainClusterController implements ResourceController<Servic
     }
 
     private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, ServiceDomainClusterStatus status) {
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka;
 
-        if (isaKafkaBrokerReady(kafka)) {
+        try {
+            kafka = client.resources(Kafka.class)
+                    .inNamespace(sdc.getMetadata().getNamespace())
+                    .withName(sdc.getMetadata().getName())
+                    .get();
+        } catch (KubernetesClientException e) {
+            LOGGER.error("Unable to retrieve Kafka {}", sdc.getMetadata().getName(), e);
+            return;
+        }
+
+        if (isKafkaBrokerReady(kafka)) {
             final List<ListenerStatus> listeners = kafka.getStatus().getListeners();
 
             final ListenerStatus listenerStatus = listeners.stream()
                     .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
                     .findFirst().orElse(null);
 
-            if(listenerStatus != null){
+            if (listenerStatus != null) {
                 status.setKafkaBroker(listenerStatus.getBootstrapServers());
                 sdc.setStatus(status);
             }
         }
     }
 
-    private boolean isaKafkaBrokerReady(Kafka kafka) {
+    private boolean isKafkaBrokerReady(Kafka kafka) {
         return kafka != null && kafka.getStatus() != null && kafka.getStatus().getListeners() != null;
-    }
-
-    private void createOrUpdateRole(ServiceDomainCluster sdc) {
-        final PolicyRule rule = new PolicyRuleBuilder().withApiGroups("", "mercury.redhat.io").withResources("services", "servicedomainbindings").withVerbs("list", "get", "watch").build();
-        Role expected = new RoleBuilder()
-                .withNewMetadata()
-                .withOwnerReferences(new OwnerReferenceBuilder()
-                        .withName(sdc.getMetadata().getName())
-                        .withUid(sdc.getMetadata().getUid())
-                        .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
-                        .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
-                        .build())
-                .withName(SERVICE_DOMAIN_ROLE)
-                .endMetadata()
-                .withRules(rule)
-                .build();
-
-        Role current = client.rbac()
-                .roles()
-                .withName(SERVICE_DOMAIN_ROLE)
-                .get();
-        if (current == null) {
-            LOGGER.debug("{} Role doesn't exist", SERVICE_DOMAIN_ROLE);
-            Role role = client.rbac().roles().createOrReplace(expected);
-            LOGGER.debug("{} Role was missing, created. {}", SERVICE_DOMAIN_ROLE, role);
-        } else {
-            if (!Objects.equals(current.getRules(), expected.getRules())) {
-                client.rbac().roles().createOrReplace(expected);
-                LOGGER.debug("{} Role was updated", SERVICE_DOMAIN_ROLE);
-            }
-        }
-    }
-
-    private void createOrUpdateRoleBinding(ServiceDomainCluster sdc) {
-        final RoleRef roleRef = new RoleRefBuilder().withName(ROLE_REF).withApiGroup(ROLE_REF_API_GROUP).withKind(ROLE_REF_KIND).build();
-        RoleBinding desiredRoleBinding = new RoleBindingBuilder()
-                .withNewMetadata()
-                .withName(ROLE_BINDING)
-                .endMetadata()
-                .withRoleRef(roleRef)
-                .withSubjects(new SubjectBuilder().withName(SUBJECT_NAME).withKind(SUBJECT_KIND).build())
-                .build();
-
-        RoleBinding roleBinding = client
-                .rbac().roleBindings()
-                .withName(ROLE_BINDING).get();
-
-        desiredRoleBinding.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sdc.getMetadata().getName())
-                .withUid(sdc.getMetadata().getUid())
-                .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
-                .build()));
-
-        if (roleBinding == null) {
-            LOGGER.info("{} role binding doesn't exist", ROLE_BINDING);
-            client.rbac().roleBindings().create(desiredRoleBinding);
-            LOGGER.debug("{} role binding was missing, creating it", ROLE_BINDING);
-        } else {
-            if (!Objects.equals(roleBinding.getRoleRef(), desiredRoleBinding.getRoleRef()) || !Objects.equals(roleBinding.getSubjects(), desiredRoleBinding.getSubjects())) {
-                client.rbac().roleBindings().replace(desiredRoleBinding);
-                LOGGER.debug("{} role binding was updated", ROLE_BINDING);
-            }
-        }
     }
 
     private void createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
         final String sdcName = sdc.getMetadata().getName();
         final String sdcNamespace = sdc.getMetadata().getNamespace();
 
-        Kafka desiredKafka = createKafkaObj(sdc.getMetadata().getUid(), sdcName, sdcNamespace);
+        Kafka desiredKafka = createKafkaObj(sdc);
 
-        final Kafka currentKafka = client.resources(Kafka.class).inNamespace(sdcNamespace).withName(sdcName).get();
+        Kafka currentKafka = null;
+        try {
+            currentKafka = client.resources(Kafka.class)
+                    .inNamespace(sdcNamespace)
+                    .withName(sdcName)
+                    .get();
+        } catch (KubernetesClientException e) {
+            LOGGER.debug("Unable to retrieve Kafka resource with name: {}", sdcName);
+        }
 
-        if (currentKafka == null) {
-            client.resources(Kafka.class).inNamespace(sdcNamespace).create(desiredKafka);
-            LOGGER.debug("{} kafka broker was missing, creating it", sdcName);
-        } else {
-            if (!Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
-                client.resources(Kafka.class).inNamespace(sdcNamespace).replace(desiredKafka);
-                LOGGER.debug("{} kafka broker was updated", sdcName);
-            }
+        if (currentKafka == null || !Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
+            client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).createOrReplace(desiredKafka);
+            LOGGER.debug("Kafka {} was created or updated", sdcName);
         }
     }
 
-    Kafka createKafkaObj(String sdcUid, String sdcName, String sdcNamespace) {
+    Kafka createKafkaObj(ServiceDomainCluster sdc) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
-                .withName(sdcName)
-                .withNamespace(sdcNamespace)
+                .withName(sdc.getMetadata().getName())
+                .withNamespace(sdc.getMetadata().getNamespace())
                 .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
                 .withKafka(new KafkaClusterSpecBuilder()
-                        .withVersion("2.8.0")
-                        .withReplicas(3)
+                        .withReplicas(sdc.getSpec().getKafka().getReplicas())
                         .withListeners(new GenericKafkaListenerBuilder()
                                         .withName("plain")
                                         .withPort(9092)
@@ -214,35 +150,44 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                                         .withPort(9093)
                                         .withType(KafkaListenerType.INTERNAL)
                                         .withTls(true).build())
-                        .withConfig(Map.of("offsets.topic.replication.factor", 3,
-                                "transaction.state.log.replication.factor", 3,
-                                "transaction.state.log.min.isr", 2,
-                                "log.message.format.version", "2.8.0",
-                                "inter.broker.protocol.version", "2.8.0"))
-                        .withStorage(new JbodStorageBuilder()
-                                .withVolumes(new PersistentClaimStorageBuilder()
-                                        .withId(0)
-                                        .withSize("100Gi")
-                                        .withDeleteClaim(false)
-                                        .build())
-                                .build())
+                        .withConfig(Map.of("offsets.topic.replication.factor", sdc.getSpec().getKafka().getReplicas(),
+                                "transaction.state.log.replication.factor", sdc.getSpec().getKafka().getReplicas(),
+                                "transaction.state.log.min.isr", getMinIsr(sdc.getSpec().getKafka().getReplicas())))
+                        .withStorage(buildKafkaStorage(sdc.getSpec().getKafka()))
                         .build())
                 .withZookeeper(new ZookeeperClusterSpecBuilder()
-                        .withReplicas(3)
-                        .withStorage(new PersistentClaimStorageBuilder()
-                                .withSize("100Gi")
-                                .withDeleteClaim(false)
-                                .build())
+                        .withReplicas(sdc.getSpec().getKafka().getReplicas())
+                        .withStorage(buildKafkaStorage(sdc.getSpec().getKafka()))
                         .build())
                 .endSpec()
                 .build();
 
         desiredKafka.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sdcName)
-                .withUid(sdcUid)
+                .withName(sdc.getMetadata().getName())
+                .withUid(sdc.getMetadata().getUid())
                 .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
                 .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
                 .build()));
         return desiredKafka;
+    }
+
+    private int getMinIsr(Integer replicas) {
+        return replicas / 2 + 1;
+    }
+
+    private SingleVolumeStorage buildKafkaStorage(KafkaConfig config) {
+        switch (config.getStorage().getType()) {
+            case Storage.TYPE_EPHEMERAL:
+                return new EphemeralStorage();
+            case Storage.TYPE_PERSISTENT_CLAIM:
+                Optional<String> size = Optional.of(config.getStorage().getSize());
+                return new PersistentClaimStorageBuilder()
+                        .withSize(size.orElse(DEFAULT_PERSISTENT_STORAGE))
+                        .build();
+            default:
+                throw new IllegalArgumentException("Unsupported kafka storage type: "
+                        + config.getStorage().getType()
+                        + " supported values are 'ephemeral' and 'persistent-volume-claim'");
+        }
     }
 }

@@ -1,6 +1,8 @@
 package com.redhat.mercury.operator.controller;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +32,13 @@ import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.PodTemplateSpecBuilder;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
-import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.model.Scope;
@@ -60,7 +61,6 @@ import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthenticationBuilder;
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
 
-    public static final String BINDING_SERVICE_SA = "bian-binding-service-sa";
     public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
     public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
     public static final String MERCURY_BINDING_LABEL = "mercury-binding";
@@ -90,7 +90,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     @Override
     public DeleteControl deleteResource(ServiceDomain sd, Context<ServiceDomain> context) {
         String sdName = sd.getMetadata().getName();
-        LOGGER.info("{} service domain deleted successfully", sdName);
+        LOGGER.debug("{} service domain deleted successfully", sdName);
         return DeleteControl.DEFAULT_DELETE;
     }
 
@@ -116,7 +116,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         }
 
         try {
-            createOrUpdateServiceAccount(sd);
             createOrUpdateDeployment(sd, sdc.getStatus().getKafkaBroker());
             createOrUpdateService(sd);
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
@@ -131,8 +130,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
             } else if (sd.getSpec().getExpose() == null || !sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 deleteCamelHttpIntegration(sd);
-            } else {
-
             }
 
             String kafkaTopic = createKafkaTopic(sd);
@@ -169,7 +166,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdOpenAPIYaml = configMap.getData().get(CONFIG_MAP_OPENAPI_JSON_KEY);
 
         String yamlString = mergeCamelYamls(sd, integrationName, sdOpenAPIYaml, sdCamelRouteYaml, grpcYaml);
-
         CustomResourceDefinitionContext resourceDefinitionContext = new CustomResourceDefinitionContext.Builder()
                 .withGroup("camel.apache.org")
                 .withVersion("v1")
@@ -177,22 +173,21 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withScope(Scope.NAMESPACED.toString())
                 .build();
 
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        Resource<GenericKubernetesResource> expected = client.genericKubernetesResources(resourceDefinitionContext)
+                .inNamespace(sd.getMetadata().getNamespace())
+                .load(new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8)));
 
-        if (integration == null) {
-            final Map<String, Object> resource = new Yaml().load(yamlString);
-            // GenericKubernetesResource doesn't work because it uses Random underneath
-            client.customResource(resourceDefinitionContext).inNamespace(sdNamespace).create(resource);
-            LOGGER.debug("{} integration was missing, creating it", integrationName);
-        } else {
-            if (!Objects.equals(integration.getMetadata().getOwnerReferences().get(0).getUid(), sd.getMetadata().getUid())) {
-                client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).edit(object -> {
-                    object.getMetadata().getOwnerReferences().get(0).setUid(sd.getMetadata().getUid());
-                    return object;
-                });
-                LOGGER.debug("{} integration was updated", integrationName);
-            }
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final GenericKubernetesResource current = client.genericKubernetesResources(resourceDefinitionContext)
+                .inNamespace(sdNamespace)
+                .withName(integrationName)
+                .get();
+
+        if (current == null || !Objects.equals(current.getAdditionalProperties(), expected.get().getAdditionalProperties())) {
+            client.genericKubernetesResources(resourceDefinitionContext)
+                    .inNamespace(sd.getMetadata().getNamespace())
+                    .createOrReplace(expected.get());
+            LOGGER.debug("Integration {} was created or updated", integrationName);
         }
     }
 
@@ -211,14 +206,11 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             if (sdCamelRouteYaml == null) {
                 LOGGER.error("{} config map value is missing", sdTypeAsString + "-direct.yaml");
             }
-
             if (grpcYaml == null) {
                 LOGGER.error("{} config map value is missing", "grpc.yaml");
             }
-
             return false;
         }
-
         return true;
     }
 
@@ -239,14 +231,20 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                         "kind", SERVICE_DOMAIN_OWNER_REFERENCES_KIND,
                         "name", sd.getMetadata().getName(),
                         "uid", sd.getMetadata().getUid())))));
-        final Map<String, Object> specMap = new TreeMap<>(Map.of("configuration", List.of(new TreeMap<>(Map.of("type", "env", "value", "MERCURY_BINDING_SERVICE_HOST=" + sdTypeAsString)),
-                        new TreeMap<>(Map.of("type", "env", "value", "MERCURY_BINDING_SERVICE_PORT=" + GRPC_PORT))),
+        final Map<String, Object> specMap = new TreeMap<>(Map.of("configuration",
+                List.of(new TreeMap<>(Map.of("type", "env",
+                                "value", "MERCURY_BINDING_SERVICE_HOST=" + sdTypeAsString)),
+                        new TreeMap<>(Map.of("type", "env",
+                                "value", "MERCURY_BINDING_SERVICE_PORT=" + GRPC_PORT))),
                 "dependencies", List.of(Map.of("mvn", "com.redhat.mercury:" + sdTypeAsString + "-integration-camel:" + version),
                         Map.of("mvn", "com.redhat.mercury:mercury-camel:" + version)),
                 "flows", yaml.load(sdCamelRouteYaml + "\n" + grpcYaml)));
 
         if (sdOpenAPIYaml != null) {
-            specMap.put("resources", List.of(new TreeMap<>(Map.of("content", sdOpenAPIYaml, "name", sd.getSpec().getType().name() + ".json", "type", "openapi"))));
+            specMap.put("resources", List.of(new TreeMap<>(Map.of(
+                    "content", sdOpenAPIYaml,
+                    "name", sd.getSpec().getType().name() + ".json",
+                    "type", "openapi"))));
         }
 
         data.put("spec", specMap);
@@ -306,16 +304,10 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
                 .build()));
 
-        if (kafkaUser == null) {
+        if (kafkaUser == null || !Objects.equals(kafkaUser.getSpec(), desiredKafkaUser.getSpec())) {
             client.resources(KafkaUser.class).create(desiredKafkaUser);
-            LOGGER.debug("{} kafka user was missing, creating it", kafkaUserName);
-        } else {
-            if (!Objects.equals(kafkaUser.getSpec(), desiredKafkaUser.getSpec()) || !Objects.equals(kafkaUser.getMetadata().getOwnerReferences(), desiredKafkaUser.getMetadata().getOwnerReferences())) {
-                client.resources(KafkaUser.class).replace(desiredKafkaUser);
-                LOGGER.debug("{} kafka topic was updated", desiredKafkaUser);
-            }
+            LOGGER.debug("KafkaUser {} was created or updated", kafkaUserName);
         }
-
         return kafkaUserName;
     }
 
@@ -342,14 +334,9 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
 
-        if (kafkaTopic == null) {
+        if (kafkaTopic == null || !Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
             client.resources(KafkaTopic.class).create(desiredKafkaTopic);
-            LOGGER.debug("{} kafka topic was missing, creating it", kafkaTopicName);
-        } else {
-            if (!Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec()) || !Objects.equals(kafkaTopic.getMetadata().getOwnerReferences(), desiredKafkaTopic.getMetadata().getOwnerReferences())) {
-                client.resources(KafkaTopic.class).replace(desiredKafkaTopic);
-                LOGGER.debug("{} kafka topic was updated", kafkaTopicName);
-            }
+            LOGGER.debug("KafkaTopic {} was created or updated", kafkaTopicName);
         }
 
         return kafkaTopicName;
@@ -360,7 +347,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         String sdName = sd.getMetadata().getName();
 
         Deployment desiredDeployment = new DeploymentBuilder()
-                .withApiVersion("apps/v1")
                 .withNewMetadata()
                 .withName(sdName)
                 .withNamespace(sdNS)
@@ -375,7 +361,6 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                                 .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
                                 .endMetadata()
                                 .withSpec(new PodSpecBuilder()
-//                                                                    .withServiceAccountName(SERVICE_ACCOUNT_NAME)
                                         .withContainers(new ContainerBuilder()
                                                 .withName(BUSINESS_SERVICE_CONTAINER_NAME)
                                                 .withImage(sd.getSpec().getBusinessImage())
@@ -401,14 +386,9 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final Deployment sdDeployment = client.apps().deployments().inNamespace(sdNS).withName(sdName).get();
 
-        if (sdDeployment == null) {
-            client.apps().deployments().inNamespace(sdNS).create(desiredDeployment);
-            LOGGER.debug("{} deployment was missing, creating it", sdName);
-        } else {
-            if (!Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec()) || !Objects.equals(sdDeployment.getMetadata().getOwnerReferences(), desiredDeployment.getMetadata().getOwnerReferences())) {
-                client.apps().deployments().inNamespace(sdNS).replace(desiredDeployment);
-                LOGGER.debug("{} deployment was updated", sdName);
-            }
+        if (sdDeployment == null || !Objects.equals(sdDeployment.getSpec(), desiredDeployment.getSpec())) {
+            client.apps().deployments().inNamespace(sdNS).createOrReplace(desiredDeployment);
+            LOGGER.debug("Deployment {} was created or updated", sdName);
         }
     }
 
@@ -440,44 +420,9 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         final Service sdService = client.services().inNamespace(sdNS).withName(sdName).get();
 
-        if (sdService == null) {
-            client.services().inNamespace(sdNS).create(desiredService);
-            LOGGER.debug("{} service was missing, creating it", sdName);
-        } else {
-            if (!Objects.equals(sdService.getSpec(), desiredService.getSpec()) || !Objects.equals(sdService.getMetadata().getOwnerReferences(), desiredService.getMetadata().getOwnerReferences())) {
-                client.services().inNamespace(sdNS).replace(desiredService);
-                LOGGER.debug("{} service was updated", sdName);
-            }
-        }
-    }
-
-    private void createOrUpdateServiceAccount(ServiceDomain sd) {
-        String sdNS = sd.getMetadata().getNamespace();
-
-        ServiceAccount desiredServiceAccount = new ServiceAccountBuilder()
-                .withNewMetadata()
-                .withName(BINDING_SERVICE_SA)
-                .withNamespace(sdNS)
-                .endMetadata()
-                .build();
-
-        desiredServiceAccount.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid())
-                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
-                .build()));
-
-        ServiceAccount serviceAccount = client.serviceAccounts().inNamespace(sdNS).withName(BINDING_SERVICE_SA).get();
-
-        if (serviceAccount == null) {
-            client.serviceAccounts().inNamespace(sdNS).create(desiredServiceAccount);
-            LOGGER.debug("{} service account was missing, creating it", BINDING_SERVICE_SA);
-        } else {
-            if (!Objects.equals(serviceAccount.getMetadata().getOwnerReferences(), desiredServiceAccount.getMetadata().getOwnerReferences())) {
-                client.serviceAccounts().inNamespace(sdNS).replace(desiredServiceAccount);
-                LOGGER.debug("{} service account was updated", BINDING_SERVICE_SA);
-            }
+        if (sdService == null || !Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
+            client.services().inNamespace(sdNS).createOrReplace(desiredService);
+            LOGGER.debug("Service {} was created or updated", sdName);
         }
     }
 }

@@ -1,0 +1,11 @@
+apiVersion: mercury.redhat.io/v1alpha1
+kind: ServiceDomainCluster
+metadata:
+  name: my-first-sdc
+  labels:
+    app: examples
+spec:
+  kafka:
+    replicas: 1
+    storage:
+      type: ephemeral

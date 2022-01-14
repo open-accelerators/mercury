@@ -10,4 +10,10 @@ import io.fabric8.kubernetes.model.annotation.Version;
 @Version("v1alpha1")
 @ShortNames("sdc")
 public class ServiceDomainCluster extends CustomResource<ServiceDomainClusterSpec, ServiceDomainClusterStatus> implements Namespaced {
+
+    public ServiceDomainCluster() {
+        super();
+        this.setSpec(new ServiceDomainClusterSpec());
+    }
+
 }

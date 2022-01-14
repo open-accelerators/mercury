@@ -1,5 +1,7 @@
 package com.redhat.mercury.operator.controller;
 
+import java.util.List;
+
 import javax.inject.Inject;
 
 import com.redhat.mercury.operator.model.ServiceDomain;
@@ -17,8 +19,6 @@ import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 
-import java.util.List;
-
 import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
 
 public abstract class AbstractControllerTest {
@@ -33,8 +33,8 @@ public abstract class AbstractControllerTest {
     @Inject
     protected ServiceDomainClusterController serviceDomainClusterController;
 
-    public Kafka getExpectedKafKa(String sdcUid, String sdcName, String sdcNamespace){
-        final Kafka kafka = serviceDomainClusterController.createKafkaObj(sdcUid, sdcName, sdcNamespace);
+    public Kafka getExpectedKafKa(ServiceDomainCluster sdc) {
+        final Kafka kafka = serviceDomainClusterController.createKafkaObj(sdc);
 
         final KafkaStatus status = new KafkaStatusBuilder().withListeners(new ListenerStatusBuilder()
                         .withType(KAFKA_LISTENER_TYPE_PLAIN)
@@ -71,7 +71,7 @@ public abstract class AbstractControllerTest {
         final ServiceDomain sd = new ServiceDomain();
         sd.setMetadata(new ObjectMetaBuilder().withName(sdName).withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).build());
 
-        if(withHttpExpose) {
+        if (withHttpExpose) {
             sd.setSpec(new ServiceDomainSpecBuilder()
                     .withBusinessImage("testImage")
                     .withServiceDomainCluster(SERVICE_DOMAIN_CLUSTER_NAME)
@@ -85,13 +85,14 @@ public abstract class AbstractControllerTest {
                     .withType(ServiceDomainSpec.Type.CustomerOffer)
                     .build());
         }
-
         return sd;
     }
 
     protected boolean isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(String sdcName) {
-        return mockServer.getClient().resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sdcName).get() != null
-                && mockServer.getClient().resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sdcName).get().getStatus() != null
-                && mockServer.getClient().resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sdcName).get().getStatus().getKafkaBroker() != null;
+        ServiceDomainCluster sdc = mockServer.getClient().resources(ServiceDomainCluster.class)
+                .inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE)
+                .withName(sdcName)
+                .get();
+        return sdc != null && sdc.getStatus() != null && sdc.getStatus().getKafkaBroker() != null;
     }
 }
