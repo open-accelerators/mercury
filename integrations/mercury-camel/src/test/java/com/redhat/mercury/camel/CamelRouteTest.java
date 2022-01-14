@@ -2,7 +2,6 @@ package com.redhat.mercury.camel;
 
 import java.util.Collection;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -21,6 +20,7 @@ import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInpu
 import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
+import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.path.json.JsonPath;
 import io.smallrye.mutiny.Uni;
@@ -104,6 +104,8 @@ class CamelRouteTest {
                         .bean(BindingService.class, "query")
                         .removeHeader("cloudEventType")
                         .removeHeader("serviceDomainName")
+                        // in camel-k extracts from Uni<CloudEvent> automagically
+                        .bean(UniExtractor.class, "extract")
                         .bean(CloudEventPrinter.class, "print");
             }
         });
@@ -156,4 +158,10 @@ class CamelRouteTest {
 
     }
 
+    private static class UniExtractor {
+
+        public static CloudEvent extract(Uni<CloudEvent> uni) {
+            return uni.await().indefinitely();
+        }
+    }
 }
