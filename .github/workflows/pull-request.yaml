@@ -17,4 +17,4 @@ jobs:
           distribution: 'adopt'
           cache: maven
       - name: Run tests
-        run: mvn -B verify
+        run: mvn -B install verify
