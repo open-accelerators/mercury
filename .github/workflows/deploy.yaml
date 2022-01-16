@@ -19,7 +19,7 @@ jobs:
           distribution: 'adopt'
       - run: cat /home/runner/.m2/settings.xml
       - name: Publish to GitHub Packages Apache Maven
-        run: mvn deploy -Pnative -DskipTests
+        run: mvn deploy -U -Pnative -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Quay
