@@ -38,4 +38,4 @@ jobs:
         with:
           context: ./mercury-operator
           push: true
-          tags: ${{ env.MERCURY_VERSION }}
+          tags: quay.io/ecosystem-appeng/mercury-operator:${{ env.MERCURY_VERSION }}
