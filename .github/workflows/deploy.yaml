@@ -20,7 +20,6 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-#      - run: cat /home/runner/.m2/settings.xml
 #      - name: Publish to GitHub Packages Apache Maven
 #        run: mvn deploy -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
 #        env:
@@ -31,15 +30,17 @@ jobs:
 #          registry: 'quay.io'
 #          username: ${{ secrets.QUAY_USERNAME }}
 #          password: ${{ secrets.QUAY_PASSWORD }}
-      - name: Run script file
-        run: |
-          chmod +x "${GITHUB_WORKSPACE}/.github/workflows/script.sh"
-          "${GITHUB_WORKSPACE}/.github/workflows/script.sh" >> $GITHUB_ENV
-        shell: bash
+#      - name: Run script file
+#        run: |
+#          chmod +x "${GITHUB_WORKSPACE}/.github/workflows/script.sh"
+#          "${GITHUB_WORKSPACE}/.github/workflows/script.sh" >> $GITHUB_ENV
+#        shell: bash
 #      - name: Set Mercury Version
 #        shell: bash
 #        run: |
 #          echo MERCURY_VERSION=xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml >> $GITHUB_ENV
+        run: |
+          MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml) >> $GITHUB_ENV
       - run: |
           echo ${{ env.MERCURY_VERSION }}
 #      - name: Build and publish mercury-operator container image
