@@ -15,7 +15,3 @@ These integrations depend on Camel K and are implemented by the Mercury Operator
 ### Mercury Camel
 
   The _mercury-camel_ directory is a common library available to all integrations to execute cloud event activities
-
-### Service Domain Integration
-
-  The _service-domain-integration_ directory contains Java code that is utilized by the Camel K integrations  
