@@ -40,8 +40,8 @@ jobs:
 #        shell: bash
 #        run: |
 #          echo MERCURY_VERSION=xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml >> $GITHUB_ENV
-#      - run: |
-#          echo ${{ env.MERCURY_VERSION }}
+      - run: |
+          echo ${{ env.MERCURY_VERSION }}
 #      - name: Build and publish mercury-operator container image
 #        uses: docker/build-push-action@v2.7.0
 #        with:
