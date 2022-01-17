@@ -43,7 +43,7 @@ jobs:
 #        run: |
 #          echo MERCURY_VERSION=xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml >> $GITHUB_ENV
       - run: |
-          MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)
+          MERCURY_VERSION=$(xmllint --xpath /*[local-name()="project"]/*[local-name()="version"]/text() pom.xml)
           echo $MERCURY_VERSION >> $GITHUB_ENV
 #          cat ./file.txt >> $GITHUB_ENV
 #          echo 'EOF' >> $GITHUB_ENV
