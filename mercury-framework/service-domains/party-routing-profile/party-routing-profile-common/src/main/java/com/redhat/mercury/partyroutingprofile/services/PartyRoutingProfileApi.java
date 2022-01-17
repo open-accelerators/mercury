@@ -10,5 +10,5 @@ public interface PartyRoutingProfileApi {
 
     Uni<BQStatusRetrieveOutputModel> retrievePartyStateStatus(String sdRef, String crRef, String bqRef);
 
-    Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef);
+    Uni<Collection<String>> retrievePartyRoutingProfileReferenceIds(String sdRef);
 }

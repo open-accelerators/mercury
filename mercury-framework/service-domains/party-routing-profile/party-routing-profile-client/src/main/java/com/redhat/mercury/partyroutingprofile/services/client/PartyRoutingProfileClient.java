@@ -53,7 +53,7 @@ public class PartyRoutingProfileClient implements PartyRoutingProfileApi {
     }
 
     @Override
-    public Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef) {
+    public Uni<Collection<String>> retrievePartyRoutingProfileReferenceIds(String sdRef) {
         return service.query(CloudEvent.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setType(PARTY_REFERENCE_IDS_RETRIEVE_TYPE)
