@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build-and-push-images:
@@ -23,37 +20,22 @@ jobs:
       - name: Install xmllint
         run: |
           sudo apt-get install libxml2-utils
-#      - name: Publish to GitHub Packages Apache Maven
-#        run: mvn deploy -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      - name: Login to Quay
-#        uses: docker/login-action@v1.12.0
-#        with:
-#          registry: 'quay.io'
-#          username: ${{ secrets.QUAY_USERNAME }}
-#          password: ${{ secrets.QUAY_PASSWORD }}
-#      - name: Run script file
-#        run: |
-#          chmod +x "${GITHUB_WORKSPACE}/.github/workflows/script.sh"
-#          "${GITHUB_WORKSPACE}/.github/workflows/script.sh" >> $GITHUB_ENV
-#        shell: bash
-#      - name: Set Mercury Version
-#        shell: bash
-#        run: |
-#          echo MERCURY_VERSION=xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml >> $GITHUB_ENV
-      - run: |
+      - name: Publish to GitHub Packages Apache Maven
+        run: mvn deploy -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to Quay
+        uses: docker/login-action@v1.12.0
+        with:
+          registry: 'quay.io'
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Set Mercury Version
+        run: |
           echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)" >> $GITHUB_ENV
-#          echo $MERCURY_VERSION >> $GITHUB_ENV
-#          cat ./file.txt >> $GITHUB_ENV
-#          echo 'EOF' >> $GITHUB_ENV
-#          echo 'MERCURY_VERSION<<EOF' >> $GITHUB_ENV
-#          echo 'MERCURY_VERSION' >> $GITHUB_ENV
-      - run: |
-          echo ${{ env.MERCURY_VERSION }}
-#      - name: Build and publish mercury-operator container image
-#        uses: docker/build-push-action@v2.7.0
-#        with:
-#          context: ./mercury-operator
-#          push: true
-#          tags: ${{ env.MERCURY_VERSION }}
+      - name: Build and publish mercury-operator container image
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: ./mercury-operator
+          push: true
+          tags: ${{ env.MERCURY_VERSION }}
