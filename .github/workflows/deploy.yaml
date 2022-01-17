@@ -48,7 +48,7 @@ jobs:
 #          cat ./file.txt >> $GITHUB_ENV
 #          echo 'EOF' >> $GITHUB_ENV
 #          echo 'MERCURY_VERSION<<EOF' >> $GITHUB_ENV
-          echo MERCURY_VERSION >> $GITHUB_ENV
+          echo 'MERCURY_VERSION' >> $GITHUB_ENV
       - run: |
           echo ${{ env.MERCURY_VERSION }}
 #      - name: Build and publish mercury-operator container image
