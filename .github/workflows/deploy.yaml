@@ -20,6 +20,9 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
+      - name: Install xmllint
+        run: |
+          sudo apt-get install libxml2-utils
 #      - name: Publish to GitHub Packages Apache Maven
 #        run: mvn deploy -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
 #        env:
