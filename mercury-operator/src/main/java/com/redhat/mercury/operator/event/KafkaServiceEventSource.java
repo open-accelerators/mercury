@@ -1,4 +1,4 @@
-package com.redhat.mercury.operator;
+package com.redhat.mercury.operator.event;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

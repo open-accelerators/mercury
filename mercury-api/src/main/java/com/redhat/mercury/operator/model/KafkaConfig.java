@@ -1,8 +1,5 @@
 package com.redhat.mercury.operator.model;
 
-import java.io.Serializable;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -22,20 +19,9 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainSpec implements Serializable {
-    public enum Type {
-        CustomerOffer(),
-        CustomerCreditRating(),
-        PartyRoutingProfile()
-    }
+public class KafkaConfig {
 
-    public enum ExposeType {
-        http
-    }
+    private Integer replicas = 1;
+    private KafkaStorage storage = new KafkaStorage();
 
-    private String businessImage;
-    private String serviceDomainCluster;
-    private Type type;
-    private List<ExposeType> expose;
-    private List<Binding> binding;
 }

@@ -1,4 +1,4 @@
-package com.redhat.mercury.operator;
+package com.redhat.mercury.operator.event;
 
 import io.fabric8.kubernetes.client.Watcher;
 import io.javaoperatorsdk.operator.processing.event.DefaultEvent;

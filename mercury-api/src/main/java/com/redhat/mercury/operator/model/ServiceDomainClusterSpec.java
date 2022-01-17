@@ -18,4 +18,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class ServiceDomainClusterSpec {
+
+    private KafkaConfig kafka = new KafkaConfig();
+
 }

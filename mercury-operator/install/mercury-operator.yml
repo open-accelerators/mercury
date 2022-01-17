@@ -7,64 +7,6 @@ metadata:
   name: mercury-operator
   namespace: mercury
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/name: mercury-operator
-  name: mercury-operator
-  namespace: mercury
-spec:
-  ports:
-    - name: http
-      port: 80
-      targetPort: 8080
-  selector:
-    app.kubernetes.io/name: mercury-operator
-  type: ClusterIP
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: mercury-operator-view
-  namespace: mercury
-roleRef:
-  kind: ClusterRole
-  apiGroup: rbac.authorization.k8s.io
-  name: view
-subjects:
-  - kind: ServiceAccount
-    name: mercury-operator
-    namespace: mercury
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: servicedomainclustercontroller-crd-validating-role-binding
-  namespace: mercury
-roleRef:
-  kind: ClusterRole
-  apiGroup: rbac.authorization.k8s.io
-  name: josdk-crd-validating-cluster-role
-subjects:
-  - kind: ServiceAccount
-    name: mercury-operator
-    namespace: mercury
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: servicedomaincontroller-crd-validating-role-binding
-  namespace: mercury
-roleRef:
-  kind: ClusterRole
-  apiGroup: rbac.authorization.k8s.io
-  name: josdk-crd-validating-cluster-role
-subjects:
-  - kind: ServiceAccount
-    name: mercury-operator
-    namespace: mercury
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -73,27 +15,22 @@ metadata:
 rules:
   - apiGroups:
       - ""
-      - mercury.redhat.io
-      - apiextensions.k8s.io
-      - rbac.authorization.k8s.io
-      - kafka.strimzi.io
       - apps
       - extensions
+      - mercury.redhat.io
+      - kafka.strimzi.io
       - camel.apache.org
     resources:
       - servicedomainclusters
       - servicedomainclusters/status
       - servicedomains
       - servicedomains/status
-      - customresourcedefinitions
-      - roles
-      - rolebindings
       - kafkas
       - kafkatopics
-      - serviceaccounts
+      - kafkausers
+      - integrations
       - services
       - deployments
-      - integrations
     verbs:
       - "*"
 ---
@@ -111,6 +48,33 @@ subjects:
     name: mercury-operator
     namespace: mercury
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mercury-operator-role
+  namespace: mercury
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mercury-operator-role-binding
+  namespace: mercury
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: mercury-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: mercury-operator
+    namespace: mercury
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -119,7 +83,6 @@ metadata:
   name: mercury-operator
   namespace: mercury
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: mercury-operator
@@ -143,10 +106,6 @@ spec:
               path: /q/health/live
               port: 8080
               scheme: HTTP
-            initialDelaySeconds: 0
-            periodSeconds: 30
-            successThreshold: 1
-            timeoutSeconds: 10
           name: mercury-operator
           ports:
             - containerPort: 8080
@@ -158,8 +117,4 @@ spec:
               path: /q/health/ready
               port: 8080
               scheme: HTTP
-            initialDelaySeconds: 0
-            periodSeconds: 30
-            successThreshold: 1
-            timeoutSeconds: 10
       serviceAccount: mercury-operator

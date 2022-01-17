@@ -18,6 +18,19 @@ spec:
       openAPIV3Schema:
         properties:
           spec:
+            properties:
+              kafka:
+                properties:
+                  replicas:
+                    type: integer
+                  storage:
+                    properties:
+                      size:
+                        type: string
+                      type:
+                        type: string
+                    type: object
+                type: object
             type: object
           status:
             properties:
