@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build-and-push-images:
@@ -31,7 +34,7 @@ jobs:
       - uses: actions/github-script@v5
         id: set-result
         with:
-          script: return xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml
+          script: return xmllint --xpath "/*[local-name()="project"]/*[local-name()="version"]/text()" pom.xml
           result-encoding: string
       - name: Get result
         run: echo "${{steps.set-result.outputs.result}}"
