@@ -34,7 +34,7 @@ jobs:
       - name: Set Mercury Version
         shell: bash
         run: |
-          echo "MERCURY_VERSION=xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml" >> $GITHUB_ENV
+          echo MERCURY_VERSION=xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml >> $GITHUB_ENV
       - run: |
           echo ${{ env.MERCURY_VERSION }}
 #      - name: Build and publish mercury-operator container image
