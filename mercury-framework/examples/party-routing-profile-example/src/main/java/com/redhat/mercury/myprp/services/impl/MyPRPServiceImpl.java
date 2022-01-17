@@ -24,7 +24,7 @@ public class MyPRPServiceImpl implements PartyRoutingProfileService {
     PartyRoutingService svc;
 
     @Override
-    public Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef) {
+    public Uni<Collection<String>> retrievePartyRoutingProfileReferenceIds(String sdRef) {
         return Uni.createFrom().item(() -> svc.getAll());
     }
 

@@ -13,7 +13,7 @@ public interface PartyRoutingProfileService extends PartyRoutingProfileApi {
         return Uni.createFrom().nullItem();
     }
 
-    default Uni<Collection<String>> retrieveCustomerProfileReferenceIds(String sdRef) {
+    default Uni<Collection<String>> retrievePartyRoutingProfileReferenceIds(String sdRef) {
         return Uni.createFrom().nullItem();
     }
 }
