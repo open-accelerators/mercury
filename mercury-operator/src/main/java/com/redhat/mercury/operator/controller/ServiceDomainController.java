@@ -17,6 +17,10 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
+import com.redhat.mercury.operator.event.DeploymentEventSource;
+import com.redhat.mercury.operator.event.IntegrationEventSource;
+import com.redhat.mercury.operator.event.KafkaTopicEventSource;
+import com.redhat.mercury.operator.event.ServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
@@ -47,6 +51,7 @@ import io.javaoperatorsdk.operator.api.Controller;
 import io.javaoperatorsdk.operator.api.DeleteControl;
 import io.javaoperatorsdk.operator.api.ResourceController;
 import io.javaoperatorsdk.operator.api.UpdateControl;
+import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRuleBuilder;
@@ -57,6 +62,9 @@ import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserAuthorizationSimpleBuilder;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthenticationBuilder;
+
+import static com.redhat.mercury.operator.event.KafkaEventSource.MANAGED_BY_LABEL;
+import static com.redhat.mercury.operator.event.KafkaEventSource.OPERATOR_NAME;
 
 @Controller
 public class ServiceDomainController implements ResourceController<ServiceDomain> {
@@ -86,6 +94,14 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
     @ConfigProperty(name = "application.version")
     String version;
+
+    @Override
+    public void init(EventSourceManager eventSourceManager) {
+        eventSourceManager.registerEventSource("deployment-event-source", DeploymentEventSource.createAndRegisterWatch(client));
+        eventSourceManager.registerEventSource("integration-event-source", IntegrationEventSource.createAndRegisterWatch(client));
+        eventSourceManager.registerEventSource("kafka-topic-event-source", KafkaTopicEventSource.createAndRegisterWatch(client));
+        eventSourceManager.registerEventSource("service-event-source", ServiceEventSource.createAndRegisterWatch(client));
+    }
 
     @Override
     public DeleteControl deleteResource(ServiceDomain sd, Context<ServiceDomain> context) {
@@ -227,6 +243,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         data.put("kind", "Integration");
         data.put("metadata", Map.of("name", integrationName,
                 "namespace", sd.getMetadata().getNamespace(),
+                "labels", Map.of(MANAGED_BY_LABEL, OPERATOR_NAME),
                 "ownerReferences", List.of(new TreeMap<>(Map.of("apiVersion", SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION,
                         "kind", SERVICE_DOMAIN_OWNER_REFERENCES_KIND,
                         "name", sd.getMetadata().getName(),
@@ -317,7 +334,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
                 .withNewMetadata()
                 .withName(kafkaTopicName)
-                .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka"))
+                .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka",
+                                   MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
                 .withPartitions(1)
@@ -350,7 +368,8 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withNewMetadata()
                 .withName(sdName)
                 .withNamespace(sdNS)
-                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
+                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName,
+                                   MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
                         .withSelector(new LabelSelectorBuilder()
@@ -401,7 +420,9 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withNewMetadata()
                 .withName(sdName)
                 .withNamespace(sdNS)
-                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName, MERCURY_BINDING_LABEL, INTERNAL))
+                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL,
+                                   sdName, MERCURY_BINDING_LABEL, INTERNAL,
+                                   MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(new ServicePortBuilder()

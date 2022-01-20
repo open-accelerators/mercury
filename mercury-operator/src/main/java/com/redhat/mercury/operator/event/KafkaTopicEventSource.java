@@ -3,41 +3,43 @@ package com.redhat.mercury.operator.event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.javaoperatorsdk.operator.processing.event.AbstractEventSource;
-import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaTopic;
 
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getUID;
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getVersion;
 
-public class KafkaServiceEventSource extends AbstractEventSource implements Watcher<Kafka> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KafkaServiceEventSource.class);
+public class KafkaTopicEventSource extends AbstractEventSource implements Watcher<KafkaTopic> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(KafkaTopicEventSource.class);
     public static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     public static final String OPERATOR_NAME = "service-domain-cluster-operator";
 
     private final KubernetesClient client;
 
-    public static KafkaServiceEventSource createAndRegisterWatch(KubernetesClient client) {
-        KafkaServiceEventSource eventSource = new KafkaServiceEventSource(client);
+    public static KafkaTopicEventSource createAndRegisterWatch(KubernetesClient client) {
+        KafkaTopicEventSource eventSource = new KafkaTopicEventSource(client);
         eventSource.registerWatch();
         return eventSource;
     }
 
-    private KafkaServiceEventSource(KubernetesClient client) {
+    private KafkaTopicEventSource(KubernetesClient client) {
         this.client = client;
     }
 
     private void registerWatch() {
-        client.resources(Kafka.class)
+        client.resources(KafkaTopic.class)
                 .inAnyNamespace()
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
                 .watch(this);
     }
 
     @Override
-    public void eventReceived(Action action, Kafka resource) {
+    public void eventReceived(Action action, KafkaTopic resource) {
         if (eventHandler == null) {
             LOGGER.warn("Ignoring action {} for resource {}. EventHandler has not yet been initialized.", action, resource);
             return;
@@ -54,7 +56,7 @@ public class KafkaServiceEventSource extends AbstractEventSource implements Watc
                     getVersion(resource));
             return;
         }
-        eventHandler.handleEvent(new KafkaServiceEvent(action, resource, this));
+        eventHandler.handleEvent(new KafkaTopicEvent(action, resource, this));
     }
 
     @Override

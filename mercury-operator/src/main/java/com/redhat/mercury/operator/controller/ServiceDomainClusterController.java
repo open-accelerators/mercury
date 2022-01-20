@@ -10,7 +10,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.operator.event.KafkaServiceEventSource;
+import com.redhat.mercury.operator.event.KafkaEventSource;
 import com.redhat.mercury.operator.model.KafkaConfig;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
@@ -36,8 +36,8 @@ import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.storage.SingleVolumeStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
-import static com.redhat.mercury.operator.event.KafkaServiceEventSource.MANAGED_BY_LABEL;
-import static com.redhat.mercury.operator.event.KafkaServiceEventSource.OPERATOR_NAME;
+import static com.redhat.mercury.operator.event.KafkaEventSource.MANAGED_BY_LABEL;
+import static com.redhat.mercury.operator.event.KafkaEventSource.OPERATOR_NAME;
 
 @Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
@@ -53,7 +53,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
     @Override
     public void init(EventSourceManager eventSourceManager) {
-        eventSourceManager.registerEventSource("kafka-service-event-source", KafkaServiceEventSource.createAndRegisterWatch(client));
+        eventSourceManager.registerEventSource("kafka-event-source", KafkaEventSource.createAndRegisterWatch(client));
     }
 
     @Override
