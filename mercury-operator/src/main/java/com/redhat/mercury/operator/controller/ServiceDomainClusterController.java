@@ -36,8 +36,8 @@ import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.storage.SingleVolumeStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
-import static com.redhat.mercury.operator.event.KafkaEventSource.MANAGED_BY_LABEL;
-import static com.redhat.mercury.operator.event.KafkaEventSource.OPERATOR_NAME;
+import static com.redhat.mercury.operator.event.AbstractMercuryEventSource.MANAGED_BY_LABEL;
+import static com.redhat.mercury.operator.event.AbstractMercuryEventSource.OPERATOR_NAME;
 
 @Controller
 public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
