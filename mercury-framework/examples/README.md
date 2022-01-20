@@ -37,7 +37,7 @@ Look at the [Mercury Operator installation instructions](../../mercury-operator/
 
     * Create Service Domain Cluster Resource
    
-      `kubectl create -f deploy/00_coreless_cluster.yaml`
+      `kubectl create -f deploy/service-domain-cluster.yaml`
 
 3. Create the different Service Domains (Customer Offer, Party Routing Profile and Customer
 Credit Rating)
@@ -48,42 +48,35 @@ Credit Rating)
 
    * Create Customer Offer Service Domain Resource
    
-     `kubectl create -f deploy/01_customer_offer.yaml`
+     `kubectl create -f deploy/customer-offer-service-domain.yaml`
    
    * Create Party Routing Profile Service Domain Resource
    
-     `kubectl create -f deploy/01_party_routing_profile.yaml`
+     `kubectl create -f deploy/party-routing-profile-service-domain.yaml`
    
    * Create Customer Credit Rating Service Domain Resource
    
-     `kubectl create -f deploy/01_customer_credit_rating.yaml`
+     `kubectl create -f deploy/customer-credit-rating-service-domain.yaml`
 
 
 4. Initiate a Customer Offer
    
-    ``curl -v -H "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/customer-offer/${SD_REFERENCE}/customer-offer-procedure/initiation -d '{"procedure": {"customerReference": "${CUSTOMER_REFERENCE}"}}'``
+    ``curl -v -H "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/customer-offer/${SD_REFERENCE}/customer-offer-procedure/initiation -d '{"customerOfferProcedureInstanceRecord": {"customerReference": "${CUSTOMER_REFERENCE}"}}'``
 
-5. Check the Party Routing Profile exists for this Customer Reference
+5. Check if the Party Routing Profile exists for this Customer Reference
 
-    * For specific Customer Reference (CUSTOMER_REFERENCE)
+    * For specific Customer Reference status (CUSTOMER_REFERENCE)
    
       ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/${SD_REFERENCE}/party-state/${CUSTOMER_REFERENCE}/status/${BQ_REFERENCE}``
    
-    * For all Customer References
+    * For all Customer Reference ids
    
       ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/&{SD_REFERENCE}/party-state``    
     
 6. Complete the Customer Offer
 
-   ``curl -XPUT -v -H "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/customer-offer/${SD_REFERENCE}/customer-offer-procedure/${CUSTOMER_REFERENCE}/update -d '{"procedure": {"customerReference": "${CUSTOMER_REFERENCE}"}}'``
+   ``curl -XPUT -v -H "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/customer-offer/${SD_REFERENCE}/customer-offer-procedure/${CUSTOMER_REFERENCE}/update -d '{"customerOfferProcedureInstanceRecord": {"customerReference": "${CUSTOMER_REFERENCE}"}}'``
 
 7. Confirm the Party Routing Profile has been updated
 
-    * For specific Customer Reference (CUSTOMER_REFERENCE)
-
-      ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/${SD_REFERENCE}/party-state/${CUSTOMER_REFERENCE}/status/${BQ_REFERENCE}``
-
-    * For all Customer References
-
-      ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/&{SD_REFERENCE}/party-state``    
-    
+   ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/${SD_REFERENCE}/party-state/${CUSTOMER_REFERENCE}/status/${BQ_REFERENCE}``

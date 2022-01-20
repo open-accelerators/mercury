@@ -6,7 +6,7 @@ metadata:
     service-domain: customer-credit-rating
 spec:
   businessImage: quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1-SNAPSHOT
-  serviceDomainCluster: coreless-cluster
+  serviceDomainCluster: service-domain-cluster
   type: CustomerCreditRating
   expose:
     - http
