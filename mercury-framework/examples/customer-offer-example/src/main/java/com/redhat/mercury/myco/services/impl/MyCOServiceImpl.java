@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
+import com.redhat.mercury.customeroffer.model.InitiateCustomerOfferProcedureRequest;
+import com.redhat.mercury.customeroffer.model.CustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
@@ -23,18 +23,17 @@ public class MyCOServiceImpl implements CustomerOfferService {
     CustomerOfferNotificationService notificationService;
 
     @Override
-    public Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure) {
-        LOGGER.info("initiateCustomerOfferProcedure received");
+    public Uni<Empty> initiate(InitiateCustomerOfferProcedureRequest procedure) {
+        LOGGER.info("Initiate received");
         return notificationService.onCustomerOfferInitiated(procedure
-                .getCustomerOfferProcedureInstanceRecord()
-                .getCustomerReference());
+                .getCustomerOfferProcedure()
+                .getCustomerReference().toString());
     }
 
     @Override
-    public Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel procedure) {
+    public Uni<Empty> update(CustomerOfferProcedure procedure) {
         LOGGER.info("updateCustomerOfferProcedure received");
         return notificationService.onCustomerOfferCompleted(procedure
-                .getCustomerOfferProcedureInstanceRecord()
-                .getCustomerReference());
+                .getCustomerReference().toString());
     }
 }

@@ -3,32 +3,22 @@ package com.redhat.mercury.customeroffer.services;
 import java.util.Collection;
 
 import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
-import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
+import com.redhat.mercury.customeroffer.model.InitiateCustomerOfferProcedureRequest;
+import com.redhat.mercury.customeroffer.model.CustomerOfferProcedure;
 
 import io.smallrye.mutiny.Uni;
 
 public interface CustomerOfferService extends CustomerOfferApi {
 
-    default Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure) {
+    default Uni<Empty> initiate(InitiateCustomerOfferProcedureRequest procedure) {
         return Uni.createFrom().nullItem();
     }
 
-    default Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel update) {
+    default Uni<Empty> update(CustomerOfferProcedure update) {
         return Uni.createFrom().nullItem();
     }
 
-    default Uni<SDCustomerOfferRetrieveOutputModel> retrieveSDCustomerOffer(String sdRefId) {
-        return Uni.createFrom().nullItem();
-    }
-
-    default Uni<CRCustomerOfferProcedureRetrieveOutputModel> retrieveCustomerOffer(String sdRefId, String crRefId) {
-        return Uni.createFrom().nullItem();
-    }
-
-    default Uni<Collection<String>> retrieveCustomerOfferReferenceIds(String sdRefId) {
+    default Uni<CustomerOfferProcedure> retrieve(String crRefId) {
         return Uni.createFrom().nullItem();
     }
 

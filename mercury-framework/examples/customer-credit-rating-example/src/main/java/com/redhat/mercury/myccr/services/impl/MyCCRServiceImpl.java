@@ -5,7 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModel;
+import com.redhat.mercury.customercreditrating.model.RetrieveCustomerCreditRatingStateResponse;
 import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1;
 import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord;
 import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingService;
@@ -19,10 +19,10 @@ public class MyCCRServiceImpl implements CustomerCreditRatingService {
     private static final String FIXED_RATING = "802";
 
     @Override
-    public Uni<CRCustomerCreditRatingStateRetrieveOutputModel> retrieveCustomerCreditRating(String sd, String cr) {
+    public Uni<RetrieveCustomerCreditRatingStateResponse> retrieve(String cr) {
         LOGGER.info("retrieveCustomerCreditRating received");
         return Uni.createFrom().item(() -> {
-            CRCustomerCreditRatingStateRetrieveOutputModel rating = new CRCustomerCreditRatingStateRetrieveOutputModel();
+            RetrieveCustomerCreditRatingStateResponse rating = new RetrieveCustomerCreditRatingStateResponse();
             CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1 instanceRecord =
                     new CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1();
             CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord assessment =

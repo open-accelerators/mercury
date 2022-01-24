@@ -10,10 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
-import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
+import com.redhat.mercury.customeroffer.model.CustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.model.InitiateCustomerOfferProcedureRequest;
 import com.redhat.mercury.customeroffer.services.CustomerOfferApi;
 
 import io.cloudevents.v1.proto.CloudEvent;
@@ -23,12 +21,10 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.Json;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
-import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
 import static com.redhat.mercury.constants.BianCloudEvent.CE_SERVICE_DOMAIN;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE;
-import static com.redhat.mercury.customeroffer.CustomerOffer.CUSTOMER_OFFER_RETRIEVE_TYPE;
 import static com.redhat.mercury.customeroffer.CustomerOffer.DOMAIN_NAME;
 
 @ApplicationScoped
@@ -40,45 +36,29 @@ public class CustomerOfferClient implements CustomerOfferApi {
     BindingService service;
 
     @Override
-    public Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure) {
+    public Uni<Empty> initiate(InitiateCustomerOfferProcedureRequest procedure) {
         return service.command(builder(CUSTOMER_OFFER_PROCEDURE_INITIATION_TYPE)
                 .setBinaryData(ByteString.copyFromUtf8(Json.encode(procedure)))
                 .build());
     }
 
     @Override
-    public Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel update) {
+    public Uni<Empty> update(CustomerOfferProcedure update) {
         return service.command(builder(CUSTOMER_OFFER_PROCEDURE_UPDATE_TYPE)
                 .setBinaryData(ByteString.copyFromUtf8(Json.encode(update)))
                 .build());
     }
 
     @Override
-    public Uni<SDCustomerOfferRetrieveOutputModel> retrieveSDCustomerOffer(String sdRefId) {
-        return service.query(builder(CUSTOMER_OFFER_RETRIEVE_TYPE)
-                        .putAttributes(CE_SD_REF, CloudEventAttributeValue
-                                .newBuilder()
-                                .setCeString(sdRefId)
-                                .build())
-                        .build())
-                .onItem()
-                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), SDCustomerOfferRetrieveOutputModel.class));
-    }
-
-    @Override
-    public Uni<CRCustomerOfferProcedureRetrieveOutputModel> retrieveCustomerOffer(String sdRefId, String crRefId) {
+    public Uni<CustomerOfferProcedure> retrieve(String crRefId) {
         return service.query(builder(CUSTOMER_OFFER_PROCEDURE_RETRIEVE_TYPE)
-                        .putAttributes(CE_SD_REF, CloudEventAttributeValue
-                                .newBuilder()
-                                .setCeString(sdRefId)
-                                .build())
                         .putAttributes(CE_CR_REF, CloudEventAttributeValue
                                 .newBuilder()
                                 .setCeString(crRefId)
                                 .build())
                         .build())
                 .onItem()
-                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), CRCustomerOfferProcedureRetrieveOutputModel.class));
+                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), CustomerOfferProcedure.class));
     }
 
     private CloudEvent.Builder builder(String type) {

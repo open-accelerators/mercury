@@ -2,7 +2,7 @@
 # camel-k: open-api=CustomerOffer.json
 
 - from:
-    uri: direct:initiateCustomerOfferProcedure
+    uri: direct:Initiate
     steps:
       - set-header:
           name: serviceDomainName
@@ -12,7 +12,7 @@
           constant: org.bian.customeroffer.procedure.initiation
       - to: direct:command
 - from:
-    uri: direct:updateCustomerOfferProcedure
+    uri: direct:Update
     steps:
       - set-header:
           name: serviceDomainName
@@ -22,17 +22,7 @@
           constant: org.bian.customeroffer.procedure.update
       - to: direct:command
 - from:
-    uri: direct:retrieveSDCustomerOffer
-    steps:
-      - set-header:
-          name: serviceDomainName
-          constant: customer-offer
-      - set-header:
-          name: cloudEventType
-          constant: org.bian.customeroffer.retrieve
-      - to: direct:query
-- from:
-    uri: direct:retrieveCustomerOffer
+    uri: direct:Retrieve
     steps:
       - set-header:
           name: serviceDomainName

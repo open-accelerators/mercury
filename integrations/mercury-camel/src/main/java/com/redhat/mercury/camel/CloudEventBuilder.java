@@ -16,7 +16,6 @@ public class CloudEventBuilder {
 
     private static final String EXTERNAL_SOURCE = "external";
 
-    private static final String SD_REFERENCE_ID = "sdReferenceId";
     private static final String CR_REFERENCE_ID = "crReferenceId";
     private static final String BQ_REFERENCE_ID = "bqReferenceId";
     private static final String CLOUD_EVENT_TYPE = "cloudEventType";
@@ -31,11 +30,6 @@ public class CloudEventBuilder {
                 .putAttributes(BianCloudEvent.CE_SERVICE_DOMAIN, CloudEventAttributeValue.newBuilder()
                         .setCeString(message.getHeader(SERVICE_DOMAIN_NAME, String.class))
                         .build());
-        if (message.getHeader(SD_REFERENCE_ID) != null) {
-            builder.putAttributes(BianCloudEvent.CE_SD_REF, CloudEventAttributeValue.newBuilder()
-                    .setCeString(message.getHeader(SD_REFERENCE_ID, String.class))
-                    .build());
-        }
         if (message.getHeader(CR_REFERENCE_ID) != null) {
             builder.putAttributes(BianCloudEvent.CE_CR_REF, CloudEventAttributeValue.newBuilder()
                     .setCeString(message.getHeader(CR_REFERENCE_ID, String.class))

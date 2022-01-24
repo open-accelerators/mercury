@@ -2,7 +2,7 @@
 # camel-k: open-api=CustomerCreditRating.json
 
 - from:
-    uri: direct:retrieveCustomerCreditRating
+    uri: direct:Retrieve
     steps:
       - set-header:
           name: serviceDomainName

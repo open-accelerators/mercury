@@ -17,7 +17,6 @@ import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
 import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
-import static com.redhat.mercury.constants.BianCloudEvent.CE_SD_REF;
 
 @GrpcService
 public class CustomerCreditRatingBindingService extends BaseBindingService {
@@ -35,7 +34,7 @@ public class CustomerCreditRatingBindingService extends BaseBindingService {
     protected Uni<? extends Object> mapQueryMethod(CloudEvent cloudEvent) {
         switch (cloudEvent.getType()) {
             case CustomerCreditRating.STATE_RETRIEVE_TYPE:
-                return service.retrieveCustomerCreditRating(getRef(cloudEvent, CE_SD_REF), getRef(cloudEvent, CE_CR_REF));
+                return service.retrieve(getRef(cloudEvent, CE_CR_REF));
             //TODO: Add more mappings
         }
         return Uni.createFrom().failure(new MappingNotFoundException(cloudEvent.getType()));
