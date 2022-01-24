@@ -148,7 +148,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 deleteCamelHttpIntegration(sd);
             }
 
-            String kafkaTopic = createKafkaTopic(sd);
+            String kafkaTopic = createKafkaTopic(sd, sdc.getMetadata().getNamespace());
             status.setKafkaTopic(kafkaTopic);
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
@@ -328,12 +328,13 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         return kafkaUserName;
     }
 
-    private String createKafkaTopic(ServiceDomain sd) {
+    private String createKafkaTopic(ServiceDomain sd, String sdcNamespace) {
         final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
 
         KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
                 .withNewMetadata()
                 .withName(kafkaTopicName)
+                .withNamespace(sdcNamespace)
                 .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka",
                                    MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
@@ -353,7 +354,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
 
         if (kafkaTopic == null || !Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
-            client.resources(KafkaTopic.class).create(desiredKafkaTopic);
+            client.resources(KafkaTopic.class).inNamespace(sdcNamespace).create(desiredKafkaTopic);
             LOGGER.debug("KafkaTopic {} was created or updated", kafkaTopicName);
         }
 
