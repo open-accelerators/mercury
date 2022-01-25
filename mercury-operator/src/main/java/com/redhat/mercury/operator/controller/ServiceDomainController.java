@@ -88,6 +88,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String GRPC_NAME = "grpc";
     private static final int GRPC_PORT = 9000;
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
+    private static final String APP_LABEL_BIAN_PREFIX = "bian-";
 
     @Inject
     KubernetesClient client;
@@ -369,16 +370,16 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withNewMetadata()
                 .withName(sdName)
                 .withNamespace(sdNS)
-                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName,
+                .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName, SERVICE_DOMAIN_LABEL, sdName,
                                    MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
                         .withSelector(new LabelSelectorBuilder()
-                                .withMatchLabels(Map.of(APP_LABEL, "bian-" + sdName))
+                                .withMatchLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName))
                                 .build())
                         .withTemplate(new PodTemplateSpecBuilder()
                                 .withNewMetadata()
-                                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL, sdName))
+                                .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName, SERVICE_DOMAIN_LABEL, sdName))
                                 .endMetadata()
                                 .withSpec(new PodSpecBuilder()
                                         .withContainers(new ContainerBuilder()
@@ -421,7 +422,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withNewMetadata()
                 .withName(sdName)
                 .withNamespace(sdNS)
-                .withLabels(Map.of(APP_LABEL, "bian-" + sdName, SERVICE_DOMAIN_LABEL,
+                .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName, SERVICE_DOMAIN_LABEL,
                                    sdName, MERCURY_BINDING_LABEL, INTERNAL,
                                    MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
@@ -430,7 +431,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                         .withPort(GRPC_PORT)
                         .withProtocol(TCP_PROTOCOL)
                         .withName(GRPC_NAME).build())
-                .withSelector(Map.of(APP_LABEL, "bian-" + sdName))
+                .withSelector(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName))
                 .endSpec().build();
 
         desiredService.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
