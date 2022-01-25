@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 @WithKubernetesTestServer
@@ -406,8 +407,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         Service service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
         assertNotNull(service);
 
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + "-topic").get() != null);
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + "-topic").get();
+        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + "-topic").get() != null);
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + "-topic").get();
         assertNotNull(kafkaTopic);
 
         sd = createServiceDomain(SERVICE_DOMAIN_NAME + 2);
@@ -422,8 +423,47 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2).get();
         assertNotNull(service);
 
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get() != null);
-        kafkaTopic = client.resources(KafkaTopic.class).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get();
+        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get() != null);
+        kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get();
         assertNotNull(kafkaTopic);
+    }
+
+    @Test
+    public void watchDeletedObjectsTest() {
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
+
+        Boolean deleted = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
+        assertTrue(deleted);
+
+        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
+
+        deleted = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
+        assertTrue(deleted);
+
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
+
+        //Test Integration data
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        deleted = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).delete();
+        assertTrue(deleted);
+
+        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() != null);
+
+        deleted = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").delete();
+        assertTrue(deleted);
+
+        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
     }
 }

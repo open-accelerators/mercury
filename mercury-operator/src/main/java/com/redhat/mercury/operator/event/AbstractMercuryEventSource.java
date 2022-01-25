@@ -3,41 +3,33 @@ package com.redhat.mercury.operator.event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.javaoperatorsdk.operator.processing.event.AbstractEventSource;
-import io.strimzi.api.kafka.model.Kafka;
 
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getUID;
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getVersion;
 
-public class KafkaServiceEventSource extends AbstractEventSource implements Watcher<Kafka> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KafkaServiceEventSource.class);
+public abstract class AbstractMercuryEventSource<T extends HasMetadata> extends AbstractEventSource implements Watcher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMercuryEventSource.class);
     public static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     public static final String OPERATOR_NAME = "service-domain-cluster-operator";
 
-    private final KubernetesClient client;
+    protected final KubernetesClient client;
 
-    public static KafkaServiceEventSource createAndRegisterWatch(KubernetesClient client) {
-        KafkaServiceEventSource eventSource = new KafkaServiceEventSource(client);
-        eventSource.registerWatch();
-        return eventSource;
-    }
-
-    private KafkaServiceEventSource(KubernetesClient client) {
+    public AbstractMercuryEventSource(KubernetesClient client) {
         this.client = client;
     }
 
-    private void registerWatch() {
-        client.resources(Kafka.class)
-                .inAnyNamespace()
-                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
-                .watch(this);
-    }
+    public abstract void registerWatch();
+
+    public abstract String getOwnerRefKind();
 
     @Override
-    public void eventReceived(Action action, Kafka resource) {
+    public void eventReceived(Action action, T resource) {
         if (eventHandler == null) {
             LOGGER.warn("Ignoring action {} for resource {}. EventHandler has not yet been initialized.", action, resource);
             return;
@@ -48,13 +40,25 @@ public class KafkaServiceEventSource extends AbstractEventSource implements Watc
                 resource.getMetadata().getName());
         if (action == Action.ERROR) {
             LOGGER.warn(
-                    "Skipping {} event for custom resource uid: {}, version: {}",
+                    "Skipping {} event for custom resource with uid: {}, version: {}",
                     action,
                     getUID(resource),
                     getVersion(resource));
             return;
         }
-        eventHandler.handleEvent(new KafkaServiceEvent(action, resource, this));
+
+        final OwnerReference ownerReference = resource.getMetadata().getOwnerReferences().stream().filter(or -> getOwnerRefKind().equalsIgnoreCase(or.getKind())).findFirst().orElse(null);
+        if(ownerReference == null) {
+            LOGGER.warn(
+                    "Skipping {} event for custom resource {} with uid: {}, version: {} because the reference owner is not ServiceDomain",
+                    action,
+                    resource.getClass().getSimpleName(),
+                    getUID(resource),
+                    getVersion(resource));
+            return;
+        }
+
+        eventHandler.handleEvent(new MercuryOperatorEvent(ownerReference.getUid(), this));
     }
 
     @Override

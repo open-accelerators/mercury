@@ -1,6 +1,7 @@
 package com.redhat.mercury.operator.controller;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -47,21 +48,29 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
     public void afterEach() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        client.resources(ServiceDomainCluster.class).list()
-                .getItems().forEach(sdc -> client.resources(ServiceDomainCluster.class)
+        client.resources(ServiceDomainCluster.class).inAnyNamespace().list()
+                .getItems().forEach(sdc ->
+                {client.resources(ServiceDomainCluster.class)
                         .inNamespace(sdc.getMetadata().getNamespace())
                         .withName(sdc.getMetadata().getName())
-                        .delete());
+                        .delete();
+                 await().atMost(2, MINUTES)
+                        .until(() -> client.resources(ServiceDomainCluster.class)
+                        .inNamespace(sdc.getMetadata().getNamespace())
+                        .withName(sdc.getMetadata().getName()).get() == null);
+                });
 
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE)
-                .withName(SERVICE_DOMAIN_CLUSTER_NAME)
-                .get();
-        if (kafka != null) {
-            client.resources(Kafka.class)
+        client.resources(Kafka.class).inAnyNamespace().list()
+                .getItems().forEach(kafka ->
+                {client.resources(Kafka.class)
                     .inNamespace(kafka.getMetadata().getNamespace())
                     .withName(kafka.getMetadata().getName())
                     .delete();
-        }
+                await().atMost(2, MINUTES)
+                    .until(() -> client.resources(Kafka.class)
+                    .inNamespace(kafka.getMetadata().getNamespace())
+                    .withName(kafka.getMetadata().getName()).get() == null);
+                });
     }
 
     @Test
@@ -95,7 +104,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                         .resources(Kafka.class)
                         .inNamespace(serviceDomainCluster.getMetadata().getNamespace())
                         .withName(serviceDomainCluster.getMetadata().getName())
-                        .get()).filter(k -> k != null).collect().first();
+                        .get()).filter(Objects::nonNull).collect().first();
         Kafka kafka = result.get(1, MINUTES);
         assertEquals("my-sdc", kafka.getMetadata().getName());
     }
@@ -122,7 +131,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                 .withName(SERVICE_DOMAIN_CLUSTER_NAME)
                 .get() != null);
 
-        await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
+        await().atMost(60, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
         final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class)
                 .inNamespace(sdcNamespace)
                 .withName(SERVICE_DOMAIN_CLUSTER_NAME)
@@ -162,5 +171,36 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                     .withName(cluster.getMetadata().getName())
                     .get());
         }
+    }
+
+    @Test
+    public void watchDeletedObjectsTest() {
+        ServiceDomainCluster cluster = createServiceDomainCluster();
+        final String sdcNamespace = cluster.getMetadata().getNamespace();
+
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        Kafka expectedKafka = getExpectedKafKa(cluster);
+        client.resources(Kafka.class).inNamespace(sdcNamespace).create(expectedKafka);
+        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
+        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        assertNotNull(fetchedKafka);
+
+        cluster = client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).create(cluster);
+
+        expectedKafka = getExpectedKafKa(cluster);
+        client.resources(Kafka.class).inNamespace(sdcNamespace).replace(expectedKafka);
+        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class)
+                .inNamespace(sdcNamespace)
+                .withName(SERVICE_DOMAIN_CLUSTER_NAME)
+                .get() != null);
+
+        final Boolean deleted = client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
+        assertTrue(deleted);
+
+        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class)
+                .inNamespace(sdcNamespace)
+                .withName(SERVICE_DOMAIN_CLUSTER_NAME)
+                .get() != null);
     }
 }
