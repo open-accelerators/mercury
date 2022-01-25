@@ -9,12 +9,15 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
-import com.redhat.mercury.customeroffer.model.CustomeroffersdReferenceIdcustomerofferprocedurecrReferenceIdupdateCustomerOfferProcedureInstanceRecord;
-import com.redhat.mercury.customeroffer.model.CustomeroffersdReferenceIdcustomerofferprocedureinitiationCustomerOfferProcedureInstanceRecord;
+import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
+import com.redhat.mercury.customeroffer.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.InitiateCustomerOfferProcedureRequestCustomerOfferProcedureOuterClass.InitiateCustomerOfferProcedureRequestCustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.InitiateCustomerOfferProcedureRequestOuterClass.InitiateCustomerOfferProcedureRequest;
+import com.redhat.mercury.customeroffer.client.CustomerOfferClient;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
-import com.redhat.mercury.customeroffer.services.client.CustomerOfferClient;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
@@ -33,24 +36,28 @@ class MyCOServiceImplTest {
 
     @Test
     void testInitiateCustomerOfferProcedure() throws ExecutionException, InterruptedException, TimeoutException {
-        CustomeroffersdReferenceIdcustomerofferprocedureinitiationCustomerOfferProcedureInstanceRecord customerOfferInstanceRecord = new CustomeroffersdReferenceIdcustomerofferprocedureinitiationCustomerOfferProcedureInstanceRecord();
-        customerOfferInstanceRecord.setCustomerReference("foo");
-        CRCustomerOfferProcedureInitiateInputModel procedure = new CRCustomerOfferProcedureInitiateInputModel();
-        procedure.setCustomerOfferProcedureInstanceRecord(customerOfferInstanceRecord);
+        InitiateRequest procedure = InitiateRequest.newBuilder()
+                .setInitiateCustomerOfferProcedureRequest(InitiateCustomerOfferProcedureRequest.newBuilder()
+                        .setCustomerOfferProcedure(InitiateCustomerOfferProcedureRequestCustomerOfferProcedure.newBuilder()
+                                .setCustomerReference(Any.newBuilder().setValue(ByteString.copyFromUtf8("foo")).build())
+                                .build())
+                        .build())
+                .build();
         CompletableFuture<Void> message = new CompletableFuture<>();
-        client.initiateCustomerOfferProcedure(procedure).subscribe().with(reply -> message.complete(null));
+        client.getCrCustomerOfferProcedureService().initiate(procedure).subscribe().with(reply -> message.complete(null));
         message.get(5, TimeUnit.SECONDS);
         verify(notificationService, times(1)).onCustomerOfferInitiated("foo");
     }
 
     @Test
     void testUpdateCustomerOfferProcedure() throws ExecutionException, InterruptedException, TimeoutException {
-        CustomeroffersdReferenceIdcustomerofferprocedurecrReferenceIdupdateCustomerOfferProcedureInstanceRecord customerOfferInstanceRecord = new CustomeroffersdReferenceIdcustomerofferprocedurecrReferenceIdupdateCustomerOfferProcedureInstanceRecord();
-        customerOfferInstanceRecord.setCustomerReference("foo");
-        CRCustomerOfferProcedureUpdateInputModel procedure = new CRCustomerOfferProcedureUpdateInputModel();
-        procedure.setCustomerOfferProcedureInstanceRecord(customerOfferInstanceRecord);
+        UpdateRequest procedure = UpdateRequest.newBuilder()
+                .setCustomerOfferProcedure(CustomerOfferProcedure.newBuilder()
+                        .setCustomerReference(Any.newBuilder().setValue(ByteString.copyFromUtf8("foo")).build())
+                        .build())
+                .build();
         CompletableFuture<Void> message = new CompletableFuture<>();
-        client.updateCustomerOfferProcedure(procedure).subscribe().with(reply -> message.complete(null));
+        client.getCrCustomerOfferProcedureService().update(procedure).subscribe().with(reply -> message.complete(null));
         message.get(5, TimeUnit.SECONDS);
         verify(notificationService, times(1)).onCustomerOfferCompleted("foo");
     }

@@ -7,9 +7,6 @@ import org.apache.camel.Message;
 import org.apache.camel.support.DefaultMessage;
 import org.junit.jupiter.api.Test;
 
-import com.redhat.mercury.constants.BianCloudEvent;
-import com.redhat.mercury.customeroffer.CustomerOffer;
-
 import io.cloudevents.SpecVersion;
 import io.cloudevents.v1.proto.CloudEvent;
 import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;

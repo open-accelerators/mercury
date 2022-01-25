@@ -1,21 +1,27 @@
 package com.redhat.mercury.myco.services.impl;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.model.InitiateCustomerOfferProcedureRequest;
-import com.redhat.mercury.customeroffer.model.CustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.ExecuteCustomerOfferProcedureResponseOuterClass.ExecuteCustomerOfferProcedureResponse;
+import com.redhat.mercury.customeroffer.InitiateCustomerOfferProcedureResponseOuterClass.InitiateCustomerOfferProcedureResponse;
+import com.redhat.mercury.customeroffer.RequestCustomerOfferProcedureResponseOuterClass.RequestCustomerOfferProcedureResponse;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.ExecuteRequest;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
-import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
-@ApplicationScoped
-public class MyCOServiceImpl implements CustomerOfferService {
+@GrpcService
+public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCOServiceImpl.class);
 
@@ -23,17 +29,41 @@ public class MyCOServiceImpl implements CustomerOfferService {
     CustomerOfferNotificationService notificationService;
 
     @Override
-    public Uni<Empty> initiate(InitiateCustomerOfferProcedureRequest procedure) {
-        LOGGER.info("Initiate received");
-        return notificationService.onCustomerOfferInitiated(procedure
-                .getCustomerOfferProcedure()
-                .getCustomerReference().toString());
+    public Uni<ExecuteCustomerOfferProcedureResponse> execute(ExecuteRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
     }
 
     @Override
-    public Uni<Empty> update(CustomerOfferProcedure procedure) {
-        LOGGER.info("updateCustomerOfferProcedure received");
-        return notificationService.onCustomerOfferCompleted(procedure
-                .getCustomerReference().toString());
+    public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
+        LOGGER.info("Initiate received");
+        return notificationService.onCustomerOfferInitiated(request
+                        .getInitiateCustomerOfferProcedureRequest()
+                        .getCustomerOfferProcedure()
+                        .getCustomerReference().getValue().toStringUtf8())
+                .onItem()
+                .transform(e -> InitiateCustomerOfferProcedureResponse.newBuilder().build());
+
     }
+
+    @Override
+    public Uni<RequestCustomerOfferProcedureResponse> request(RequestRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+    }
+
+    @Override
+    public Uni<CustomerOfferProcedure> retrieve(RetrieveRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+    }
+
+    @Override
+    public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
+        LOGGER.info("Update received");
+        return notificationService.onCustomerOfferCompleted(request
+                        .getCustomerOfferProcedure()
+                        .getCustomerReference().getValue().toStringUtf8())
+                .onItem()
+                .transform(e -> CustomerOfferProcedure.newBuilder().build());
+
+    }
+
 }

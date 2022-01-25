@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.apache.camel.Message;
 
 import com.google.protobuf.ByteString;
-import com.redhat.mercury.constants.BianCloudEvent;
 
 import io.cloudevents.SpecVersion;
 import io.cloudevents.v1.proto.CloudEvent;

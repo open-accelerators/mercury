@@ -1,7 +1,5 @@
 package com.redhat.mercury.camel;
 
-import java.util.Collection;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -11,16 +9,14 @@ import org.bian.protobuf.BindingService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.CustomerOffer;
+import com.redhat.mercury.customeroffer.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.InitiateCustomerOfferProcedureResponseOuterClass.InitiateCustomerOfferProcedureResponse;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest;
+import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
 import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
 import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModel;
 import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureRetrieveOutputModelCustomerOfferProcedureInstanceRecord1;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
-import com.redhat.mercury.customeroffer.model.SDCustomerOfferRetrieveOutputModel;
-import com.redhat.mercury.customeroffer.services.CustomerOfferService;
 
-import io.cloudevents.v1.proto.CloudEvent;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.path.json.JsonPath;
 import io.smallrye.mutiny.Uni;
@@ -127,41 +123,19 @@ class CamelRouteTest {
     }
 
     @Singleton
-    public static class MockCustomerOfferService implements CustomerOfferService {
+    public static class MockCustomerOfferService extends CustomerOfferService {
 
         private final CustomerOfferService mock = Mockito.mock(CustomerOfferService.class);
 
         @Override
-        public Uni<Empty> initiateCustomerOfferProcedure(CRCustomerOfferProcedureInitiateInputModel procedure) {
-            return mock.initiateCustomerOfferProcedure(procedure);
+        public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
+            return mock.initiate(request);
         }
 
         @Override
-        public Uni<Empty> updateCustomerOfferProcedure(CRCustomerOfferProcedureUpdateInputModel update) {
-            return mock.updateCustomerOfferProcedure(update);
+        public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
+            return mock.update(request);
         }
 
-        @Override
-        public Uni<Collection<String>> retrieveCustomerOfferReferenceIds(String sdRefId) {
-            return mock.retrieveCustomerOfferReferenceIds(sdRefId);
-        }
-
-        @Override
-        public Uni<SDCustomerOfferRetrieveOutputModel> retrieveSDCustomerOffer(String sdRefId) {
-            return mock.retrieveSDCustomerOffer(sdRefId);
-        }
-
-        @Override
-        public Uni<CRCustomerOfferProcedureRetrieveOutputModel> retrieveCustomerOffer(String sdRefId, String crRefId) {
-            return mock.retrieveCustomerOffer(sdRefId, crRefId);
-        }
-
-    }
-
-    private static class UniExtractor {
-
-        public static CloudEvent extract(Uni<CloudEvent> uni) {
-            return uni.await().indefinitely();
-        }
     }
 }
