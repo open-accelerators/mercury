@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import com.redhat.mercury.myprp.model.PartyRoutingState;
 import com.redhat.mercury.partyroutingprofile.model.BQStatusRetrieveOutputModel;
 import com.redhat.mercury.partyroutingprofile.model.PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord;
-import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileService;
 
 import io.smallrye.mutiny.Uni;
 
