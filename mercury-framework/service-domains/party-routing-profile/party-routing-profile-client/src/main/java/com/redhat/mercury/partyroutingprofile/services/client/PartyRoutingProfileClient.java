@@ -2,9 +2,6 @@ package com.redhat.mercury.partyroutingprofile.services.client;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqalertservice.BQAlertService;
 import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqratingservice.BQRatingService;
 import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BQStatusService;

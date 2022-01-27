@@ -2,42 +2,41 @@ package com.redhat.mercury.customercreditrating.services.client;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.bian.protobuf.BindingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.bqalertsservice.BQAlertsService;
+import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.bqexternalreportingservice.BQExternalReportingService;
+import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.bqinternalreportingservice.BQInternalReportingService;
+import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CRCustomerCreditRatingStateService;
 
-import com.redhat.mercury.customercreditrating.CustomerCreditRating;
-import com.redhat.mercury.customercreditrating.model.RetrieveCustomerCreditRatingStateResponse;
-import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingApi;
-
-import io.cloudevents.v1.proto.CloudEvent;
-import io.cloudevents.v1.proto.CloudEvent.CloudEventAttributeValue;
 import io.quarkus.grpc.GrpcClient;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.Json;
-
-import static com.redhat.mercury.constants.BianCloudEvent.CE_CR_REF;
-import static com.redhat.mercury.customercreditrating.CustomerCreditRating.STATE_RETRIEVE_TYPE;
 
 @ApplicationScoped
-public class CustomerCreditRatingClient implements CustomerCreditRatingApi {
+public class CustomerCreditRatingClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CustomerCreditRatingClient.class);
+    @GrpcClient("customer-credit-rating-bq-alert")
+    BQAlertsService bqAlertsService;
 
-    @GrpcClient("customer-credit-rating")
-    BindingService service;
+    @GrpcClient("customer-credit-rating-bq-external-reporting")
+    BQExternalReportingService bqExternalReportingService;
 
-    @Override
-    public Uni<RetrieveCustomerCreditRatingStateResponse> retrieve(String cr) {
-        LOGGER.info("Received retrieveCustomerCreditRating for {}/{}", cr);
-        return service.query(CloudEvent.newBuilder()
-                        .setSource(CustomerCreditRating.DOMAIN_NAME)
-                        .setType(STATE_RETRIEVE_TYPE)
-                        .putAttributes(CE_CR_REF, CloudEventAttributeValue.newBuilder()
-                                .setCeString(cr)
-                                .build())
-                        .build())
-                .onItem()
-                .transform(ce -> Json.decodeValue(ce.getBinaryData().toStringUtf8(), RetrieveCustomerCreditRatingStateResponse.class));
+    @GrpcClient("customer-credit-rating-bq-internal-reporting")
+    BQInternalReportingService bqInternalReportingService;
+
+    @GrpcClient("customer-credit-rating-bq-customer-credit-rating-state")
+    CRCustomerCreditRatingStateService crCustomerCreditRatingStateService;
+
+    public BQAlertsService getBqAlertsService() {
+        return bqAlertsService;
     }
+    public BQExternalReportingService getBqExternalReportingService() {
+        return bqExternalReportingService;
+    }
+
+    public BQInternalReportingService getBqInternalReportingService() {
+        return bqInternalReportingService;
+    }
+
+    public CRCustomerCreditRatingStateService getCrCustomerCreditRatingStateService() {
+        return crCustomerCreditRatingStateService;
+    }
+
 }

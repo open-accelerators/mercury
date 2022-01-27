@@ -12,10 +12,10 @@ syntax = "proto3";
 
 package com.redhat.mercury.partyroutingprofile;
 
-import public "com.redhat.mecury.partyroutingprofile.model/update_rating_request_rating.proto";
+import public "com.redhat.mecury.partyroutingprofile.model/rating.proto";
 
 message UpdateRatingRequest {
 
-  UpdateRatingRequestRating Rating = 243622470;
+  Rating Rating = 243622470;
 
 }

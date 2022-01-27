@@ -17,13 +17,10 @@ com.redhat.mecury.partyroutingprofile.model/retrieve_rating_response.proto
 com.redhat.mecury.partyroutingprofile.model/retrieve_status_response.proto
 com.redhat.mecury.partyroutingprofile.model/status.proto
 com.redhat.mecury.partyroutingprofile.model/update_alert_request.proto
-com.redhat.mecury.partyroutingprofile.model/update_alert_request_alert.proto
 com.redhat.mecury.partyroutingprofile.model/update_alert_response.proto
 com.redhat.mecury.partyroutingprofile.model/update_rating_request.proto
-com.redhat.mecury.partyroutingprofile.model/update_rating_request_rating.proto
 com.redhat.mecury.partyroutingprofile.model/update_rating_response.proto
 com.redhat.mecury.partyroutingprofile.model/update_status_request.proto
-com.redhat.mecury.partyroutingprofile.model/update_status_request_status.proto
 com.redhat.mecury.partyroutingprofile.model/update_status_response.proto
 com.redhat.mercury.partyroutingprofile.api/bq_alert_service.proto
 com.redhat.mercury.partyroutingprofile.api/bq_rating_service.proto

@@ -12,10 +12,10 @@ syntax = "proto3";
 
 package com.redhat.mercury.partyroutingprofile;
 
-import public "com.redhat.mecury.partyroutingprofile.model/update_alert_request_alert.proto";
+import public "com.redhat.mecury.partyroutingprofile.model/alert.proto";
 
 message CaptureAlertRequest {
 
-  UpdateAlertRequestAlert Alert = 63347004;
+  Alert Alert = 63347004;
 
 }

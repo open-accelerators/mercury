@@ -1,21 +1,25 @@
 package com.redhat.mercury.myprp.services.impl;
 
-import java.util.Collection;
-
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.redhat.mercury.partyroutingprofile.CaptureStatusResponseOuterClass.CaptureStatusResponse;
+import com.redhat.mercury.partyroutingprofile.StatusOuterClass.Status;
+import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.CaptureStatusRequest;
+import com.redhat.mercury.partyroutingprofile.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
+import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
+import com.redhat.mercury.partyroutingprofile.UpdateStatusResponseOuterClass.UpdateStatusResponse;
+import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.UpdateStatusRequest;
 import com.redhat.mercury.myprp.model.PartyRoutingState;
-import com.redhat.mercury.partyroutingprofile.model.BQStatusRetrieveOutputModel;
-import com.redhat.mercury.partyroutingprofile.model.PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord;
+import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BQStatusService;
 
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
-@ApplicationScoped
-public class MyPRPServiceImpl implements PartyRoutingProfileService {
+@GrpcService
+public class MyPRPServiceImpl implements BQStatusService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyPRPServiceImpl.class);
 
@@ -23,28 +27,32 @@ public class MyPRPServiceImpl implements PartyRoutingProfileService {
     PartyRoutingService svc;
 
     @Override
-    public Uni<Collection<String>> retrievePartyRoutingProfileReferenceIds(String sdRef) {
-        return Uni.createFrom().item(() -> svc.getAll());
+    public Uni<CaptureStatusResponse> captureStatus(CaptureStatusRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
     }
 
     @Override
-    public Uni<BQStatusRetrieveOutputModel> retrievePartyStateStatus(String sdRef, String crRef, String bqRef) {
+    public Uni<RetrieveStatusResponse> retrieveStatus(RetrieveStatusRequest request) {
         return Uni.createFrom().item(() -> {
-            LOGGER.info("Retrieving party state status for {}/{}/{}", sdRef, crRef, bqRef);
-            if (crRef != null) {
-                PartyRoutingState state = svc.getState(crRef);
+            String prpId = request.getPartyroutingprofileId();
+            LOGGER.info("Retrieving party state status for {}", prpId);
+            if (prpId != null) {
+                PartyRoutingState state = svc.getState(prpId);
                 if (state == null) {
                     return null;
                 }
-                BQStatusRetrieveOutputModel output = new BQStatusRetrieveOutputModel();
-                output.setStatusRetrieveActionTaskReference(state.getProcessId());
-                PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord record = new PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord();
-                record.setCustomerRelationshipStatus(state.getStatus());
-                output.setStatusInstanceRecord(record);
-                return output;
+                return RetrieveStatusResponse.newBuilder()
+                        .setStatus(Status.newBuilder()
+                                .setCustomerRelationshipStatus(prpId)
+                                .build())
+                        .build();
             }
             return null;
         });
     }
 
+    @Override
+    public Uni<UpdateStatusResponse> updateStatus(UpdateStatusRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+    }
 }

@@ -10,8 +10,9 @@ import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import com.redhat.mercury.myprp.services.impl.CustomerOfferEventHandler;
-import com.redhat.mercury.partyroutingprofile.model.BQStatusRetrieveOutputModel;
-import com.redhat.mercury.partyroutingprofile.model.PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord;
+import com.redhat.mercury.partyroutingprofile.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
+import com.redhat.mercury.partyroutingprofile.StatusOuterClass.Status;
+import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
 import com.redhat.mercury.partyroutingprofile.services.client.PartyRoutingProfileClient;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -29,17 +30,20 @@ class MyPRPServiceImplTest {
 
     @Test
     void testRetrievePartyStateStatus() throws ExecutionException, InterruptedException, TimeoutException {
-        String crRefId = "kermit";
-        eventHandler.onCustomerOfferCompleted(crRefId).await().indefinitely();
-        CompletableFuture<BQStatusRetrieveOutputModel> message = new CompletableFuture<>();
-        client.retrievePartyStateStatus("some-sd", crRefId, "some-bq").subscribe().with(reply -> {
-            message.complete(reply);
-        });
-        BQStatusRetrieveOutputModel expected = new BQStatusRetrieveOutputModel();
-        expected.setStatusRetrieveActionTaskReference("kermit");
-        PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord record = new PartyroutingprofilesdReferenceIdpartystatecrReferenceIdstatusbqReferenceIdupdateStatusInstanceRecord();
-        record.setCustomerRelationshipStatus("1");
-        expected.setStatusInstanceRecord(record);
+        String prpId = "kermit";
+        eventHandler.onCustomerOfferCompleted(prpId).await().indefinitely();
+        CompletableFuture<RetrieveStatusResponse> message = new CompletableFuture<>();
+        client.getBqStatusService().retrieveStatus(
+                RetrieveStatusRequest.newBuilder()
+                        .setPartyroutingprofileId(prpId)
+                        .build()
+        ).subscribe().with(message::complete);
+
+        RetrieveStatusResponse expected = RetrieveStatusResponse.newBuilder()
+                .setStatus(Status.newBuilder()
+                        .setCustomerRelationshipStatus(prpId)
+                        .build())
+                .build();
         assertThat(message.get(5, TimeUnit.SECONDS)).isEqualTo(expected);
     }
 
