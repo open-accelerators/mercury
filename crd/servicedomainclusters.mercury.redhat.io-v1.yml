@@ -36,8 +36,27 @@ spec:
             properties:
               kafkaBroker:
                 type: string
-              error:
-                type: string
+              conditions:
+                items:
+                  properties:
+                    status:
+                      type: string
+                    reason:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                    observedGeneration:
+                      type: number
+                    type:
+                      type: string
+                    additionalProperties:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    message:
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true
