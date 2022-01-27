@@ -67,6 +67,13 @@ import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC_NOT_FOUND;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC_NOT_READY;
 
 @ControllerConfiguration
 public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements Reconciler<ServiceDomain>, EventSourceInitializer<ServiceDomain> {
@@ -134,7 +141,6 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     @Override
     public UpdateControl<ServiceDomain> reconcile(ServiceDomain sd, Context context) {
         setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
-
         String sdName = sd.getMetadata().getName();
         final String sdcName = sd.getSpec().getServiceDomainCluster();
 
