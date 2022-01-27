@@ -2,18 +2,18 @@ package com.redhat.mercury.customeroffer.client;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqagreementservice.BQAgreementService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqauditservice.BQAuditService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqbookingservice.BQBookingService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqcollateralservice.BQCollateralService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqcomplianceservice.BQComplianceService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqcorrespondenceanddocumentsservice.BQCorrespondenceandDocumentsService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqcreditservice.BQCreditService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqdisclosuresservice.BQDisclosuresService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqfacilityapplicationservice.BQFacilityApplicationService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqproductinitializationservice.BQProductInitializationService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqunderwritingservice.BQUnderwritingService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService;
+import com.redhat.mercury.customeroffer.api.bqagreementservice.BQAgreementService;
+import com.redhat.mercury.customeroffer.api.bqauditservice.BQAuditService;
+import com.redhat.mercury.customeroffer.api.bqbookingservice.BQBookingService;
+import com.redhat.mercury.customeroffer.api.bqcollateralservice.BQCollateralService;
+import com.redhat.mercury.customeroffer.api.bqcomplianceservice.BQComplianceService;
+import com.redhat.mercury.customeroffer.api.bqcorrespondenceanddocumentsservice.BQCorrespondenceandDocumentsService;
+import com.redhat.mercury.customeroffer.api.bqcreditservice.BQCreditService;
+import com.redhat.mercury.customeroffer.api.bqdisclosuresservice.BQDisclosuresService;
+import com.redhat.mercury.customeroffer.api.bqfacilityapplicationservice.BQFacilityApplicationService;
+import com.redhat.mercury.customeroffer.api.bqproductinitializationservice.BQProductInitializationService;
+import com.redhat.mercury.customeroffer.api.bqunderwritingservice.BQUnderwritingService;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService;
 
 import io.quarkus.grpc.GrpcClient;
 

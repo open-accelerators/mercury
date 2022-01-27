@@ -2,10 +2,10 @@ package com.redhat.mercury.partyroutingprofile.services.client;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqalertservice.BQAlertService;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqratingservice.BQRatingService;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BQStatusService;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.crpartystateservice.CRPartyStateService;
+import com.redhat.mercury.partyroutingprofile.api.bqalertservice.BQAlertService;
+import com.redhat.mercury.partyroutingprofile.api.bqratingservice.BQRatingService;
+import com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BQStatusService;
+import com.redhat.mercury.partyroutingprofile.api.crpartystateservice.CRPartyStateService;
 
 import io.quarkus.grpc.GrpcClient;
 

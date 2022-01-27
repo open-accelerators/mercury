@@ -16,15 +16,15 @@ import com.redhat.mercury.customeroffer.InitiateCustomerOfferProcedureResponseOu
 import com.redhat.mercury.customeroffer.RequestCustomerOfferProcedureResponseOuterClass.RequestCustomerOfferProcedureResponse;
 import com.redhat.mercury.customeroffer.UpdateAgreementResponseOuterClass.UpdateAgreementResponse;
 import com.redhat.mercury.customeroffer.client.CustomerOfferClient;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqagreementservice.BQAgreementService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqagreementservice.BqAgreementService.RetrieveAgreementRequest;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.bqagreementservice.BqAgreementService.UpdateAgreementRequest;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.ExecuteRequest;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
-import com.redhat.mercury.customeroffer.com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
+import com.redhat.mercury.customeroffer.api.bqagreementservice.BQAgreementService;
+import com.redhat.mercury.customeroffer.api.bqagreementservice.BqAgreementService.RetrieveAgreementRequest;
+import com.redhat.mercury.customeroffer.api.bqagreementservice.BqAgreementService.UpdateAgreementRequest;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.ExecuteRequest;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
+import com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
 
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.junit.QuarkusTest;
