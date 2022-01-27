@@ -32,8 +32,6 @@
         <quarkus.container-image.build>true</quarkus.container-image.build>
         <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
         <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
-        <sonar.organization>mercury</sonar.organization>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <modules>
