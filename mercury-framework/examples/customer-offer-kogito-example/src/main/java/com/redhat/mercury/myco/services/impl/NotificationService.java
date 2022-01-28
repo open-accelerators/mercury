@@ -6,7 +6,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
+import com.redhat.mercury.customeroffer.v10.services.CustomerOfferNotificationService;
 
 @ApplicationScoped
 public class NotificationService {

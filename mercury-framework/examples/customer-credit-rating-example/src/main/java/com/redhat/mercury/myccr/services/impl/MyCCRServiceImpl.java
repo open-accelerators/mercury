@@ -3,16 +3,16 @@ package com.redhat.mercury.myccr.services.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.customercreditrating.RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingStateOuterClass.RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState;
-import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CRCustomerCreditRatingStateService;
-import com.redhat.mercury.customercreditrating.ExecuteCustomerCreditRatingStateResponseOuterClass.ExecuteCustomerCreditRatingStateResponse;
-import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.ExecuteRequest;
-import com.redhat.mercury.customercreditrating.InitiateCustomerCreditRatingStateResponseOuterClass.InitiateCustomerCreditRatingStateResponse;
-import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.InitiateRequest;
-import com.redhat.mercury.customercreditrating.RequestCustomerCreditRatingStateResponseOuterClass.RequestCustomerCreditRatingStateResponse;
-import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RequestRequest;
-import com.redhat.mercury.customercreditrating.RetrieveCustomerCreditRatingStateResponseOuterClass.RetrieveCustomerCreditRatingStateResponse;
-import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
+import com.redhat.mercury.customercreditrating.v10.ExecuteCustomerCreditRatingStateResponseOuterClass.ExecuteCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.InitiateCustomerCreditRatingStateResponseOuterClass.InitiateCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.RequestCustomerCreditRatingStateResponseOuterClass.RequestCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingStateOuterClass.RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState;
+import com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseOuterClass.RetrieveCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CRCustomerCreditRatingStateService;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.ExecuteRequest;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.InitiateRequest;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RequestRequest;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
 
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
@@ -42,10 +42,10 @@ public class MyCCRServiceImpl implements CRCustomerCreditRatingStateService {
     public Uni<RetrieveCustomerCreditRatingStateResponse> retrieve(RetrieveRequest request) {
         LOGGER.info("Retrieve received");
         return Uni.createFrom().item(() -> RetrieveCustomerCreditRatingStateResponse.newBuilder()
-                    .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
-                            .setCreditRatingAssessmentResult(FIXED_RATING)
-                            .build())
-                    .build()
+                .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
+                        .setCreditRatingAssessmentResult(FIXED_RATING)
+                        .build())
+                .build()
         );
     }
 }

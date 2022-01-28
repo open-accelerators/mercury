@@ -10,10 +10,10 @@ import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import com.redhat.mercury.myprp.services.impl.CustomerOfferEventHandler;
-import com.redhat.mercury.partyroutingprofile.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
-import com.redhat.mercury.partyroutingprofile.StatusOuterClass.Status;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
-import com.redhat.mercury.partyroutingprofile.services.client.PartyRoutingProfileClient;
+import com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
+import com.redhat.mercury.partyroutingprofile.v10.StatusOuterClass.Status;
+import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
+import com.redhat.mercury.partyroutingprofile.v10.client.PartyRoutingProfileClient;
 
 import io.quarkus.test.junit.QuarkusTest;
 

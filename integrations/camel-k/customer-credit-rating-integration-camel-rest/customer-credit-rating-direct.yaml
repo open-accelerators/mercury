@@ -7,11 +7,11 @@
     steps:
       - unmarshal:
           protobuf:
-            instance-class: com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest
+            instance-class: com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest
             content-type-format: json
       - to:
-          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customeroffer.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService?synchronous=true&method=Initiate
+          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService?synchronous=true&method=Initiate
       - marshal:
           protobuf:
-            instance-class: com.redhat.mercury.customeroffer.InitiateCustomerOfferProcedureResponseOuterClass.InitiateCustomerOfferProcedureResponse
+            instance-class: com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureResponseOuterClass.InitiateCustomerOfferProcedureResponse
             content-type-format: json

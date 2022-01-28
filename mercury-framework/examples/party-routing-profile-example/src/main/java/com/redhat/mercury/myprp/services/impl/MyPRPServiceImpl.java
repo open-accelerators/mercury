@@ -5,15 +5,15 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.partyroutingprofile.CaptureStatusResponseOuterClass.CaptureStatusResponse;
-import com.redhat.mercury.partyroutingprofile.StatusOuterClass.Status;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.CaptureStatusRequest;
-import com.redhat.mercury.partyroutingprofile.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
-import com.redhat.mercury.partyroutingprofile.UpdateStatusResponseOuterClass.UpdateStatusResponse;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BqStatusService.UpdateStatusRequest;
 import com.redhat.mercury.myprp.model.PartyRoutingState;
-import com.redhat.mercury.partyroutingprofile.com.redhat.mercury.partyroutingprofile.api.bqstatusservice.BQStatusService;
+import com.redhat.mercury.partyroutingprofile.v10.CaptureStatusResponseOuterClass.CaptureStatusResponse;
+import com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
+import com.redhat.mercury.partyroutingprofile.v10.StatusOuterClass.Status;
+import com.redhat.mercury.partyroutingprofile.v10.UpdateStatusResponseOuterClass.UpdateStatusResponse;
+import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BQStatusService;
+import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.CaptureStatusRequest;
+import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
+import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.UpdateStatusRequest;
 
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;

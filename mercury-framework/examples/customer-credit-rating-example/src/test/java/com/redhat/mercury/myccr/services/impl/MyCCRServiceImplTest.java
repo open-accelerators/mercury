@@ -9,12 +9,11 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
-import com.redhat.mercury.customercreditrating.RetrieveCustomerCreditRatingStateResponseOuterClass.RetrieveCustomerCreditRatingStateResponse;
-import com.redhat.mercury.customercreditrating.com.redhat.mercury.customercreditrating.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
-import com.redhat.mercury.customercreditrating.services.client.CustomerCreditRatingClient;
+import com.redhat.mercury.customercreditrating.v10.client.CustomerCreditRatingClient;
+import com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseOuterClass.RetrieveCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
 
 import io.quarkus.test.junit.QuarkusTest;
-
 
 import static org.assertj.core.api.Assertions.assertThat;
 
