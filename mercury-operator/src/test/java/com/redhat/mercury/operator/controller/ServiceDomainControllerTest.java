@@ -29,6 +29,7 @@ import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaTopic;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
@@ -312,9 +313,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         final String sdNamespace = sd.getMetadata().getNamespace();
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get().getStatus().getError() != null);
-        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(sd.getStatus().getError());
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get().getStatus().getConditions().stream().anyMatch(c -> CONDITION_SERVICE_DOMAIN_CLUSTER_READY.equals(c.getType()) && c.getStatus().equalsIgnoreCase("FALSE")));
     }
 
     @Test
@@ -339,9 +338,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get().getStatus() != null);
-        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(sd.getStatus().getError());
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get().getStatus().getConditions().stream().anyMatch(c -> CONDITION_SERVICE_DOMAIN_CLUSTER_READY.equals(c.getType()) && c.getStatus().equalsIgnoreCase("FALSE")));
     }
 
     @Test
