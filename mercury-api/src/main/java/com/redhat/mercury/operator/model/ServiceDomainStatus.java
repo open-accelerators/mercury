@@ -11,13 +11,19 @@ import lombok.experimental.Accessors;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize
-@ToString
-@EqualsAndHashCode
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainStatus {
+public class ServiceDomainStatus extends AbstractResourceStatus{
+    public static final String CONDITION_SERVICE_DOMAIN_CLUSTER_READY = "ServiceDomainClusterReady";
+    public static final String REASON_SDC_NOT_FOUND = "ServiceDomainClusterNotFound";
+    public static final String REASON_SDC_NOT_READY = "ServiceDomainClusterNotReady";
+    public static final String CONDITION_KAFKA_TOPIC_READY = "KafkaTopicReady";
+    public static final String CONDITION_INTEGRATION_READY = "IntegrationReady";
+
     private String kafkaTopic;
     private String kafkaUser;
     private String error;

@@ -1,22 +1,16 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.mercury.operator.event.KafkaEventSource;
 import com.redhat.mercury.operator.model.KafkaConfig;
+import com.redhat.mercury.operator.model.ResourceUtils;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import com.redhat.mercury.operator.model.ServiceDomainClusterSpec;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.javaoperatorsdk.operator.api.Context;
 import io.javaoperatorsdk.operator.api.Controller;
@@ -24,6 +18,10 @@ import io.javaoperatorsdk.operator.api.DeleteControl;
 import io.javaoperatorsdk.operator.api.ResourceController;
 import io.javaoperatorsdk.operator.api.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
+import io.strimzi.api.kafka.model.EntityOperatorSpec;
+import io.strimzi.api.kafka.model.EntityOperatorSpecBuilder;
+import io.strimzi.api.kafka.model.EntityTopicOperatorSpec;
+import io.strimzi.api.kafka.model.EntityTopicOperatorSpecBuilder;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpecBuilder;
@@ -36,20 +34,25 @@ import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.storage.SingleVolumeStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
 import static com.redhat.mercury.operator.event.AbstractMercuryEventSource.MANAGED_BY_LABEL;
 import static com.redhat.mercury.operator.event.AbstractMercuryEventSource.OPERATOR_NAME;
+import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_KAFKA_BROKER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_BROKER_READY;
 
 @Controller
-public class ServiceDomainClusterController implements ResourceController<ServiceDomainCluster> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainClusterController.class);
+public class ServiceDomainClusterController extends AbstractController<ServiceDomainClusterSpec, ServiceDomainClusterStatus, ServiceDomainCluster> implements ResourceController<ServiceDomainCluster> {
     public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND = "ServiceDomainCluster";
     public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
     public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
     private static final String DEFAULT_PERSISTENT_STORAGE = "10Gi";
-
-    @Inject
-    KubernetesClient client;
 
     @Override
     public void init(EventSourceManager eventSourceManager) {
@@ -65,19 +68,20 @@ public class ServiceDomainClusterController implements ResourceController<Servic
 
     @Override
     public UpdateControl<ServiceDomainCluster> createOrUpdateResource(ServiceDomainCluster sdc, Context<ServiceDomainCluster> context) {
-        ServiceDomainClusterStatus status = new ServiceDomainClusterStatus();
+        setStatusCondition(sdc, CONDITION_READY, Boolean.FALSE);
+
         try {
             createOrUpdateKafkaBroker(sdc);
-            updateStatusWithKafkaBrokerUrl(sdc, status);
+            updateStatusWithKafkaBrokerUrl(sdc);
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
-            status.setError(e.getMessage());
+            setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, REASON_FAILED, e.getMessage(), Boolean.FALSE);
         }
 
-        return UpdateControl.updateStatusSubResource(sdc);
+        return updateStatus(sdc);
     }
 
-    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc, ServiceDomainClusterStatus status) {
+    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc) {
         Kafka kafka;
 
         try {
@@ -87,6 +91,7 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                     .get();
         } catch (KubernetesClientException e) {
             LOGGER.error("Unable to retrieve Kafka {}", sdc.getMetadata().getName(), e);
+            setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, REASON_KAFKA_BROKER_READY, "Unable to retrieve Kafka broker", Boolean.FALSE);
             return;
         }
 
@@ -98,8 +103,11 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                     .findFirst().orElse(null);
 
             if (listenerStatus != null) {
-                status.setKafkaBroker(listenerStatus.getBootstrapServers());
-                sdc.setStatus(status);
+                sdc.getStatus().setKafkaBroker(listenerStatus.getBootstrapServers());
+                setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, Boolean.TRUE);
+                setStatusCondition(sdc, CONDITION_READY, Boolean.TRUE);
+            } else {
+                setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, REASON_KAFKA_BROKER_READY, "The Kafka broker is not ready yet", Boolean.FALSE);
             }
         }
     }
@@ -138,6 +146,9 @@ public class ServiceDomainClusterController implements ResourceController<Servic
                 .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
+                .withEntityOperator(new EntityOperatorSpecBuilder()
+                                            .withTopicOperator(new EntityTopicOperatorSpecBuilder().build())
+                                    .build())
                 .withKafka(new KafkaClusterSpecBuilder()
                         .withReplicas(sdc.getSpec().getKafka().getReplicas())
                         .withListeners(new GenericKafkaListenerBuilder()

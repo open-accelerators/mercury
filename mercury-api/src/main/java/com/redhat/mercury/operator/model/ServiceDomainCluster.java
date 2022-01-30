@@ -14,6 +14,7 @@ public class ServiceDomainCluster extends CustomResource<ServiceDomainClusterSpe
     public ServiceDomainCluster() {
         super();
         this.setSpec(new ServiceDomainClusterSpec());
+        this.setStatus(new ServiceDomainClusterStatus());
     }
 
 }
