@@ -32,8 +32,7 @@
         <quarkus.container-image.build>true</quarkus.container-image.build>
         <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
         <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
-<!--        <sonar.organization>open-accelerators</sonar.organization>-->
-        <sonar.projectKey>open-accelerators_mercury</sonar.projectKey>
+        <sonar.organization>open-accelerators</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
