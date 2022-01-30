@@ -26,5 +26,4 @@ public class ServiceDomainStatus extends AbstractResourceStatus{
 
     private String kafkaTopic;
     private String kafkaUser;
-    private String error;
 }
