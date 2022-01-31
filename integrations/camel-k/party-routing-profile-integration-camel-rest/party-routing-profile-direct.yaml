@@ -1,24 +1,19 @@
 # camel-k: language=yaml
-# camel-k: open-api=PartyRoutingProfile.json
+# camel-k: dependency=camel-quarkus-protobuf
+# camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-common:1.0.1-SNAPSHOT
 
 - from:
-    uri: direct:retrievePartyStateStatus
+    uri: direct:Retrieve
     steps:
-      - set-header:
-          name: serviceDomainName
-          constant: party-routing-profile
-      - set-header:
-          name: cloudEventType
-          constant: org.bian.partyroutingprofile.partystate.status.retrieve
-      - to: direct:query
-
-- from:
-    uri: direct:RetrievePartyRoutingProfileReferenceIds
-    steps:
-      - set-header:
-          name: serviceDomainName
-          constant: party-routing-profile
-      - set-header:
-          name: cloudEventType
-          constant: org.bian.partyroutingprofile.partystate.ids.retrieve
-      - to: direct:query
+      - set-body:
+          simple: "{\"partyroutingprofileId\": \"${header.partyroutingprofileId}\"}"
+      - unmarshal:
+          protobuf:
+            instance-class: com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService$RetrieveStatusRequest
+            content-type-format: json
+      - to:
+          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BQStatusService?synchronous=true&method=RetrieveStatus
+      - marshal:
+          protobuf:
+            instance-class: com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass$RetrieveStatusResponse
+            content-type-format: json
