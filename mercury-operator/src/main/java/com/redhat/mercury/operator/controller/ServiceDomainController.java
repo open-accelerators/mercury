@@ -14,10 +14,6 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
-import com.redhat.mercury.operator.event.DeploymentEventSource;
-import com.redhat.mercury.operator.event.IntegrationEventSource;
-import com.redhat.mercury.operator.event.KafkaTopicEventSource;
-import com.redhat.mercury.operator.event.ServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
@@ -41,13 +37,15 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.model.Scope;
-import io.javaoperatorsdk.operator.api.Context;
-import io.javaoperatorsdk.operator.api.Controller;
-import io.javaoperatorsdk.operator.api.DeleteControl;
-import io.javaoperatorsdk.operator.api.ResourceController;
-import io.javaoperatorsdk.operator.api.UpdateControl;
-import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
+import io.javaoperatorsdk.operator.api.reconciler.EventSourceContext;
+import io.javaoperatorsdk.operator.api.reconciler.EventSourceInitializer;
+import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
+import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
+import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRuleBuilder;
@@ -64,11 +62,14 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FA
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC_NOT_FOUND;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_INTEGRATION_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_FOUND;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
 
-@Controller
-public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements ResourceController<ServiceDomain> {
+@ControllerConfiguration
+public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements Reconciler<ServiceDomain>, EventSourceInitializer<ServiceDomain> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
 
     public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
@@ -96,22 +97,42 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     String version;
 
     @Override
-    public void init(EventSourceManager eventSourceManager) {
-        eventSourceManager.registerEventSource("deployment-event-source", DeploymentEventSource.createAndRegisterWatch(client));
-        eventSourceManager.registerEventSource("integration-event-source", IntegrationEventSource.createAndRegisterWatch(client));
-        eventSourceManager.registerEventSource("kafka-topic-event-source", KafkaTopicEventSource.createAndRegisterWatch(client));
-        eventSourceManager.registerEventSource("service-event-source", ServiceEventSource.createAndRegisterWatch(client));
+    public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomain> context) {
+        SharedIndexInformer<Deployment> deploymentInformer = client.resources(Deployment.class)
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        CustomResourceDefinitionContext resourceDefinitionContext = new CustomResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withScope(Scope.NAMESPACED.toString())
+                .build();
+
+        SharedIndexInformer<GenericKubernetesResource> integrationInformer = client.genericKubernetesResources(resourceDefinitionContext)
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        SharedIndexInformer<KafkaTopic> kafkaTopicInformer = client.resources(KafkaTopic.class)
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        SharedIndexInformer<Service> servicesInformer = client.services()
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        return List.of(getInformerEventSource(deploymentInformer),
+                       getInformerEventSource(integrationInformer),
+                       getInformerEventSource(kafkaTopicInformer),
+                       getInformerEventSource(servicesInformer));
     }
 
     @Override
-    public DeleteControl deleteResource(ServiceDomain sd, Context<ServiceDomain> context) {
-        String sdName = sd.getMetadata().getName();
-        LOGGER.debug("{} service domain deleted successfully", sdName);
-        return DeleteControl.DEFAULT_DELETE;
-    }
-
-    @Override
-    public UpdateControl<ServiceDomain> createOrUpdateResource(ServiceDomain sd, Context<ServiceDomain> context) {
+    public UpdateControl<ServiceDomain> reconcile(ServiceDomain sd, Context context) {
         setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
 
         String sdName = sd.getMetadata().getName();
@@ -121,14 +142,14 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         if (sdc == null) {
             LOGGER.error("{} service domain cluster not found", sdcName);
             setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
-            setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, REASON_SDC_NOT_FOUND, sdcName + " service domain cluster not found", Boolean.FALSE);
+            setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, REASON_SDC, sdcName + " " + MESSAGE_SDC_NOT_FOUND, Boolean.FALSE);
             return updateStatus(sd);
         }
 
-        if (sdc.getStatus().getCondition(CONDITION_READY) == null || "False".equals(sdc.getStatus().getCondition(CONDITION_READY).getStatus())) {
+        if (sdc.getStatus().getCondition(CONDITION_READY) == null || Boolean.FALSE.toString().equalsIgnoreCase(sdc.getStatus().getCondition(CONDITION_READY).getStatus())) {
             LOGGER.error("{} service domain cluster not ready", sdcName);
             setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
-            setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, REASON_SDC_NOT_READY, sdcName + " service domain cluster not ready", Boolean.FALSE);
+            setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, REASON_SDC, sdcName + " " + MESSAGE_SDC_NOT_READY, Boolean.FALSE);
             return updateStatus(sd);
         }
 
@@ -138,7 +159,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
             createOrUpdateDeployment(sd, sdc.getStatus().getKafkaBroker());
             createOrUpdateService(sd);
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
-                setStatusCondition(sd, CONDITION_INTEGRATION_READY, Boolean.FALSE);
+                setStatusCondition(sd, CONDITION_INTEGRATION_READY, REASON_INTEGRATION, MESSAGE_INTEGRATION_NOT_READY, Boolean.FALSE);
                 final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sd.getSpec().getType().toString()) + "-http";
                 ConfigMap sdConfigMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
 
