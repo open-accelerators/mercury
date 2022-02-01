@@ -95,6 +95,9 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final String INTEGRATION_TYPE_PROPERTY = "type";
     private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
 
+    @Inject
+    KubernetesClient client;
+
     @ConfigProperty(name = "application.version")
     String version;
 
