@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
-import com.google.inject.Inject;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
@@ -27,7 +26,6 @@ import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
@@ -96,9 +94,6 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final String INTEGRATION_STATUS_PROPERTY = "status";
     private static final String INTEGRATION_TYPE_PROPERTY = "type";
     private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
-
-    @Inject
-    KubernetesClient client;
 
     @ConfigProperty(name = "application.version")
     String version;
