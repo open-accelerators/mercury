@@ -36,11 +36,9 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -247,11 +245,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
                 .inNamespace(sdNamespace)
                 .withName(sdName)
                 .get().getStatus().isReady());
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+        await().atMost(2, MINUTES).until(() -> {
             final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
                     .inNamespace(sdNamespace)
                     .withName(sdName)
@@ -350,11 +348,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
                 .inNamespace(sdNamespace)
                 .withName(sdName)
                 .get().getStatus().isReady());
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+        await().atMost(2, MINUTES).until(() -> {
             final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
                     .inNamespace(sdNamespace)
                     .withName(sdName)
@@ -372,11 +370,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertNull(integration);
 
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
                 .inNamespace(sdNamespace)
                 .withName(sdName)
                 .get().getStatus().isReady());
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+        await().atMost(2, MINUTES).until(() -> {
             final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
                     .inNamespace(sdNamespace)
                     .withName(sdName)
@@ -501,11 +499,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
                 .inNamespace(sdNamespace)
                 .withName(sdName)
                 .get().getStatus().isReady());
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+        await().atMost(2, MINUTES).until(() -> {
             final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
                     .inNamespace(sdNamespace)
                     .withName(sdName)
@@ -556,11 +554,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
                 .inNamespace(sdNamespace)
                 .withName(sdName)
                 .get().getStatus().isReady());
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+        await().atMost(2, MINUTES).until(() -> {
             final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
                     .inNamespace(sdNamespace)
                     .withName(sdName)
@@ -599,11 +597,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).replace(integration);
 
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
                 .inNamespace(sdNamespace)
                 .withName(sdName2)
                 .get().getStatus().isReady());
-        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+        await().atMost(2, MINUTES).until(() -> {
             final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
                     .inNamespace(sdNamespace)
                     .withName(sdName2)
