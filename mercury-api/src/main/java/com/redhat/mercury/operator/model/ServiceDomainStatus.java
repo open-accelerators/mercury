@@ -19,10 +19,13 @@ import lombok.experimental.Accessors;
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class ServiceDomainStatus extends AbstractResourceStatus{
     public static final String CONDITION_SERVICE_DOMAIN_CLUSTER_READY = "ServiceDomainClusterReady";
-    public static final String REASON_SDC_NOT_FOUND = "ServiceDomainClusterNotFound";
-    public static final String REASON_SDC_NOT_READY = "ServiceDomainClusterNotReady";
+    public static final String REASON_SDC = "ServiceDomainCluster";
+    public static final String MESSAGE_SDC_NOT_FOUND = "Service Domain Cluster not found";
+    public static final String MESSAGE_SDC_NOT_READY = "Service Domain Cluster is not ready";
     public static final String CONDITION_KAFKA_TOPIC_READY = "KafkaTopicReady";
     public static final String CONDITION_INTEGRATION_READY = "IntegrationReady";
+    public static final String MESSAGE_INTEGRATION_NOT_READY = "Integration not ready";
+    public static final String REASON_INTEGRATION = "Integration";
 
     private String kafkaTopic;
     private String kafkaUser;
