@@ -1,9 +1,5 @@
 package com.redhat.mercury.operator.controller;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +23,24 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaTopic;
+import io.strimzi.api.kafka.model.status.ConditionBuilder;
+import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -156,13 +164,14 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     public void addServiceDomainTest() {
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
         //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
+        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get() != null);
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
         assertNotNull(deployment);
 
         List<OwnerReference> ownerReferences = deployment.getMetadata().getOwnerReferences();
@@ -176,8 +185,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Service service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName).get() != null);
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
         assertNotNull(service);
 
         ownerReferences = service.getMetadata().getOwnerReferences();
@@ -217,19 +226,55 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertNotNull(kafkaTopic);
+
+        ownerReferences = kafkaTopic.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+                .inNamespace(sdNamespace)
+                .withName(sdName)
+                .get().getStatus().isReady());
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
+                    .inNamespace(sdNamespace)
+                    .withName(sdName)
+                    .get();
+
+            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
+        });
     }
 
     @Test
     public void updateServiceDomainNoExposeTest() {
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
         //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
+        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get() != null);
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
         assertNotNull(deployment);
 
         List<OwnerReference> ownerReferences = deployment.getMetadata().getOwnerReferences();
@@ -243,8 +288,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Service service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName).get() != null);
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
         assertNotNull(service);
 
         ownerReferences = service.getMetadata().getOwnerReferences();
@@ -285,12 +330,61 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
 
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertNotNull(kafkaTopic);
+
+        ownerReferences = kafkaTopic.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+                .inNamespace(sdNamespace)
+                .withName(sdName)
+                .get().getStatus().isReady());
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
+                    .inNamespace(sdNamespace)
+                    .withName(sdName)
+                    .get();
+
+            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
+        });
+
         sd.getSpec().setExpose(null);
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).replace(sd);
 
         await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() == null);
         integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertNull(integration);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+                .inNamespace(sdNamespace)
+                .withName(sdName)
+                .get().getStatus().isReady());
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
+                    .inNamespace(sdNamespace)
+                    .withName(sdName)
+                    .get();
+
+            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY);
+        });
     }
 
     @Test
@@ -302,9 +396,10 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get().getStatus().getConditions().stream().anyMatch(c -> CONDITION_SERVICE_DOMAIN_CLUSTER_READY.equals(c.getType()) && c.getStatus().equalsIgnoreCase("FALSE")));
+        await().atMost(2, MINUTES).until(() -> !client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(sdName).get().getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY));
     }
 
     @Test
@@ -326,16 +421,18 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
 
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get().getStatus().getConditions().stream().anyMatch(c -> CONDITION_SERVICE_DOMAIN_CLUSTER_READY.equals(c.getType()) && c.getStatus().equalsIgnoreCase("FALSE")));
+        await().atMost(2, MINUTES).until(() -> !client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(sdName).get().getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY));
     }
 
     @Test
     public void addServiceDomainWithoutExposeHttpTest() {
         ServiceDomain sd = createServiceDomain(SERVICE_DOMAIN_NAME, false);
         final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
@@ -386,12 +483,44 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertNull(integration);
+
+        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertNotNull(kafkaTopic);
+
+        ownerReferences = kafkaTopic.getMetadata().getOwnerReferences();
+        assertNotNull(ownerReferences);
+        assertFalse(ownerReferences.isEmpty());
+
+        ownerReference = ownerReferences.get(0);
+        assertNotNull(ownerReference);
+        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
+        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+                .inNamespace(sdNamespace)
+                .withName(sdName)
+                .get().getStatus().isReady());
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
+                    .inNamespace(sdNamespace)
+                    .withName(sdName)
+                    .get();
+
+            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY);
+        });
     }
 
     @Test
     public void addMultipleServiceDomainTest() {
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
@@ -408,21 +537,82 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + "-topic").get();
         assertNotNull(kafkaTopic);
 
-        sd = createServiceDomain(SERVICE_DOMAIN_NAME + 2);
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
+        //Test Integration data
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() != null);
+        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertNotNull(integration);
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+                .inNamespace(sdNamespace)
+                .withName(sdName)
+                .get().getStatus().isReady());
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
+                    .inNamespace(sdNamespace)
+                    .withName(sdName)
+                    .get();
+
+            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
+        });
+
+        sd = createServiceDomain(sdName + 2);
+        final String integrationName2 = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        final String sdName2 = sd.getMetadata().getName();
         client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
 
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2).get() != null);
-        sdDeployment = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2).get();
+        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(sdName2).get() != null);
+        sdDeployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName2).get();
         assertNotNull(sdDeployment);
 
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2).get() != null);
-        service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2).get();
+        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName2).get() != null);
+        service = client.services().inNamespace(sdNamespace).withName(sdName2).get();
         assertNotNull(service);
 
         await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get() != null);
-        kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get();
+        kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName2 + "-topic").get();
         assertNotNull(kafkaTopic);
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName2 + "-topic").replace(kafkaTopic);
+
+        //Test Integration data
+        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).get() != null);
+        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).get();
+        assertNotNull(integration);
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).replace(integration);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
+                .inNamespace(sdNamespace)
+                .withName(sdName2)
+                .get().getStatus().isReady());
+        with().pollInterval(500, MILLISECONDS).await().atMost(2, MINUTES).until(() -> {
+            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
+                    .inNamespace(sdNamespace)
+                    .withName(sdName2)
+                    .get();
+
+            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
+                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
+        });
     }
 
     @Test

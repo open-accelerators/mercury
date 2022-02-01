@@ -124,8 +124,6 @@ spec:
                 type: string
               kafkaTopic:
                 type: string
-              error:
-                type: string
               conditions:
                 items:
                   properties:
