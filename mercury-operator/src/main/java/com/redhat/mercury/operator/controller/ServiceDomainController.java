@@ -87,6 +87,10 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final int GRPC_PORT = 9000;
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     private static final String APP_LABEL_BIAN_PREFIX = "bian-";
+    private static final String INTEGRATION_SPEC_PROPERTY = "spec";
+    private static final String INTEGRATION_STATUS_PROPERTY = "status";
+    private static final String INTEGRATION_TYPE_PROPERTY = "type";
+    private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
 
     @ConfigProperty(name = "application.version")
     String version;
@@ -183,6 +187,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
         if (integration != null) {
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).delete();
+            removeStatusCondition(sd, CONDITION_INTEGRATION_READY);
         }
     }
 
@@ -208,7 +213,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(integrationName)
                 .get();
 
-        if (current == null || !Objects.equals(current.getAdditionalProperties(), expected.get().getAdditionalProperties())) {
+        if (current == null || !Objects.equals(current.getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY), expected.get().getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY))) {
             current = client.genericKubernetesResources(resourceDefinitionContext)
                     .inNamespace(sd.getMetadata().getNamespace())
                     .createOrReplace(expected.get());
@@ -219,9 +224,9 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     }
 
     private void updateIntegrationReadyCondition(ServiceDomain sd, GenericKubernetesResource current) {
-        if(current != null && current.getAdditionalProperties() != null && current.getAdditionalProperties().get("status") != null && ((Map) current.getAdditionalProperties().get("status")).get("conditions") != null){
-            final List<Map<String, String>> conditions = (List<Map<String, String>>) ((Map) current.getAdditionalProperties().get("status")).get("conditions");
-            final boolean integrationReady = conditions.stream().anyMatch(c -> "Ready".equals(c.get("type")) && "True".equals(c.get("status")));
+        if(current != null && current.getAdditionalProperties() != null && current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY) != null && ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY) != null){
+            final List<Map<String, String>> conditions = (List<Map<String, String>>) ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY);
+            final boolean integrationReady = conditions.stream().anyMatch(c -> CONDITION_READY.equals(c.get(INTEGRATION_TYPE_PROPERTY)) && Boolean.TRUE.toString().equalsIgnoreCase(c.get(INTEGRATION_STATUS_PROPERTY)));
             if(integrationReady) {
                 setStatusCondition(sd, CONDITION_INTEGRATION_READY, Boolean.TRUE);
             }

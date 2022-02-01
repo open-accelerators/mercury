@@ -47,10 +47,11 @@ public abstract class AbstractMercuryEventSource<T extends HasMetadata> extends 
             return;
         }
 
-        final OwnerReference ownerReference = resource.getMetadata().getOwnerReferences().stream().filter(or -> getOwnerRefKind().equalsIgnoreCase(or.getKind())).findFirst().orElse(null);
+        final String ownerRefKind = getOwnerRefKind();
+        final OwnerReference ownerReference = resource.getMetadata().getOwnerReferences().stream().filter(or -> ownerRefKind.equalsIgnoreCase(or.getKind())).findFirst().orElse(null);
         if(ownerReference == null) {
             LOGGER.warn(
-                    "Skipping {} event for custom resource {} with uid: {}, version: {} because the reference owner is not ServiceDomain",
+                    "Skipping {} event for custom resource {} with uid: {}, version: {} because the reference owner is not " + ownerRefKind,
                     action,
                     resource.getClass().getSimpleName(),
                     getUID(resource),
