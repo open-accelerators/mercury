@@ -25,12 +25,20 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
     @Inject
     KubernetesClient client;
 
-    protected void setStatusCondition(T sdc, String type, Boolean status){
-        setStatusCondition(sdc, type,null, null, status);
+    protected void setStatusCondition(T resource, String type, Boolean status){
+        setStatusCondition(resource, type,null, null, status);
     }
 
-    protected void setStatusCondition(T sdc, String type, String reason, String message, Boolean status){
-        setStatusCondition(sdc, new ConditionBuilder()
+    protected void removeStatusCondition(T resource, String type){
+        if(resource.getStatus() == null) {
+            return;
+        }
+
+        resource.getStatus().removeCondition(type);
+    }
+
+    protected void setStatusCondition(T resource, String type, String reason, String message, Boolean status){
+        setStatusCondition(resource, new ConditionBuilder()
                 .withType(type)
                 .withMessage(message)
                 .withReason(reason)

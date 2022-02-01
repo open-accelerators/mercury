@@ -1,9 +1,9 @@
 package com.redhat.mercury.operator.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.fabric8.kubernetes.api.model.Condition;
-import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
@@ -32,6 +32,20 @@ public abstract class AbstractResourceStatus {
 
     public Condition getCondition(String key) {
         return conditions.stream().filter(c -> c.getType().equals(key)).findFirst().orElse(null);
+    }
+
+    public void removeCondition(String key) {
+        conditions.removeIf(c -> c.getType().equalsIgnoreCase(key));
+    }
+
+    @JsonIgnore
+    public boolean isReady() {
+        return conditions.stream().anyMatch(c -> CONDITION_READY.equals(c.getType()) && c.getStatus().equalsIgnoreCase(Boolean.TRUE.toString()));
+    }
+
+    @JsonIgnore
+    public boolean isSpecificConditionReady(String type) {
+        return conditions.stream().anyMatch(c -> type.equals(c.getType()) && c.getStatus().equalsIgnoreCase(Boolean.TRUE.toString()));
     }
 
     public AbstractResourceStatus setCondition(Condition condition) {
