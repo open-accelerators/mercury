@@ -98,18 +98,18 @@ $ curl -H "Content-Type: application/json" `minikube service -n mercury party-ro
 3. Retrieve a report of all the Customer Offer Procedure References
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service -n mercury party-routing-profile-reporting --url=true`/1/reports/ids
+$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-reporting --url=true`/party-routing-profile/reports/ids
 [
-   "my-customer-reference",
-   "other-customer",
-   "yet-another-customer"
+   "1",
+   "2",
+   "3"
 ]
 ```
 
 4. Complete the Customer Offer Procedure
 
 ```shell
-$ curl -vH "Content-Type: application/json" `minikube service -n mercury customer-offer-camelk-rest --url=true`/CustomerOffer/1/Update -d '          
+$ curl -vH "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/CustomerOffer/1/Update -d '          
 {
   "CustomerOfferProcedure": {
     "CustomerReference": "my-customer-reference"
@@ -128,7 +128,7 @@ $ curl -vH "Content-Type: application/json" `minikube service -n mercury custome
 5. Confirm the Party Routing Profile has been updated
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service -n mercury party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
+$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
 {
   "Status": {
     "CustomerRelationshipStatus": "1"
@@ -141,7 +141,7 @@ $ curl -H "Content-Type: application/json" `minikube service -n mercury party-ro
 The Customer Credit Rating example always provide the same result for any input.
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service -n mercury customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/whatever/Retrieve
+$ curl -H "Content-Type: application/json" `minikube service customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/${customercreditratingId}/Retrieve
 {
   "CustomerCreditRatingState": {
     "CreditRatingAssessmentResult": "802"
