@@ -2,13 +2,12 @@
 ## Prerequisites:
 
 - Kafka operator installed (minimum strimzi version 0.26.0)
-
 - Camel-K operator installed (version 1.7.0)
-
-- A ConfigMap per service domain that exposes an http route
-(with the name integration-<service-domain-name>-http e.g integration-customer-offer-http)
-containing definitions of camel routes(e.g directs.yaml, grpc.yaml, openapi.json)
-
+- A ConfigMap per service domain that exposes a http route
+(with the name integration-<service-domain-name>-http e.g. integration-customer-offer-http)
+containing definitions of camel routes(e.g. directs.yaml)
+- A ConfigMap per service domain that defines the OpenApi used to map REST requests to the
+_directs_ routes
 - A namespace named mercury should be created if it doesn't already exist.
 
 ## Installation
@@ -18,7 +17,7 @@ The operator will be created in the mercury namespace.
 To install the operator run:
 
 ```shell
-kubectl create -f ./install/mercury-operator.yml
+kubectl create -f ./deploy/mercury-operator.yml
 ```
 
 ## Functionality:
