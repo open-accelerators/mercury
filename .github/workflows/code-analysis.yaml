@@ -37,8 +37,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           TEST: ${{ secrets.TEST }}
         run: |
-          echo $SONAR_TOKEN
-          echo $TEST
+          echo "$SONAR_TOKEN"
+          echo "$TEST"
           echo ${{ env.SONAR_TOKEN}}
           echo ${{ secrets.SONAR_TOKEN }}
           echo ${{ secrets.TEST }}
