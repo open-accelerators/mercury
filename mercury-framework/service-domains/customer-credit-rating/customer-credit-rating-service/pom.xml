@@ -16,7 +16,7 @@
         </dependency>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>mercury-common-service</artifactId>
+            <artifactId>mercury-common-events</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

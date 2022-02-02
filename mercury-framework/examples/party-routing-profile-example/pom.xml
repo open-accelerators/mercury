@@ -19,9 +19,10 @@
             <artifactId>customer-offer-events</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- for reporting -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

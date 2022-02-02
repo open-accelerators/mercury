@@ -64,6 +64,14 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
             }
         }
 
+        String openApiConfigMap = "customer-offer-openapi";
+        ConfigMap openAPIConfigMap = client.configMaps()
+                .inNamespace(client.getNamespace())
+                .load(this.getClass().getClassLoader().getResourceAsStream("openAPIConfigMap.yaml"))
+                .create();
+        await().atMost(2, MINUTES).until(() -> client.configMaps().inNamespace(client.getNamespace()).withName(openApiConfigMap).get() != null);
+        assertNotNull(openAPIConfigMap);
+
         //Hack so that the cluster will already have a kafka broker
         ServiceDomainCluster sdc = new ServiceDomainCluster();
         sdc.setMetadata(new ObjectMetaBuilder().withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).build());
@@ -118,6 +126,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         if (configMap != null) {
             client.configMaps().inNamespace(client.getNamespace()).delete(configMap);
         }
+        client.configMaps().inNamespace(client.getNamespace()).withName("customer-offer-openapi").delete();
 
         final String integrationName = SERVICE_DOMAIN_NAME + INTEGRATION_SUFFIX;
         ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()

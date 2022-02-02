@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Empty;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureUpdateInputModel;
-import com.redhat.mercury.customeroffer.services.CustomerOfferService;
+import com.redhat.mercury.customeroffer.v10.model.CRCustomerOfferProcedureInitiateInputModel;
+import com.redhat.mercury.customeroffer.v10.model.CRCustomerOfferProcedureUpdateInputModel;
+import com.redhat.mercury.customeroffer.v10.services.CustomerOfferService;
 
 import io.smallrye.mutiny.Uni;
 

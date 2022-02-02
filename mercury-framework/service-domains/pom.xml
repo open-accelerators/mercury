@@ -9,41 +9,6 @@
     <artifactId>service-domain-parent</artifactId>
     <name>Service Domains</name>
     <packaging>pom</packaging>
-    <properties>
-        <camel-restdsl-plugin.version>3.14.0</camel-restdsl-plugin.version>
-        <swagger-annotations.version>2.1.9</swagger-annotations.version>
-    </properties>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-annotations</artifactId>
-                <version>${swagger-annotations.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.camel</groupId>
-                    <artifactId>camel-restdsl-openapi-plugin</artifactId>
-                    <version>${camel-restdsl-plugin.version}</version>
-                    <configuration>
-                        <restConfiguration>false</restConfiguration>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <phase>process-sources</phase>
-                            <goals>
-                                <goal>generate-with-dto</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
     <modules>
         <module>customer-credit-rating</module>
         <module>customer-offer</module>
