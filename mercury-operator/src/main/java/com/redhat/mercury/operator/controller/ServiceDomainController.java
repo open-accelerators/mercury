@@ -8,18 +8,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-import javax.inject.Inject;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
-import com.redhat.mercury.operator.event.DeploymentEventSource;
-import com.redhat.mercury.operator.event.IntegrationEventSource;
-import com.redhat.mercury.operator.event.KafkaTopicEventSource;
-import com.redhat.mercury.operator.event.ServiceEventSource;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
@@ -40,17 +34,18 @@ import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.model.Scope;
-import io.javaoperatorsdk.operator.api.Context;
-import io.javaoperatorsdk.operator.api.Controller;
-import io.javaoperatorsdk.operator.api.DeleteControl;
-import io.javaoperatorsdk.operator.api.ResourceController;
-import io.javaoperatorsdk.operator.api.UpdateControl;
-import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
+import io.javaoperatorsdk.operator.api.reconciler.EventSourceContext;
+import io.javaoperatorsdk.operator.api.reconciler.EventSourceInitializer;
+import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
+import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
+import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRuleBuilder;
@@ -62,19 +57,26 @@ import io.strimzi.api.kafka.model.KafkaUserAuthorizationSimpleBuilder;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthenticationBuilder;
 
-import static com.redhat.mercury.operator.event.AbstractMercuryEventSource.MANAGED_BY_LABEL;
-import static com.redhat.mercury.operator.event.AbstractMercuryEventSource.OPERATOR_NAME;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_INTEGRATION_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_FOUND;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
 
-@Controller
-public class ServiceDomainController implements ResourceController<ServiceDomain> {
+@ControllerConfiguration
+public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements Reconciler<ServiceDomain>, EventSourceInitializer<ServiceDomain> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
 
     public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
     public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
     public static final String MERCURY_BINDING_LABEL = "mercury-binding";
     public static final String INTEGRATION_SUFFIX = "-camelk-rest";
     public static final String CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY = "directs.yaml";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
     private static final String SERVICE_DOMAIN_LABEL = "service-domain";
     private static final String BUSINESS_SERVICE_CONTAINER_NAME = "business-service";
     private static final String APP_LABEL = "app";
@@ -87,58 +89,83 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     private static final String APP_LABEL_BIAN_PREFIX = "bian-";
     private static final String OPENAPI_CM_SUFFIX = "-openapi";
-    @Inject
-    KubernetesClient client;
+    private static final String INTEGRATION_SPEC_PROPERTY = "spec";
+    private static final String INTEGRATION_STATUS_PROPERTY = "status";
+    private static final String INTEGRATION_TYPE_PROPERTY = "type";
+    private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
 
     @ConfigProperty(name = "application.version")
     String version;
 
     @Override
-    public void init(EventSourceManager eventSourceManager) {
-        eventSourceManager.registerEventSource("deployment-event-source", DeploymentEventSource.createAndRegisterWatch(client));
-        eventSourceManager.registerEventSource("integration-event-source", IntegrationEventSource.createAndRegisterWatch(client));
-        eventSourceManager.registerEventSource("kafka-topic-event-source", KafkaTopicEventSource.createAndRegisterWatch(client));
-        eventSourceManager.registerEventSource("service-event-source", ServiceEventSource.createAndRegisterWatch(client));
+    public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomain> context) {
+        SharedIndexInformer<Deployment> deploymentInformer = client.resources(Deployment.class)
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        CustomResourceDefinitionContext resourceDefinitionContext = new CustomResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withScope(Scope.NAMESPACED.toString())
+                .build();
+
+        SharedIndexInformer<GenericKubernetesResource> integrationInformer = client.genericKubernetesResources(resourceDefinitionContext)
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        SharedIndexInformer<KafkaTopic> kafkaTopicInformer = client.resources(KafkaTopic.class)
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        SharedIndexInformer<Service> servicesInformer = client.services()
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
+        return List.of(getInformerEventSource(deploymentInformer),
+                       getInformerEventSource(integrationInformer),
+                       getInformerEventSource(kafkaTopicInformer),
+                       getInformerEventSource(servicesInformer));
     }
 
     @Override
-    public DeleteControl deleteResource(ServiceDomain sd, Context<ServiceDomain> context) {
-        String sdName = sd.getMetadata().getName();
-        LOGGER.debug("{} service domain deleted successfully", sdName);
-        return DeleteControl.DEFAULT_DELETE;
-    }
-
-    @Override
-    public UpdateControl<ServiceDomain> createOrUpdateResource(ServiceDomain sd, Context<ServiceDomain> context) {
-        ServiceDomainStatus status = new ServiceDomainStatus();
+    public UpdateControl<ServiceDomain> reconcile(ServiceDomain sd, Context context) {
+        setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
         String sdName = sd.getMetadata().getName();
         final String sdcName = sd.getSpec().getServiceDomainCluster();
 
         ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).inNamespace(sd.getMetadata().getNamespace()).withName(sdcName).get();
         if (sdc == null) {
             LOGGER.error("{} service domain cluster not found", sdcName);
-            status.setError(sdcName + " service domain cluster not found");
-            sd.setStatus(status);
-            return UpdateControl.updateStatusSubResource(sd);
+            setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
+            setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, REASON_SDC, sdcName + " " + MESSAGE_SDC_NOT_FOUND, Boolean.FALSE);
+            return updateStatus(sd);
         }
 
-        if (sdc.getStatus() == null || sdc.getStatus().getKafkaBroker() == null) {
-            LOGGER.error("kafka broker url not found");
-            status.setError("kafka broker url not found");
-            sd.setStatus(status);
-            return UpdateControl.updateStatusSubResource(sd);
+        if (sdc.getStatus().getCondition(CONDITION_READY) == null || Boolean.FALSE.toString().equalsIgnoreCase(sdc.getStatus().getCondition(CONDITION_READY).getStatus())) {
+            LOGGER.error("{} service domain cluster not ready", sdcName);
+            setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
+            setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, REASON_SDC, sdcName + " " + MESSAGE_SDC_NOT_READY, Boolean.FALSE);
+            return updateStatus(sd);
         }
+
+        setStatusCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY, Boolean.TRUE);
 
         try {
             createOrUpdateDeployment(sd, sdc.getStatus().getKafkaBroker());
             createOrUpdateService(sd);
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
+                setStatusCondition(sd, CONDITION_INTEGRATION_READY, REASON_INTEGRATION, MESSAGE_INTEGRATION_NOT_READY, Boolean.FALSE);
                 final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sd.getSpec().getType().toString()) + "-http";
                 ConfigMap sdConfigMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
 
                 final boolean validateSdConfigMap = validateSdConfigMap(sd, sdConfigMapName, sdConfigMap);
                 if (!validateSdConfigMap) {
-                    return UpdateControl.noUpdate();
+                    return updateStatus(sd);
                 }
 
                 createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
@@ -147,14 +174,25 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
             }
 
             String kafkaTopic = createKafkaTopic(sd, sdc.getMetadata().getNamespace());
-            status.setKafkaTopic(kafkaTopic);
+            sd.getStatus().setKafkaTopic(kafkaTopic);
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
-            status.setError(e.getMessage());
+            setStatusCondition(sd, CONDITION_READY, REASON_FAILED, e.getMessage(), Boolean.FALSE);
         }
 
-        sd.setStatus(status);
-        return UpdateControl.updateStatusSubResource(sd);
+        updateSdReadyCondition(sd);
+
+        return updateStatus(sd);
+    }
+
+    private void updateSdReadyCondition(ServiceDomain sd) {
+        final boolean isSDReady = sd.getStatus().getConditions().stream()
+                .filter(c -> !CONDITION_READY.equals(c.getType()))
+                .allMatch(c -> Boolean.TRUE.toString().equalsIgnoreCase(c.getStatus()));
+
+        if(isSDReady){
+            setStatusCondition(sd, CONDITION_READY, Boolean.TRUE);
+        }
     }
 
     private void deleteCamelHttpIntegration(ServiceDomain sd) {
@@ -170,6 +208,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
         if (integration != null) {
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).delete();
+            removeStatusCondition(sd, CONDITION_INTEGRATION_READY);
         }
     }
 
@@ -190,16 +229,28 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .load(new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8)));
 
         final String sdNamespace = sd.getMetadata().getNamespace();
-        final GenericKubernetesResource current = client.genericKubernetesResources(resourceDefinitionContext)
+        GenericKubernetesResource current = client.genericKubernetesResources(resourceDefinitionContext)
                 .inNamespace(sdNamespace)
                 .withName(integrationName)
                 .get();
 
-        if (current == null || !Objects.equals(current.getAdditionalProperties(), expected.get().getAdditionalProperties())) {
-            client.genericKubernetesResources(resourceDefinitionContext)
+        if (current == null || !Objects.equals(current.getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY), expected.get().getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY))) {
+            current = client.genericKubernetesResources(resourceDefinitionContext)
                     .inNamespace(sd.getMetadata().getNamespace())
                     .createOrReplace(expected.get());
             LOGGER.debug("Integration {} was created or updated", integrationName);
+        }
+
+        updateIntegrationReadyCondition(sd, current);
+    }
+
+    private void updateIntegrationReadyCondition(ServiceDomain sd, GenericKubernetesResource current) {
+        if(current != null && current.getAdditionalProperties() != null && current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY) != null && ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY) != null){
+            final List<Map<String, String>> conditions = (List<Map<String, String>>) ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY);
+            final boolean integrationReady = conditions.stream().anyMatch(c -> CONDITION_READY.equals(c.get(INTEGRATION_TYPE_PROPERTY)) && Boolean.TRUE.toString().equalsIgnoreCase(c.get(INTEGRATION_STATUS_PROPERTY)));
+            if(integrationReady) {
+                setStatusCondition(sd, CONDITION_INTEGRATION_READY, Boolean.TRUE);
+            }
         }
     }
 
@@ -214,9 +265,7 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
 
         String sdCamelRouteYaml = camelRoutesConfigMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
         if (sdCamelRouteYaml == null) {
-            if (sdCamelRouteYaml == null) {
-                LOGGER.error("{} config map key with the direct routes is missing", sdTypeAsString + "-direct.yaml");
-            }
+            LOGGER.error("{} config map key with the direct routes is missing", sdTypeAsString + "-direct.yaml");
             return false;
         }
         if (client.configMaps().inNamespace(client.getNamespace()).withName(sdTypeAsString + OPENAPI_CM_SUFFIX).get() == null) {
@@ -320,13 +369,14 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
     }
 
     private String createKafkaTopic(ServiceDomain sd, String sdcNamespace) {
+        setStatusCondition(sd, CONDITION_KAFKA_TOPIC_READY, Boolean.FALSE);
         final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
 
         KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
                 .withNewMetadata()
                 .withName(kafkaTopicName)
                 .withNamespace(sdcNamespace)
-                .withLabels(Map.of("strimzi.io/cluster", "mercury-kafka",
+                .withLabels(Map.of("strimzi.io/cluster", sd.getSpec().getServiceDomainCluster(),
                                    MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
@@ -342,14 +392,22 @@ public class ServiceDomainController implements ResourceController<ServiceDomain
                 .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
                 .build()));
 
-        final KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).withName(kafkaTopicName).get();
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdcNamespace).withName(kafkaTopicName).get();
 
         if (kafkaTopic == null || !Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
-            client.resources(KafkaTopic.class).inNamespace(sdcNamespace).create(desiredKafkaTopic);
+            kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdcNamespace).create(desiredKafkaTopic);
             LOGGER.debug("KafkaTopic {} was created or updated", kafkaTopicName);
         }
 
+        if(isKafkaTopicReady(kafkaTopic)){
+            setStatusCondition(sd, CONDITION_KAFKA_TOPIC_READY, Boolean.TRUE);
+        }
+
         return kafkaTopicName;
+    }
+
+    private boolean isKafkaTopicReady(KafkaTopic kafkaTopic) {
+        return kafkaTopic != null && kafkaTopic.getStatus() != null && kafkaTopic.getStatus().getConditions().stream().anyMatch(c -> CONDITION_READY.equals(c.getType()) && Boolean.TRUE.toString().equalsIgnoreCase(c.getStatus()));
     }
 
     private void createOrUpdateDeployment(ServiceDomain sd, String kafkaBrokerUrl) {

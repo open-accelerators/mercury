@@ -10,4 +10,9 @@ import io.fabric8.kubernetes.model.annotation.Version;
 @Version("v1alpha1")
 @ShortNames("sdr")
 public class ServiceDomain extends CustomResource<ServiceDomainSpec, ServiceDomainStatus> implements Namespaced{
+    public ServiceDomain() {
+        super();
+        this.setSpec(new ServiceDomainSpec());
+        this.setStatus(new ServiceDomainStatus());
+    }
 }
