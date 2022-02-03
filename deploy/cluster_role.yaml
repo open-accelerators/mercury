@@ -1,0 +1,31 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mercury-operator
+rules:
+  - apiGroups:
+      - ""
+      - apps
+      - extensions
+      - mercury.redhat.io
+      - kafka.strimzi.io
+      - camel.apache.org
+    resources:
+      - servicedomainclusters
+      - servicedomainclusters/status
+      - servicedomains
+      - servicedomains/status
+      - kafkas
+      - kafkatopics
+      - kafkausers
+      - integrations
+      - services
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
