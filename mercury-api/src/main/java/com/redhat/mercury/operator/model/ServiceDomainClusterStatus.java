@@ -19,7 +19,8 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainClusterStatus extends AbstractResourceStatus{
+public class ServiceDomainClusterStatus extends AbstractResourceStatus {
+
     public static final String CONDITION_KAFKA_BROKER_READY = "KafkaBrokerReady";
     public static final String REASON_KAFKA_BROKER = "KafkaBroker";
     public static final String MESSAGE_KAFKA_BROKER_NOT_READY = "Kafka Broker not ready yet";

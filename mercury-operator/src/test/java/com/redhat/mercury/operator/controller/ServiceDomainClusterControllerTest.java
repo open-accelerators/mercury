@@ -1,5 +1,11 @@
 package com.redhat.mercury.operator.controller;
 
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,12 +20,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 import io.smallrye.mutiny.Multi;
 import io.strimzi.api.kafka.model.Kafka;
-
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_KAFKA_BROKER_READY;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -50,26 +50,28 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         client.resources(ServiceDomainCluster.class).inAnyNamespace().list()
                 .getItems().forEach(sdc ->
-                {client.resources(ServiceDomainCluster.class)
-                        .inNamespace(sdc.getMetadata().getNamespace())
-                        .withName(sdc.getMetadata().getName())
-                        .delete();
-                 await().atMost(2, MINUTES)
-                        .until(() -> client.resources(ServiceDomainCluster.class)
-                        .inNamespace(sdc.getMetadata().getNamespace())
-                        .withName(sdc.getMetadata().getName()).get() == null);
+                {
+                    client.resources(ServiceDomainCluster.class)
+                            .inNamespace(sdc.getMetadata().getNamespace())
+                            .withName(sdc.getMetadata().getName())
+                            .delete();
+                    await().atMost(2, MINUTES)
+                            .until(() -> client.resources(ServiceDomainCluster.class)
+                                    .inNamespace(sdc.getMetadata().getNamespace())
+                                    .withName(sdc.getMetadata().getName()).get() == null);
                 });
 
         client.resources(Kafka.class).inAnyNamespace().list()
                 .getItems().forEach(kafka ->
-                {client.resources(Kafka.class)
-                    .inNamespace(kafka.getMetadata().getNamespace())
-                    .withName(kafka.getMetadata().getName())
-                    .delete();
-                await().atMost(2, MINUTES)
-                    .until(() -> client.resources(Kafka.class)
-                    .inNamespace(kafka.getMetadata().getNamespace())
-                    .withName(kafka.getMetadata().getName()).get() == null);
+                {
+                    client.resources(Kafka.class)
+                            .inNamespace(kafka.getMetadata().getNamespace())
+                            .withName(kafka.getMetadata().getName())
+                            .delete();
+                    await().atMost(2, MINUTES)
+                            .until(() -> client.resources(Kafka.class)
+                                    .inNamespace(kafka.getMetadata().getNamespace())
+                                    .withName(kafka.getMetadata().getName()).get() == null);
                 });
     }
 
@@ -141,13 +143,13 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertNotNull(kafkaBrokerUrl);
 
         await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class)
-                                                             .inNamespace(sdcNamespace)
-                                                             .withName(SERVICE_DOMAIN_CLUSTER_NAME)
-                                                             .get().getStatus().isReady());
+                .inNamespace(sdcNamespace)
+                .withName(SERVICE_DOMAIN_CLUSTER_NAME)
+                .get().getStatus().isReady());
         await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class)
-                                                             .inNamespace(sdcNamespace)
-                                                             .withName(SERVICE_DOMAIN_CLUSTER_NAME)
-                                                             .get().getStatus().isSpecificConditionReady(CONDITION_KAFKA_BROKER_READY));
+                .inNamespace(sdcNamespace)
+                .withName(SERVICE_DOMAIN_CLUSTER_NAME)
+                .get().getStatus().isSpecificConditionReady(CONDITION_KAFKA_BROKER_READY));
     }
 
     @Test

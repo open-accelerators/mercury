@@ -1,6 +1,12 @@
 package com.redhat.mercury.operator.controller;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
 import com.redhat.mercury.operator.model.KafkaConfig;
+import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpec;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
@@ -29,11 +35,6 @@ import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.storage.SingleVolumeStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_KAFKA_BROKER_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
@@ -42,10 +43,9 @@ import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASO
 
 @ControllerConfiguration
 public class ServiceDomainClusterController extends AbstractController<ServiceDomainClusterSpec, ServiceDomainClusterStatus, ServiceDomainCluster> implements Reconciler<ServiceDomainCluster>, EventSourceInitializer<ServiceDomainCluster> {
-    public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND = "ServiceDomainCluster";
-    public static final String SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
+
+    private static final String DEFAULT_PERSISTENT_STORAGE = "100Gi";
     public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
-    private static final String DEFAULT_PERSISTENT_STORAGE = "10Gi";
 
     @Override
     public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomainCluster> context) {
@@ -137,8 +137,8 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                 .endMetadata()
                 .withNewSpec()
                 .withEntityOperator(new EntityOperatorSpecBuilder()
-                                            .withTopicOperator(new EntityTopicOperatorSpecBuilder().build())
-                                    .build())
+                        .withTopicOperator(new EntityTopicOperatorSpecBuilder().build())
+                        .build())
                 .withKafka(new KafkaClusterSpecBuilder()
                         .withReplicas(sdc.getSpec().getKafka().getReplicas())
                         .withListeners(new GenericKafkaListenerBuilder()
@@ -166,8 +166,8 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
         desiredKafka.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
                 .withName(sdc.getMetadata().getName())
                 .withUid(sdc.getMetadata().getUid())
-                .withKind(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_CLUSTER_OWNER_REFERENCES_API_VERSION)
+                .withKind(ServiceDomainCluster.class.getSimpleName())
+                .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
         return desiredKafka;
     }

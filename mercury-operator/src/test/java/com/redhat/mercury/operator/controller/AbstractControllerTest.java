@@ -1,5 +1,7 @@
 package com.redhat.mercury.operator.controller;
 
+import java.util.List;
+
 import javax.inject.Inject;
 
 import com.redhat.mercury.operator.model.ServiceDomain;
@@ -16,8 +18,6 @@ import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
-
-import java.util.List;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
 

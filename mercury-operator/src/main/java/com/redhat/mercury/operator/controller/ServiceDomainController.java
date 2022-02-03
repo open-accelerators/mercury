@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
+import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
@@ -72,8 +73,7 @@ import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
 public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements Reconciler<ServiceDomain>, EventSourceInitializer<ServiceDomain> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainController.class);
 
-    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = "ServiceDomain";
-    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION = "mercury.redhat.io/v1alpha1";
+    public static final String SERVICE_DOMAIN_OWNER_REFERENCES_KIND = ServiceDomain.class.getSimpleName();
     public static final String MERCURY_BINDING_LABEL = "mercury-binding";
     public static final String INTEGRATION_SUFFIX = "-camelk-rest";
     public static final String CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY = "directs.yaml";
@@ -84,8 +84,8 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final String INTERNAL = "internal";
     private static final String TCP_PROTOCOL = "TCP";
     private static final String DEPLOYMENT_CONTAINER_IMAGE_PULL_POLICY = "Always";
-    private static final String GRPC_NAME = "grpc";
-    private static final int GRPC_PORT = 9000;
+    private static final String SERVICE_NAME = "grpc";
+    private static final int SERVICE_PORT = 9000;
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     private static final String APP_LABEL_BIAN_PREFIX = "bian-";
     private static final String OPENAPI_CM_SUFFIX = "-openapi";
@@ -127,9 +127,9 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .runnableInformer(0);
 
         return List.of(getInformerEventSource(deploymentInformer),
-                       getInformerEventSource(integrationInformer),
-                       getInformerEventSource(kafkaTopicInformer),
-                       getInformerEventSource(servicesInformer));
+                getInformerEventSource(integrationInformer),
+                getInformerEventSource(kafkaTopicInformer),
+                getInformerEventSource(servicesInformer));
     }
 
     @Override
@@ -190,7 +190,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .filter(c -> !CONDITION_READY.equals(c.getType()))
                 .allMatch(c -> Boolean.TRUE.toString().equalsIgnoreCase(c.getStatus()));
 
-        if(isSDReady){
+        if (isSDReady) {
             setStatusCondition(sd, CONDITION_READY, Boolean.TRUE);
         }
     }
@@ -245,10 +245,10 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     }
 
     private void updateIntegrationReadyCondition(ServiceDomain sd, GenericKubernetesResource current) {
-        if(current != null && current.getAdditionalProperties() != null && current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY) != null && ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY) != null){
+        if (current != null && current.getAdditionalProperties() != null && current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY) != null && ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY) != null) {
             final List<Map<String, String>> conditions = (List<Map<String, String>>) ((Map) current.getAdditionalProperties().get(INTEGRATION_STATUS_PROPERTY)).get(INTEGRATION_CONDITIONS_PROPERTY);
             final boolean integrationReady = conditions.stream().anyMatch(c -> CONDITION_READY.equals(c.get(INTEGRATION_TYPE_PROPERTY)) && Boolean.TRUE.toString().equalsIgnoreCase(c.get(INTEGRATION_STATUS_PROPERTY)));
-            if(integrationReady) {
+            if (integrationReady) {
                 setStatusCondition(sd, CONDITION_INTEGRATION_READY, Boolean.TRUE);
             }
         }
@@ -288,7 +288,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         data.put("metadata", Map.of("name", integrationName,
                 "namespace", sd.getMetadata().getNamespace(),
                 "labels", Map.of(MANAGED_BY_LABEL, OPERATOR_NAME),
-                "ownerReferences", List.of(new TreeMap<>(Map.of("apiVersion", SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION,
+                "ownerReferences", List.of(new TreeMap<>(Map.of("apiVersion", MercuryConstants.API_VERSION,
                         "kind", SERVICE_DOMAIN_OWNER_REFERENCES_KIND,
                         "name", sd.getMetadata().getName(),
                         "uid", sd.getMetadata().getUid())))));
@@ -298,7 +298,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                                 Map.of("configuration",
                                         Map.of("vars",
                                                 List.of("MERCURY_BINDING_SERVICE_HOST=" + sdTypeAsString,
-                                                        "MERCURY_BINDING_SERVICE_PORT=" + GRPC_PORT)
+                                                        "MERCURY_BINDING_SERVICE_PORT=" + SERVICE_PORT)
                                         )
                                 ),
                                 "openapi", Map.of("configuration",
@@ -358,7 +358,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid())
                 .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
 
         if (kafkaUser == null || !Objects.equals(kafkaUser.getSpec(), desiredKafkaUser.getSpec())) {
@@ -377,7 +377,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(kafkaTopicName)
                 .withNamespace(sdcNamespace)
                 .withLabels(Map.of("strimzi.io/cluster", sd.getSpec().getServiceDomainCluster(),
-                                   MANAGED_BY_LABEL, OPERATOR_NAME))
+                        MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
                 .withPartitions(1)
@@ -389,7 +389,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid())
                 .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
 
         KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdcNamespace).withName(kafkaTopicName).get();
@@ -399,7 +399,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
             LOGGER.debug("KafkaTopic {} was created or updated", kafkaTopicName);
         }
 
-        if(isKafkaTopicReady(kafkaTopic)){
+        if (isKafkaTopicReady(kafkaTopic)) {
             setStatusCondition(sd, CONDITION_KAFKA_TOPIC_READY, Boolean.TRUE);
         }
 
@@ -419,7 +419,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(sdName)
                 .withNamespace(sdNS)
                 .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName, SERVICE_DOMAIN_LABEL, sdName,
-                                   MANAGED_BY_LABEL, OPERATOR_NAME))
+                        MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
                         .withSelector(new LabelSelectorBuilder()
@@ -435,8 +435,8 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                                                 .withImage(sd.getSpec().getBusinessImage())
                                                 .withImagePullPolicy(DEPLOYMENT_CONTAINER_IMAGE_PULL_POLICY)
                                                 .withPorts(new ContainerPortBuilder()
-                                                        .withContainerPort(GRPC_PORT)
-                                                        .withName(GRPC_NAME).build())
+                                                        .withContainerPort(SERVICE_PORT)
+                                                        .withName(SERVICE_NAME).build())
                                                 .withEnv(new EnvVarBuilder()
                                                         .withName(MERCURY_KAFKA_BROKER_ENV_VAR)
                                                         .withValue(kafkaBrokerUrl).build())
@@ -450,7 +450,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid())
                 .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
 
         final Deployment sdDeployment = client.apps().deployments().inNamespace(sdNS).withName(sdName).get();
@@ -471,14 +471,14 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(sdName)
                 .withNamespace(sdNS)
                 .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName, SERVICE_DOMAIN_LABEL,
-                                   sdName, MERCURY_BINDING_LABEL, INTERNAL,
-                                   MANAGED_BY_LABEL, OPERATOR_NAME))
+                        sdName, MERCURY_BINDING_LABEL, INTERNAL,
+                        MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(new ServicePortBuilder()
-                        .withPort(GRPC_PORT)
+                        .withPort(SERVICE_PORT)
                         .withProtocol(TCP_PROTOCOL)
-                        .withName(GRPC_NAME).build())
+                        .withName(SERVICE_NAME).build())
                 .withSelector(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName))
                 .endSpec().build();
 
@@ -486,7 +486,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(sd.getMetadata().getName())
                 .withUid(sd.getMetadata().getUid())
                 .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION)
+                .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
 
         final Service sdService = client.services().inNamespace(sdNS).withName(sdName).get();

@@ -1,9 +1,15 @@
 package com.redhat.mercury.operator.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
@@ -25,11 +31,6 @@ import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
@@ -189,7 +190,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
         await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName).get() != null);
@@ -204,7 +205,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         //Test Kafka Broker data
         await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
@@ -232,9 +233,9 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
@@ -249,7 +250,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
@@ -292,7 +293,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
         await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName).get() != null);
@@ -307,7 +308,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         //Test Kafka Broker data
         await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
@@ -335,9 +336,9 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
@@ -352,7 +353,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
@@ -457,7 +458,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         //Test Service data
         await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
@@ -472,7 +473,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         //Test Kafka Broker data
         await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
@@ -503,7 +504,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertNotNull(ownerReference);
         assertEquals(sd.getMetadata().getName(), ownerReference.getName());
         assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_API_VERSION, ownerReference.getApiVersion());
+        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
 
         kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
@@ -560,7 +561,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertNotNull(integration);
 
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
@@ -603,7 +604,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).get();
         assertNotNull(integration);
 
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type","Ready", "status", "True"))));
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).replace(integration);
 
         await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)

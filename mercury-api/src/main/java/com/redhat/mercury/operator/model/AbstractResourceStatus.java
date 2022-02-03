@@ -1,5 +1,9 @@
 package com.redhat.mercury.operator.model;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -7,9 +11,6 @@ import io.fabric8.kubernetes.api.model.Condition;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;

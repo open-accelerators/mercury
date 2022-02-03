@@ -1,12 +1,17 @@
 package com.redhat.mercury.operator.controller;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.mercury.operator.model.AbstractResourceStatus;
-import com.redhat.mercury.operator.model.ResourceUtils;
+import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
@@ -20,15 +25,11 @@ import io.javaoperatorsdk.operator.processing.event.ResourceID;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static java.util.Collections.EMPTY_SET;
 
 public abstract class AbstractController<K, E extends AbstractResourceStatus, T extends CustomResource<K, E>> {
+
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractController.class);
     protected static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     protected static final String OPERATOR_NAME = "service-domain-cluster-operator";
@@ -47,19 +48,19 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         });
     }
 
-    protected void setStatusCondition(T resource, String type, Boolean status){
-        setStatusCondition(resource, type,null, null, status);
+    protected void setStatusCondition(T resource, String type, Boolean status) {
+        setStatusCondition(resource, type, null, null, status);
     }
 
-    protected void removeStatusCondition(T resource, String type){
-        if(resource.getStatus() == null) {
+    protected void removeStatusCondition(T resource, String type) {
+        if (resource.getStatus() == null) {
             return;
         }
 
         resource.getStatus().removeCondition(type);
     }
 
-    protected void setStatusCondition(T resource, String type, String reason, String message, Boolean status){
+    protected void setStatusCondition(T resource, String type, String reason, String message, Boolean status) {
         setStatusCondition(resource, new ConditionBuilder()
                 .withType(type)
                 .withMessage(message)
