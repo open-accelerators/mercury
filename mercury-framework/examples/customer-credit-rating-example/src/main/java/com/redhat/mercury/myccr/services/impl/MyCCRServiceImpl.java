@@ -1,36 +1,51 @@
 package com.redhat.mercury.myccr.services.impl;
 
-import javax.enterprise.context.ApplicationScoped;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModel;
-import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1;
-import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord;
-import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingService;
+import com.redhat.mercury.customercreditrating.v10.ExecuteCustomerCreditRatingStateResponseOuterClass.ExecuteCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.InitiateCustomerCreditRatingStateResponseOuterClass.InitiateCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.RequestCustomerCreditRatingStateResponseOuterClass.RequestCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingStateOuterClass.RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState;
+import com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseOuterClass.RetrieveCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CRCustomerCreditRatingStateService;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.ExecuteRequest;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.InitiateRequest;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RequestRequest;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
 
+import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
-@ApplicationScoped
-public class MyCCRServiceImpl implements CustomerCreditRatingService {
+@GrpcService
+public class MyCCRServiceImpl implements CRCustomerCreditRatingStateService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCCRServiceImpl.class);
     private static final String FIXED_RATING = "802";
 
     @Override
-    public Uni<CRCustomerCreditRatingStateRetrieveOutputModel> retrieveCustomerCreditRating(String sd, String cr) {
-        LOGGER.info("retrieveCustomerCreditRating received");
-        return Uni.createFrom().item(() -> {
-            CRCustomerCreditRatingStateRetrieveOutputModel rating = new CRCustomerCreditRatingStateRetrieveOutputModel();
-            CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1 instanceRecord =
-                    new CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1();
-            CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord assessment =
-                    new CRCustomerCreditRatingStateRetrieveOutputModelCustomerCreditRatingStateInstanceRecord1CustomerCreditRatingAssessmentRecord();
-            assessment.setCreditRatingAssessmentResult(FIXED_RATING);
-            instanceRecord.setCustomerCreditRatingAssessmentRecord(assessment);
-            rating.setCustomerCreditRatingStateInstanceRecord(instanceRecord);
-            return rating;
-        });
+    public Uni<ExecuteCustomerCreditRatingStateResponse> execute(ExecuteRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+    }
+
+    @Override
+    public Uni<InitiateCustomerCreditRatingStateResponse> initiate(InitiateRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+    }
+
+    @Override
+    public Uni<RequestCustomerCreditRatingStateResponse> request(RequestRequest request) {
+        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+    }
+
+    @Override
+    public Uni<RetrieveCustomerCreditRatingStateResponse> retrieve(RetrieveRequest request) {
+        LOGGER.info("Retrieve received");
+        return Uni.createFrom().item(() -> RetrieveCustomerCreditRatingStateResponse.newBuilder()
+                .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
+                        .setCreditRatingAssessmentResult(FIXED_RATING)
+                        .build())
+                .build()
+        );
     }
 }

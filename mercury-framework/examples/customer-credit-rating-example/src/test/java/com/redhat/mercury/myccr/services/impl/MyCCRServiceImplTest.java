@@ -9,8 +9,9 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
-import com.redhat.mercury.customercreditrating.model.CRCustomerCreditRatingStateRetrieveOutputModel;
-import com.redhat.mercury.customercreditrating.services.client.CustomerCreditRatingClient;
+import com.redhat.mercury.customercreditrating.v10.client.CustomerCreditRatingClient;
+import com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseOuterClass.RetrieveCustomerCreditRatingStateResponse;
+import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
 
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -25,15 +26,14 @@ class MyCCRServiceImplTest {
     @Test
     void testRetrieveCustomerCreditRatingState() throws ExecutionException, InterruptedException, TimeoutException {
         assertThat(client).isNotNull();
-        CompletableFuture<CRCustomerCreditRatingStateRetrieveOutputModel> message = new CompletableFuture<>();
-        client.retrieveCustomerCreditRating("some-sd", "some-cr").subscribe().with(reply -> {
-            message.complete(reply);
-        });
+        CompletableFuture<RetrieveCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
+        client.getCrCustomerCreditRatingStateService().retrieve(
+                RetrieveRequest.newBuilder().setCustomercreditratingId("some-ccr").build()
+        ).subscribe().with(message::complete);
+
         assertThat(message.get(5, TimeUnit.SECONDS)
-                .getCustomerCreditRatingStateInstanceRecord()
-                .getCustomerCreditRatingAssessmentRecord()
+                .getCustomerCreditRatingState()
                 .getCreditRatingAssessmentResult())
                 .isEqualTo("802");
     }
-
 }

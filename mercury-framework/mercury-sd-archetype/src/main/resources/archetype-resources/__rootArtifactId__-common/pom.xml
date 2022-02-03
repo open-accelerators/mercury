@@ -10,19 +10,11 @@
     </parent>
     <artifactId>${artifactId}</artifactId>
     <name>Service Domains :: ${sdName} :: Common</name>
-    <properties>
-        <quarkus.generate-code.grpc.scan-for-imports>all</quarkus.generate-code.grpc.scan-for-imports>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>mercury-common</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

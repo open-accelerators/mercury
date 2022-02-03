@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: party-routing-profile-reporting
+  labels:
+    app: party-routing-profile-reporting
+    service-domain: party-routing-profile
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: bian-party-routing-profile
