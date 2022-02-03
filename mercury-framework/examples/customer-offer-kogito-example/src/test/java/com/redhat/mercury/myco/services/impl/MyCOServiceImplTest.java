@@ -9,10 +9,10 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
-import com.redhat.mercury.customeroffer.model.CRCustomerOfferProcedureInitiateInputModel;
-import com.redhat.mercury.customeroffer.model.CustomeroffersdReferenceIdcustomerofferprocedureinitiationCustomerOfferProcedureInstanceRecord;
-import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
-import com.redhat.mercury.customeroffer.services.client.CustomerOfferClient;
+import com.redhat.mercury.customeroffer.v10.model.CRCustomerOfferProcedureInitiateInputModel;
+import com.redhat.mercury.customeroffer.v10.model.CustomeroffersdReferenceIdcustomerofferprocedureinitiationCustomerOfferProcedureInstanceRecord;
+import com.redhat.mercury.customeroffer.v10.services.CustomerOfferNotificationService;
+import com.redhat.mercury.customeroffer.v10.services.client.CustomerOfferClient;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;

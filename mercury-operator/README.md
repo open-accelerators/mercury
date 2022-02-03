@@ -78,23 +78,22 @@ To create a service domain run the following command
 kubectl create -f customer-offer-service-domain.yaml
 ```
 
-When exposing an http endpoint for a SD, it is mandatory that
-a config map with the following name exists: integration-<service-domain-name-in-lower-case-seperated-by-hyphen>-http.
+When exposing a http endpoint for a SD, it is mandatory that a config map with the OpenApi spec
+exists. The expected name is `<service-domain-name-in-lower-case-seperated-by-hyphen>-openapi`. It can be created
+as follows:
 
-It has two mandatory properties and one optional:
-* directs.yaml (mandatory) - The yaml of the specific SD, can be found under integrations/camel-k/<sd-name>
-* grpc.yaml (mandatory) - The yaml containing the grpc handling in mercury, can be found under integrations/camel-k/common-integrations
-* openapi.json (optional) - The SD BIAN OpenAPI yaml, can be found under integrations/camel-k/<sd-name>
-  
-*Note: openapi.json is mandatory only when the directs.yaml depends on the open-api trait*
-
-*An example:*
-```yaml
-# camel-k: open-api=CustomerOffer.json
+```shell
+kubectl create configmap customer-credit-rating-openapi --from-file=CustomerCreditRating.json
 ```
+
+For the Camel-K routes configuration it is required to also create a config map containing the direct routes
+from the generated OpenAPI to the GRPC service. This route definitions are available in the
+[integrations](../integrations/camel-k) folder.
+
+They include a mandatory property called `directs.yaml` with the routes definitions.
 
 An example of how to create a config map:
 
 ```shell
-kubectl create configmap integration-customer-offer-http --from-file=directs.yaml=customer-offer-direct.yaml --from-file=grpc.yaml=grpc.yaml --from-file=openapi.json=CustomerOffer.json
+kubectl create configmap integration-customer-offer-http --from-file=directs.yaml=customer-offer-direct.yaml
 ```

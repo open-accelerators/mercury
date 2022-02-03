@@ -1,13 +1,35 @@
 # camel-k: language=yaml
-# camel-k: open-api=CustomerCreditRating.json
+# camel-k: dependency=camel-quarkus-protobuf
+# camel-k: dependency=mvn:com.redhat.mercury:customer-credit-rating-common:1.0.1-SNAPSHOT
 
 - from:
-    uri: direct:retrieveCustomerCreditRating
+    uri: direct:Initiate
     steps:
-      - set-header:
-          name: serviceDomainName
-          constant: customer-credit-rating
-      - set-header:
-          name: cloudEventType
-          constant: org.bian.customercreditrating.state.retrieve
-      - to: direct:query
+      - unmarshal:
+          protobuf:
+            instance-class: com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService$InitiateRequest
+            content-type-format: json
+      - to:
+          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CRCustomerCreditRatingStateService?synchronous=true&method=Initiate
+      - marshal:
+          protobuf:
+            instance-class: com.redhat.mercury.customercreditrating.v10.InitiateCustomerCreditRatingStateResponseOuterClass$InitiateCustomerCreditRatingStateResponse
+            content-type-format: json
+
+- from:
+    uri: direct:Retrieve
+    steps:
+      - set-body:
+          simple: "{\"customercreditratingId\": \"${header.customercreditratingId}\"}"
+      - to:
+          uri: log:example?showBody=true
+      - unmarshal:
+          protobuf:
+            instance-class: com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService$RetrieveRequest
+            content-type-format: json
+      - to:
+          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CRCustomerCreditRatingStateService?synchronous=true&method=retrieve
+      - marshal:
+          protobuf:
+            instance-class: com.redhat.mercury.customercreditrating.v10.RetrieveCustomerCreditRatingStateResponseOuterClass$RetrieveCustomerCreditRatingStateResponse
+            content-type-format: json

@@ -11,7 +11,6 @@
     <modules>
         <module>mercury-common</module>
         <module>mercury-common-events</module>
-        <module>mercury-common-service</module>
         <module>service-domains</module>
         <module>mercury-sd-archetype</module>
         <module>examples</module>

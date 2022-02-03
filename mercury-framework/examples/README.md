@@ -8,8 +8,7 @@ The provided set of examples describe the following participants:
 
 ## Initiate Customer Offer
 
-1. The Customer Offer Service Domain receives a request to initiate a `CustomerOffer` for a given
-customer.
+1. The Customer Offer Service Domain receives a request to initiate a `CustomerOffer` for a given customer.
 2. The `CustomerOfferInitiated` event is emitted
 3. The _Party Routing Profile_ receives the `CustomerOfferInitiated` and updates its internal state.
 4. The _Party Routing Profile_ can be queried to retrieve the current profile
@@ -27,8 +26,8 @@ The customer credit rating service domain always returns the same value for any 
 
 ## How to use the examples
 
-1. Create a Minikube cluster with the Mercury Operator and all the dependencies. 
-Look at the [Mercury Operator installation instructions](../../mercury-operator/README.md)
+1. Create a Minikube cluster with the Mercury Operator and all the dependencies. Look at
+   the [Mercury Operator installation instructions](../../mercury-operator/README.md)
 2. Create a Service Domain Cluster
 
     * Create Service Domain Cluster Custom Resource Definition (CRD)
@@ -36,47 +35,116 @@ Look at the [Mercury Operator installation instructions](../../mercury-operator/
       `kubectl create -f ../../crd/servicedomainclusters.mercury.redhat.io-v1.yml`
 
     * Create Service Domain Cluster Resource
-   
+
       `kubectl create -f deploy/service-domain-cluster.yaml`
 
-3. Create the different Service Domains (Customer Offer, Party Routing Profile and Customer
-Credit Rating)
+3. Create the different Service Domains (Customer Offer, Party Routing Profile and Customer Credit Rating)
 
-   * Create Service Domain Custom Resource Definition (CRD)
-   
-     `kubectl create -f ../../crd/servicedomains.mercury.redhat.io-v1.yml`
+    * Create Service Domain Custom Resource Definition (CRD)
 
-   * Create Customer Offer Service Domain Resource
-   
-     `kubectl create -f deploy/customer-offer-service-domain.yaml`
-   
-   * Create Party Routing Profile Service Domain Resource
-   
-     `kubectl create -f deploy/party-routing-profile-service-domain.yaml`
-   
-   * Create Customer Credit Rating Service Domain Resource
-   
-     `kubectl create -f deploy/customer-credit-rating-service-domain.yaml`
+      `kubectl create -f ../../crd/servicedomains.mercury.redhat.io-v1.yml`
+
+    * Create Customer Offer Service Domain Resource
+
+      `kubectl create -f deploy/customer-offer-service-domain.yaml`
+
+    * Create Party Routing Profile Service Domain Resource
+
+      `kubectl create -f deploy/party-routing-profile-service-domain.yaml`
+
+    * Create Customer Credit Rating Service Domain Resource
+
+      `kubectl create -f deploy/customer-credit-rating-service-domain.yaml`
+
+    * Create the Party Routing Profile Reporting service
+
+      `kubectl create -f deploy/party-routing-profile-reporting.yaml`
 
 
-4. Initiate a Customer Offer
-   
-    ``curl -v -H "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/customer-offer/${SD_REFERENCE}/customer-offer-procedure/initiation -d '{"customerOfferProcedureInstanceRecord": {"customerReference": "${CUSTOMER_REFERENCE}"}}'``
+###  Customer Offer and Party Routing Profile
 
-5. Check if the Party Routing Profile exists for this Customer Reference
+1. Initiate a Customer Offer
 
-    * For specific Customer Reference status (CUSTOMER_REFERENCE)
-   
-      ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/${SD_REFERENCE}/party-state/${CUSTOMER_REFERENCE}/status/${BQ_REFERENCE}``
-   
-    * For all Customer Reference ids
-   
-      ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/&{SD_REFERENCE}/party-state``    
-    
-6. Complete the Customer Offer
+```shell
+$ curl -vH "Content-Type: application/json" `minikube service -n mercury customer-offer-camelk-rest --url=true`/CustomerOffer/Initiate -d '          
+{
+  "CustomerOfferProcedure": {
+    "CustomerReference": "my-customer-reference"
+  }
+}'
 
-   ``curl -XPUT -v -H "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/customer-offer/${SD_REFERENCE}/customer-offer-procedure/${CUSTOMER_REFERENCE}/update -d '{"customerOfferProcedureInstanceRecord": {"customerReference": "${CUSTOMER_REFERENCE}"}}'``
+# Response
+{
+  "CustomerOfferProcedure": {
+    "CustomerOfferProcessingTask": "1", ## This is the Customer Offer Reference
+    "CustomerOfferProcessingTaskResult": "INITIATED"
+  }
+} 
+```
 
-7. Confirm the Party Routing Profile has been updated
+2. Check if the Party Routing Profile exists for this Customer Offer Reference
 
-   ``curl -v `minikube service party-routing-profile-camelk-rest --url=true`/party-routing-profile/${SD_REFERENCE}/party-state/${CUSTOMER_REFERENCE}/status/${BQ_REFERENCE}``
+    * For specific Customer Offer Reference status (CUSTOMER_OFFER_REFERENCE)
+
+```shell
+$ curl -H "Content-Type: application/json" `minikube service -n mercury party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
+{
+  "Status": {
+    "CustomerRelationshipStatus": "0"
+  }
+}
+```
+
+3. Retrieve a report of all the Customer Offer Procedure References
+
+```shell
+$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-reporting --url=true`/party-routing-profile/reports/ids
+[
+   "1",
+   "2",
+   "3"
+]
+```
+
+4. Complete the Customer Offer Procedure
+
+```shell
+$ curl -vH "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/CustomerOffer/1/Update -d '          
+{
+  "CustomerOfferProcedure": {
+    "CustomerReference": "my-customer-reference"
+  }
+}'
+
+# Response
+{
+  "CustomerOfferProcedure": {
+    "CustomerOfferProcessingTask": "1",
+    "CustomerOfferProcessingTaskResult": "COMPLETED"
+  }
+} 
+```
+
+5. Confirm the Party Routing Profile has been updated
+
+```shell
+$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
+{
+  "Status": {
+    "CustomerRelationshipStatus": "1"
+  }
+}
+```
+
+### Customer Credit Rating
+
+The Customer Credit Rating example always provide the same result for any input.
+
+```shell
+$ curl -H "Content-Type: application/json" `minikube service customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/${customercreditratingId}/Retrieve
+{
+  "CustomerCreditRatingState": {
+    "CreditRatingAssessmentResult": "802"
+  }
+}
+```

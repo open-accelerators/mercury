@@ -8,17 +8,10 @@
     </parent>
     <artifactId>mercury-common</artifactId>
     <name>Mercury Common</name>
-    <properties>
-        <quarkus.generate-code.grpc.scan-for-imports>all</quarkus.generate-code.grpc.scan-for-imports>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.cloudevents</groupId>
-            <artifactId>cloudevents-protobuf</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
