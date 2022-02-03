@@ -82,7 +82,6 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                     .get();
         } catch (KubernetesClientException e) {
             LOGGER.error("Unable to retrieve Kafka {}", sdc.getMetadata().getName(), e);
-            setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, REASON_KAFKA_BROKER_READY, "Unable to retrieve Kafka broker", Boolean.FALSE);
             return;
         }
 

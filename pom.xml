@@ -19,7 +19,6 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.version>2.7.0.Final</quarkus.platform.version>
         <quarkus.camel.version>2.7.0.CR1</quarkus.camel.version>
-        <quarkus.camel.version>2.7.0.CR1</quarkus.camel.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <testcontainers.version>1.6.0</testcontainers.version>
         <lombok.version>1.18.16</lombok.version>
@@ -38,7 +37,6 @@
         <module>mercury-api</module>
         <module>mercury-framework</module>
         <module>mercury-operator</module>
-        <module>integrations</module>
     </modules>
 
     <distributionManagement>

@@ -67,13 +67,6 @@ import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
-import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
-import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC_NOT_FOUND;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC_NOT_READY;
 
 @ControllerConfiguration
 public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements Reconciler<ServiceDomain>, EventSourceInitializer<ServiceDomain> {
@@ -95,6 +88,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final int GRPC_PORT = 9000;
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     private static final String APP_LABEL_BIAN_PREFIX = "bian-";
+    private static final String OPENAPI_CM_SUFFIX = "-openapi";
     private static final String INTEGRATION_SPEC_PROPERTY = "spec";
     private static final String INTEGRATION_STATUS_PROPERTY = "status";
     private static final String INTEGRATION_TYPE_PROPERTY = "type";
