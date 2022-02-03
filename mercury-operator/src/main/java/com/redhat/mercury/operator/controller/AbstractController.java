@@ -75,10 +75,10 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         }
         Condition current = resource.getStatus().getCondition(condition.getType());
         if (current != null) {
-            condition.setLastTransitionTime(current.getLastTransitionTime());
+            condition.setLastTransitionTime(ResourceUtils.now());
         }
         if (!condition.equals(current)) {
-            condition.setLastTransitionTime(new Date().toString());
+            condition.setLastTransitionTime(ResourceUtils.now());
             resource.getStatus().setCondition(condition);
             LOGGER.debug("Set status condition for {} to {}", resource.getMetadata().getName(), condition);
         }
