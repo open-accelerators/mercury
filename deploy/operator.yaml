@@ -17,6 +17,7 @@ spec:
       labels:
         name: mercury-operator
     spec:
+      serviceAccountName: mercury-operator
       containers:
         - env:
           - name: KUBERNETES_NAMESPACE
@@ -50,4 +51,3 @@ spec:
             periodSeconds: 30
             successThreshold: 1
             timeoutSeconds: 10
-          serviceAccountName: mercury-operator

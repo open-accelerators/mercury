@@ -2,6 +2,76 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomainCluster",
+          "metadata": {
+            "name": "my-example-sdc",
+            "labels": {
+              "app": "examples"
+            }
+          },
+          "spec": {
+            "kafka": {
+              "replicas": 3,
+              "storage": {
+                "type": "persistent-claim",
+                "size": "100Gi"
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-party-routing-profile",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/party-routing-profile-example:1.0.1-SNAPSHOT",
+            "serviceDomainCluster": "my-example-sdc",
+            "type": "PartyRoutingProfile",
+            "expose": ["http"]
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-customer-credit-rating",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1-SNAPSHOT",
+            "serviceDomainCluster": "my-example-sdc",
+            "type": "CustomerCreditRating",
+            "expose": ["http"]
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-customer-offer",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT",
+            "serviceDomainCluster": "my-example-sdc",
+            "type": "CustomerOffer",
+            "expose": ["http"]
+          }
+        }
+      ]
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
@@ -109,7 +179,7 @@ spec:
         serviceAccountName: mercury-operator
       deployments:
       - name: mercury-operator
-        template:
+        spec:
           replicas: 1
           selector:
             matchLabels:
@@ -157,7 +227,7 @@ spec:
                   periodSeconds: 30
                   successThreshold: 1
                   timeoutSeconds: 10
-                serviceAccountName: mercury-operator
+              serviceAccountName: mercury-operator
       permissions:
       - rules:
         - apiGroups:
@@ -171,7 +241,14 @@ spec:
           resources:
           - serviceaccounts
           verbs:
-          - '*'
+          - create
+          - delete
+          - deletecollection
+          - get
+          - list
+          - patch
+          - update
+          - watch
         serviceAccountName: mercury-operator
     strategy: deployment
   installModes:
