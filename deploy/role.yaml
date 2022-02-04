@@ -14,4 +14,11 @@ rules:
     resources:
       - serviceaccounts
     verbs:
-      - "*"
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
