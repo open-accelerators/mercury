@@ -10,6 +10,7 @@ import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.KafkaTopicSpec;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserSpec;
+import io.strimzi.api.kafka.model.Spec;
 import io.strimzi.api.kafka.model.ZookeeperClusterSpec;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
@@ -26,6 +27,8 @@ import io.strimzi.api.kafka.model.storage.Storage;
 
 @RegisterForReflection(targets = {
         Kafka.class,
+        Spec.class,
+        Status.class,
         KafkaSpec.class,
         KafkaStatus.class,
         KafkaTopic.class,
@@ -41,12 +44,11 @@ import io.strimzi.api.kafka.model.storage.Storage;
         KafkaListenerType.class,
         EphemeralStorage.class,
         PersistentClaimStorage.class,
-        Status.class,
         Condition.class,
         ListenerStatus.class,
         ListenerAddress.class,
         EntityOperatorSpec.class,
-        EntityTopicOperatorSpec.class
+        EntityTopicOperatorSpec.class,
 })
 public class DependenciesConfiguration {
 }

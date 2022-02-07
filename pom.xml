@@ -17,8 +17,8 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.version>2.7.0.Final</quarkus.platform.version>
-        <quarkus.camel.version>2.7.0.Final</quarkus.camel.version>
+        <quarkus.platform.version>2.6.3.Final</quarkus.platform.version>
+        <quarkus.camel.version>2.6.3.Final</quarkus.camel.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <testcontainers.version>1.6.0</testcontainers.version>
         <lombok.version>1.18.16</lombok.version>
@@ -88,6 +88,7 @@
                 <groupId>io.sundr</groupId>
                 <artifactId>builder-annotations</artifactId>
                 <version>${builder-annotations.version}</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

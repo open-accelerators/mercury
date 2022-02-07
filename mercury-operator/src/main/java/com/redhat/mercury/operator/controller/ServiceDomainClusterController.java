@@ -5,12 +5,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.redhat.mercury.operator.model.KafkaConfig;
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpec;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
-import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
@@ -44,12 +46,17 @@ import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDI
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_EXCEPTION;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_WAITING;
+import static com.redhat.mercury.operator.utils.ResourceUtils.now;
+import static com.redhat.mercury.operator.utils.ResourceUtils.toStatus;
 
 @ControllerConfiguration
 public class ServiceDomainClusterController extends AbstractController<ServiceDomainClusterSpec, ServiceDomainClusterStatus, ServiceDomainCluster> implements Reconciler<ServiceDomainCluster>, EventSourceInitializer<ServiceDomainCluster> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainClusterController.class);
+
     private static final String DEFAULT_PERSISTENT_STORAGE = "100Gi";
     public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
+    private static final String KAFKA_VERSION = "3.0.0";
 
     @Override
     public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomainCluster> context) {
@@ -87,15 +94,19 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                 .get();
 
         if (isKafkaBrokerReady(kafka)) {
+            LOGGER.debug("KafkaBroker for {} is Ready", sdc.getMetadata().getName());
             List<ListenerStatus> listeners = kafka.getStatus().getListeners();
             Optional<ListenerStatus> listenerStatus = listeners.stream()
                     .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
                     .findFirst();
             if (listenerStatus.isPresent()) {
+                LOGGER.debug("Assigning Kafka bootstrapServer with value {} to {}",
+                        listenerStatus.get().getBootstrapServers(), sdc.getMetadata().getName());
                 sdc.getStatus().setKafkaBroker(listenerStatus.get().getBootstrapServers());
             }
             return updateStatusWithReadyCondition(sdc, CONDITION_KAFKA_BROKER_READY);
         }
+        LOGGER.debug("KafkaBroker for {} is not yet Ready", sdc.getMetadata().getName());
         return updateStatusWithCondition(sdc, new ConditionBuilder()
                 .withType(CONDITION_KAFKA_BROKER_READY)
                 .withStatus(STATUS_FALSE)
@@ -105,7 +116,15 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     }
 
     private boolean isKafkaBrokerReady(Kafka kafka) {
-        return kafka != null && kafka.getStatus() != null && kafka.getStatus().getListeners() != null;
+        if (kafka == null || kafka.getStatus() == null) {
+            return false;
+        }
+        Optional<io.strimzi.api.kafka.model.status.Condition> condition = kafka.getStatus()
+                .getConditions()
+                .stream()
+                .filter(c -> c.getType().equals(CONDITION_READY))
+                .findFirst();
+        return condition.isPresent() && condition.get().getStatus().equals(STATUS_TRUE);
     }
 
     private UpdateControl<ServiceDomainCluster> createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
@@ -117,8 +136,9 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                 .get();
 
         if (currentKafka == null || !Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
-            client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).createOrReplace(desiredKafka);
-            LOGGER.debug("Kafka {} was created or updated", sdcName);
+            LOGGER.debug("Creating or replacing Kafka {}", desiredKafka);
+            currentKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).createOrReplace(desiredKafka);
+            LOGGER.debug("Created or replaced Kafka {}", currentKafka);
             return updateStatusWithCondition(sdc, new ConditionBuilder()
                     .withType(CONDITION_KAFKA_BROKER_READY)
                     .withStatus(STATUS_FALSE)
@@ -126,6 +146,7 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                     .withMessage(MESSAGE_KAFKA_BROKER_NOT_READY)
                     .build());
         }
+        LOGGER.debug("Kafka {} was not updated", sdcName);
         return UpdateControl.noUpdate();
     }
 
@@ -137,21 +158,27 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     }
 
     private UpdateControl<ServiceDomainCluster> updateStatusWithCondition(ServiceDomainCluster resource, Condition condition) {
-        condition.setLastTransitionTime(ResourceUtils.now());
+        condition.setLastTransitionTime(now());
         Condition current = resource.getStatus().getCondition(condition.getType());
         if (areSameConditions(current, condition)) {
+            LOGGER.debug("ServiceDomainCluster {} Status not updated for condition {}.", resource.getMetadata().getName(), condition.getType());
             return UpdateControl.noUpdate();
         }
         resource.getStatus().setCondition(condition);
-        if (resource.getStatus()
+        boolean isReady = resource.getStatus()
                 .getConditions()
                 .stream()
                 .filter(c -> !c.getType().equals(CONDITION_READY))
-                .allMatch(c -> c.getStatus().equals(STATUS_TRUE))) {
+                .allMatch(c -> c.getStatus().equals(STATUS_TRUE));
+        if (isReady && !resource.getStatus().isReady()) {
+            LOGGER.debug("ServiceDomainCluster {} transition to READY  {}.", resource.getMetadata().getName(), condition.getType());
             resource.getStatus().setCondition(buildReadyCondition(CONDITION_READY));
-        } else {
+        }
+        if (resource.getStatus().getCondition(CONDITION_READY) == null || (!isReady && resource.getStatus().isReady())) {
+            LOGGER.debug("ServiceDomainCluster {} transition to NOT READY  {}.", resource.getMetadata().getName(), condition.getType());
             resource.getStatus().setCondition(buildCondition(CONDITION_READY, Boolean.FALSE, null, null));
         }
+        LOGGER.debug("ServiceDomainCluster {} Status updated for condition {}.", resource.getMetadata().getName(), condition.getType());
         return UpdateControl.updateStatus(resource);
     }
 
@@ -172,10 +199,10 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     private Condition buildCondition(String condition, boolean status, String reason, String message) {
         return new ConditionBuilder()
                 .withType(condition)
-                .withStatus(ResourceUtils.toStatus(status))
+                .withStatus(toStatus(status))
                 .withReason(reason)
                 .withMessage(message)
-                .withLastTransitionTime(ResourceUtils.now())
+                .withLastTransitionTime(now())
                 .build();
     }
 
@@ -196,15 +223,22 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                                         .withName("plain")
                                         .withPort(9092)
                                         .withType(KafkaListenerType.INTERNAL)
-                                        .withTls(false).build(),
+                                        .withTls(false)
+                                        .build(),
                                 new GenericKafkaListenerBuilder()
                                         .withName("tls")
                                         .withPort(9093)
                                         .withType(KafkaListenerType.INTERNAL)
-                                        .withTls(true).build())
-                        .withConfig(Map.of("offsets.topic.replication.factor", sdc.getSpec().getKafka().getReplicas(),
+                                        .withTls(true)
+                                        .build())
+                        .withVersion(KAFKA_VERSION)
+                        .withConfig(Map.of(
+                                "inter.broker.protocol.version", "3.0",
+                                "default.replication.factor", sdc.getSpec().getKafka().getReplicas(),
+                                "offsets.topic.replication.factor", sdc.getSpec().getKafka().getReplicas(),
                                 "transaction.state.log.replication.factor", sdc.getSpec().getKafka().getReplicas(),
-                                "transaction.state.log.min.isr", getMinIsr(sdc.getSpec().getKafka().getReplicas())))
+                                "transaction.state.log.min.isr", getMinIsr(sdc.getSpec().getKafka().getReplicas()),
+                                "min.insync.replicas", getMinIsr(sdc.getSpec().getKafka().getReplicas())))
                         .withStorage(buildKafkaStorage(sdc.getSpec().getKafka()))
                         .build())
                 .withZookeeper(new ZookeeperClusterSpecBuilder()

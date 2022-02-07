@@ -17,4 +17,21 @@ public class ResourceUtils {
         return ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
     }
 
+    public static String toLowerHyphen(String text) {
+        if (text == null || text.isBlank()) {
+            return text;
+        }
+        String result = "";
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c >= 'A' && c <= 'Z') {
+                c = Character.toLowerCase(c);
+                if (i != 0) {
+                    result += "-";
+                }
+            }
+            result += c;
+        }
+        return result;
+    }
 }

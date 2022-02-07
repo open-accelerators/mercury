@@ -43,6 +43,10 @@ spec:
                                     type: string
                                   name:
                                     type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
                                 type: object
                               fieldRef:
                                 properties:
@@ -50,11 +54,19 @@ spec:
                                     type: string
                                   fieldPath:
                                     type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
                                 type: object
                               resourceFieldRef:
                                 properties:
                                   containerName:
                                     type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
                                   divisor:
                                     anyOf:
                                     - type: integer
@@ -71,10 +83,22 @@ spec:
                                     type: string
                                   name:
                                     type: string
+                                  additionalProperties:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
+                                type: object
+                              additionalProperties:
+                                additionalProperties:
+                                  type: string
                                 type: object
                             type: object
                           name:
                             type: string
+                          additionalProperties:
+                            additionalProperties:
+                              type: string
+                            type: object
                         type: object
                       type: array
                     endpoint:
@@ -110,9 +134,13 @@ spec:
                     lastTransitionTime:
                       type: string
                     observedGeneration:
-                      type: integer
+                      type: number
                     type:
                       type: string
+                    additionalProperties:
+                      additionalProperties:
+                        type: string
+                      type: object
                     message:
                       type: string
                   type: object

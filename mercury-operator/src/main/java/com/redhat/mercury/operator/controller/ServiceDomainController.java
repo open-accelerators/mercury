@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import com.google.common.base.CaseFormat;
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
@@ -68,6 +67,7 @@ import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
+import static com.redhat.mercury.operator.utils.ResourceUtils.toLowerHyphen;
 
 @ControllerConfiguration
 public class ServiceDomainController extends AbstractController<ServiceDomainSpec, ServiceDomainStatus, ServiceDomain> implements Reconciler<ServiceDomain>, EventSourceInitializer<ServiceDomain> {
@@ -160,7 +160,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
             createOrUpdateService(sd);
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 setStatusCondition(sd, CONDITION_INTEGRATION_READY, REASON_INTEGRATION, MESSAGE_INTEGRATION_NOT_READY, Boolean.FALSE);
-                final String sdConfigMapName = "integration-" + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sd.getSpec().getType().toString()) + "-http";
+                final String sdConfigMapName = "integration-" + toLowerHyphen(sd.getSpec().getType().toString()) + "-http";
                 ConfigMap sdConfigMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
 
                 final boolean validateSdConfigMap = validateSdConfigMap(sd, sdConfigMapName, sdConfigMap);
@@ -256,7 +256,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
     private boolean validateSdConfigMap(ServiceDomain sd, String sdConfigMapName, ConfigMap camelRoutesConfigMap) {
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-        final String sdTypeAsString = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sdType.toString());
+        final String sdTypeAsString = toLowerHyphen(sdType.toString());
 
         if (camelRoutesConfigMap == null) {
             LOGGER.error("{} config map is missing ", sdConfigMapName);
@@ -277,7 +277,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
     private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdCamelRouteYaml) {
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-        final String sdTypeAsString = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, sdType.toString());
+        final String sdTypeAsString = toLowerHyphen(sdType.toString());
 
         sdCamelRouteYaml = sdCamelRouteYaml.replaceAll(COMMENT_LINE_REGEX, "").trim();
 

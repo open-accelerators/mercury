@@ -24,6 +24,7 @@ import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
+import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
@@ -232,6 +233,10 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                                 .withPort(9092)
                                 .build())
                         .build())
+                        .withConditions(new ConditionBuilder()
+                                .withType(CONDITION_READY)
+                                .withStatus(STATUS_TRUE)
+                                .build())
                 .build());
         mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdc")
                 .andReturn(200, kafka).times(2);
@@ -279,10 +284,14 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertThat(kafka).isNotNull();
         // Kafka Config
+        assertThat(kafka.getSpec().getKafka().getVersion()).isEqualTo("3.0.0");
         assertThat(kafka.getSpec().getKafka().getConfig())
                 .containsEntry("offsets.topic.replication.factor", 3)
                 .containsEntry("transaction.state.log.replication.factor", 3)
-                .containsEntry("transaction.state.log.min.isr", 2);
+                .containsEntry("min.insync.replicas", 2)
+                .containsEntry("default.replication.factor", 3)
+                .containsEntry("transaction.state.log.min.isr", 2)
+                .containsEntry("inter.broker.protocol.version", "3.0");
         // Kafka Listeners
         // PLAIN
         assertThat(kafka.getSpec().getKafka().getListeners()).hasSize(2);
@@ -338,10 +347,14 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
     private void assertEphemeralKafka(Kafka kafka) {
         assertThat(kafka).isNotNull();
         // Kafka Config
+        assertThat(kafka.getSpec().getKafka().getVersion()).isEqualTo("3.0.0");
         assertThat(kafka.getSpec().getKafka().getConfig())
                 .containsEntry("offsets.topic.replication.factor", 1)
                 .containsEntry("transaction.state.log.replication.factor", 1)
-                .containsEntry("transaction.state.log.min.isr", 1);
+                .containsEntry("min.insync.replicas", 1)
+                .containsEntry("default.replication.factor", 1)
+                .containsEntry("transaction.state.log.min.isr", 1)
+                .containsEntry("inter.broker.protocol.version", "3.0");
         // Kafka Listeners
         // PLAIN
         assertThat(kafka.getSpec().getKafka().getListeners()).hasSize(2);

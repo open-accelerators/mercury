@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.mercury.operator.model.AbstractResourceStatus;
-import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
@@ -25,6 +24,8 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.utils.ResourceUtils.now;
+import static com.redhat.mercury.operator.utils.ResourceUtils.toStatus;
 import static java.util.Collections.EMPTY_SET;
 
 public abstract class AbstractController<K, E extends AbstractResourceStatus, T extends CustomResource<K, E>> {
@@ -64,7 +65,7 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
                 .withType(type)
                 .withMessage(message)
                 .withReason(reason)
-                .withStatus(ResourceUtils.toStatus(status))
+                .withStatus(toStatus(status))
                 .build());
     }
 
@@ -74,10 +75,10 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         }
         Condition current = resource.getStatus().getCondition(condition.getType());
         if (current != null) {
-            condition.setLastTransitionTime(ResourceUtils.now());
+            condition.setLastTransitionTime(now());
         }
         if (!condition.equals(current)) {
-            condition.setLastTransitionTime(ResourceUtils.now());
+            condition.setLastTransitionTime(now());
             resource.getStatus().setCondition(condition);
             LOGGER.debug("Set status condition for {} to {}", resource.getMetadata().getName(), condition);
         }

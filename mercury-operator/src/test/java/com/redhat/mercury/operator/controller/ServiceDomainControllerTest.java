@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 @WithKubernetesTestServer
 public class ServiceDomainControllerTest extends AbstractControllerTest {
+
+    @Inject
+    ServiceDomainController controller;
 
     @BeforeEach
     public void beforeEach() throws IOException {
