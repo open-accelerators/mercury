@@ -21,7 +21,7 @@ import lombok.experimental.Accessors;
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class KafkaConfig {
 
-    private Integer replicas = 1;
-    private KafkaStorage storage = new KafkaStorage();
+    private Integer replicas;
+    private KafkaStorage storage;
 
 }

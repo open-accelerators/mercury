@@ -3,6 +3,7 @@ package com.redhat.mercury.operator.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -24,10 +25,17 @@ import lombok.ToString;
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", refs = {
         @BuildableReference(Condition.class)})
 public abstract class AbstractResourceStatus {
+
     public static final String CONDITION_READY = "Ready";
+
+    public static final String REASON_INVALID_CONFIGURATION = "InvalidConfiguration";
 
     public static final String REASON_SUCCESS = "Success";
     public static final String REASON_FAILED = "Failed";
+
+    public static final String STATUS_FALSE = "False";
+    public static final String STATUS_TRUE = "True";
+
 
     private List<Condition> conditions = new ArrayList<>();
 
@@ -39,9 +47,11 @@ public abstract class AbstractResourceStatus {
         conditions.removeIf(c -> c.getType().equalsIgnoreCase(key));
     }
 
+    // All other conditions are Ready means the resource is Ready
     @JsonIgnore
     public boolean isReady() {
-        return conditions.stream().anyMatch(c -> CONDITION_READY.equals(c.getType()) && c.getStatus().equalsIgnoreCase(Boolean.TRUE.toString()));
+        Condition ready = getCondition(CONDITION_READY);
+        return ready != null  && STATUS_TRUE.equals(ready.getStatus());
     }
 
     @JsonIgnore

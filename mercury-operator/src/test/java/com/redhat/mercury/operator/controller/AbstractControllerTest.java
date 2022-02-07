@@ -25,7 +25,7 @@ public abstract class AbstractControllerTest {
 
     protected static final String SERVICE_DOMAIN_CLUSTER_NAME = "service-domain-cluster";
     protected static final String SERVICE_DOMAIN_NAME = "customer-offer";
-    protected static final String SERVICE_DOMAIN_CLUSTER_NAMESPACE = "test-service-domains";
+    protected static final String SERVICE_DOMAIN_CLUSTER_NAMESPACE = "test-service-domain";
 
     @KubernetesTestServer
     protected KubernetesServer mockServer;

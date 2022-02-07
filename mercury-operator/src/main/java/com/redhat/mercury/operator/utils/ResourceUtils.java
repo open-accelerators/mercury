@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter;
 
 public class ResourceUtils {
 
-    public static final String capitalize(Boolean value) {
+    public static final String toStatus(Boolean value) {
         if (Boolean.TRUE.equals(value)) {
             return "True";
         }

@@ -28,7 +28,7 @@ kubectl apply -f ../deploy/config/openapi
 integrations depend on custom maven dependencies published on GitHub Packages.
 
 ```shell
-kubectl create cm mercury-mvn-settings --from-literal repo.url=https://maven.pkg.github.com/open-accelerators/mercury --from-literal repo.pass=****** --from-literal repo.user=ruromero -n mercury
+kubectl create cm mercury-mvn-settings --from-literal repo.url=https://maven.pkg.github.com/open-accelerators/mercury --from-literal repo.pass=****** --from-literal repo.user=kermit -n mercury
 ```
 
 - An Integration Platform pointing to this configMap
@@ -111,24 +111,4 @@ spec:
 To create a service domain run the following command
 ```shell
 kubectl create -f customer-offer-service-domain.yaml
-```
-
-When exposing a http endpoint for a SD, it is mandatory that a config map with the OpenApi spec
-exists. The expected name is `<service-domain-name-in-lower-case-seperated-by-hyphen>-openapi`. It can be created
-as follows:
-
-```shell
-kubectl create configmap customer-credit-rating-openapi --from-file=CustomerCreditRating.json
-```
-
-For the Camel-K routes configuration it is required to also create a config map containing the direct routes
-from the generated OpenAPI to the GRPC service. This route definitions are available in the
-[integrations](../integrations/camel-k) folder.
-
-They include a mandatory property called `directs.yaml` with the routes definitions.
-
-An example of how to create a config map:
-
-```shell
-kubectl create configmap integration-customer-offer-http --from-file=directs.yaml=customer-offer-direct.yaml
 ```

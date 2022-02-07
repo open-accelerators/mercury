@@ -1,6 +1,8 @@
 package com.redhat.mercury.operator.reflection;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.strimzi.api.kafka.model.EntityOperatorSpec;
+import io.strimzi.api.kafka.model.EntityTopicOperatorSpec;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
@@ -42,7 +44,9 @@ import io.strimzi.api.kafka.model.storage.Storage;
         Status.class,
         Condition.class,
         ListenerStatus.class,
-        ListenerAddress.class
+        ListenerAddress.class,
+        EntityOperatorSpec.class,
+        EntityTopicOperatorSpec.class
 })
 public class DependenciesConfiguration {
 }

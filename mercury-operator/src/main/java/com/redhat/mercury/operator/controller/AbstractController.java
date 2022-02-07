@@ -1,6 +1,5 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -65,7 +64,7 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
                 .withType(type)
                 .withMessage(message)
                 .withReason(reason)
-                .withStatus(ResourceUtils.capitalize(status))
+                .withStatus(ResourceUtils.toStatus(status))
                 .build());
     }
 

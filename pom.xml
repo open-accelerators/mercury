@@ -18,13 +18,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.version>2.7.0.Final</quarkus.platform.version>
-        <quarkus.camel.version>2.7.0.CR1</quarkus.camel.version>
+        <quarkus.camel.version>2.7.0.Final</quarkus.camel.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <testcontainers.version>1.6.0</testcontainers.version>
         <lombok.version>1.18.16</lombok.version>
         <builder-annotations.version>0.50.3</builder-annotations.version>
-        <operator-sdk.version>3.0.2</operator-sdk.version>
-        <strimzi-api.version>0.26.0</strimzi-api.version>
+        <operator-sdk.version>3.0.3</operator-sdk.version>
+        <strimzi-api.version>0.27.1</strimzi-api.version>
         <archetype.version>3.2.0</archetype.version>
         <!-- Image build properties -->
         <quarkus.native.container-build>true</quarkus.native.container-build>

@@ -10,9 +10,11 @@ import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpec;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
+import com.redhat.mercury.operator.utils.ResourceUtils;
 
+import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
@@ -35,11 +37,13 @@ import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.storage.SingleVolumeStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_KAFKA_BROKER_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_FAILED;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_BROKER;
+import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_EXCEPTION;
+import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_WAITING;
 
 @ControllerConfiguration
 public class ServiceDomainClusterController extends AbstractController<ServiceDomainClusterSpec, ServiceDomainClusterStatus, ServiceDomainCluster> implements Reconciler<ServiceDomainCluster>, EventSourceInitializer<ServiceDomainCluster> {
@@ -59,76 +63,123 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
 
     @Override
     public UpdateControl<ServiceDomainCluster> reconcile(ServiceDomainCluster sdc, Context context) {
-        setStatusCondition(sdc, CONDITION_READY, Boolean.FALSE);
-
         try {
-            createOrUpdateKafkaBroker(sdc);
-            updateStatusWithKafkaBrokerUrl(sdc);
+            UpdateControl<ServiceDomainCluster> control = createOrUpdateKafkaBroker(sdc);
+            if (control.isUpdateStatus()) {
+                return control;
+            }
+            return updateStatusWithKafkaBrokerUrl(sdc);
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
-            setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, REASON_FAILED, e.getMessage(), Boolean.FALSE);
+            return updateStatusWithCondition(sdc, new ConditionBuilder()
+                    .withType(CONDITION_KAFKA_BROKER_READY)
+                    .withStatus(STATUS_FALSE)
+                    .withReason(REASON_KAFKA_EXCEPTION)
+                    .withMessage(e.getMessage())
+                    .build());
         }
-
-        return updateStatus(sdc);
     }
 
-    private void updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc) {
-        Kafka kafka;
-
-        try {
-            kafka = client.resources(Kafka.class)
-                    .inNamespace(sdc.getMetadata().getNamespace())
-                    .withName(sdc.getMetadata().getName())
-                    .get();
-        } catch (KubernetesClientException e) {
-            LOGGER.error("Unable to retrieve Kafka {}", sdc.getMetadata().getName(), e);
-            return;
-        }
+    private UpdateControl<ServiceDomainCluster> updateStatusWithKafkaBrokerUrl(ServiceDomainCluster sdc) {
+        Kafka kafka = client.resources(Kafka.class)
+                .inNamespace(sdc.getMetadata().getNamespace())
+                .withName(sdc.getMetadata().getName())
+                .get();
 
         if (isKafkaBrokerReady(kafka)) {
-            final List<ListenerStatus> listeners = kafka.getStatus().getListeners();
-
-            final ListenerStatus listenerStatus = listeners.stream()
+            List<ListenerStatus> listeners = kafka.getStatus().getListeners();
+            Optional<ListenerStatus> listenerStatus = listeners.stream()
                     .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
-                    .findFirst().orElse(null);
-
-            if (listenerStatus != null) {
-                sdc.getStatus().setKafkaBroker(listenerStatus.getBootstrapServers());
-                setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, Boolean.TRUE);
-                setStatusCondition(sdc, CONDITION_READY, Boolean.TRUE);
+                    .findFirst();
+            if (listenerStatus.isPresent()) {
+                sdc.getStatus().setKafkaBroker(listenerStatus.get().getBootstrapServers());
             }
+            return updateStatusWithReadyCondition(sdc, CONDITION_KAFKA_BROKER_READY);
         }
+        return updateStatusWithCondition(sdc, new ConditionBuilder()
+                .withType(CONDITION_KAFKA_BROKER_READY)
+                .withStatus(STATUS_FALSE)
+                .withReason(REASON_KAFKA_WAITING)
+                .withMessage(MESSAGE_KAFKA_BROKER_NOT_READY)
+                .build());
     }
 
     private boolean isKafkaBrokerReady(Kafka kafka) {
         return kafka != null && kafka.getStatus() != null && kafka.getStatus().getListeners() != null;
     }
 
-    private void createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
-        setStatusCondition(sdc, CONDITION_KAFKA_BROKER_READY, REASON_KAFKA_BROKER, MESSAGE_KAFKA_BROKER_NOT_READY, Boolean.FALSE);
-
+    private UpdateControl<ServiceDomainCluster> createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
         final String sdcName = sdc.getMetadata().getName();
-        final String sdcNamespace = sdc.getMetadata().getNamespace();
-
         Kafka desiredKafka = createKafkaObj(sdc);
-
-        Kafka currentKafka = null;
-        try {
-            currentKafka = client.resources(Kafka.class)
-                    .inNamespace(sdcNamespace)
-                    .withName(sdcName)
-                    .get();
-        } catch (KubernetesClientException e) {
-            LOGGER.debug("Unable to retrieve Kafka resource with name: {}", sdcName);
-        }
+        Kafka currentKafka = client.resources(Kafka.class)
+                .inNamespace(sdc.getMetadata().getNamespace())
+                .withName(sdcName)
+                .get();
 
         if (currentKafka == null || !Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
             client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).createOrReplace(desiredKafka);
             LOGGER.debug("Kafka {} was created or updated", sdcName);
+            return updateStatusWithCondition(sdc, new ConditionBuilder()
+                    .withType(CONDITION_KAFKA_BROKER_READY)
+                    .withStatus(STATUS_FALSE)
+                    .withReason(REASON_KAFKA_WAITING)
+                    .withMessage(MESSAGE_KAFKA_BROKER_NOT_READY)
+                    .build());
         }
+        return UpdateControl.noUpdate();
     }
 
-    Kafka createKafkaObj(ServiceDomainCluster sdc) {
+    private UpdateControl<ServiceDomainCluster> updateStatusWithReadyCondition(ServiceDomainCluster resource, String condition) {
+        return updateStatusWithCondition(resource, new ConditionBuilder()
+                .withType(condition)
+                .withStatus(STATUS_TRUE)
+                .build());
+    }
+
+    private UpdateControl<ServiceDomainCluster> updateStatusWithCondition(ServiceDomainCluster resource, Condition condition) {
+        condition.setLastTransitionTime(ResourceUtils.now());
+        Condition current = resource.getStatus().getCondition(condition.getType());
+        if (areSameConditions(current, condition)) {
+            return UpdateControl.noUpdate();
+        }
+        resource.getStatus().setCondition(condition);
+        if (resource.getStatus()
+                .getConditions()
+                .stream()
+                .filter(c -> !c.getType().equals(CONDITION_READY))
+                .allMatch(c -> c.getStatus().equals(STATUS_TRUE))) {
+            resource.getStatus().setCondition(buildReadyCondition(CONDITION_READY));
+        } else {
+            resource.getStatus().setCondition(buildCondition(CONDITION_READY, Boolean.FALSE, null, null));
+        }
+        return UpdateControl.updateStatus(resource);
+    }
+
+    // The only ignored field when comparing two conditions is the
+    // last transition time
+    public boolean areSameConditions(Condition c1, Condition c2) {
+        return ((c1 == null && c2 == null) || (c1 != null && c2 != null)) &&
+                Objects.equals(c1.getType(), c2.getType()) &&
+                Objects.equals(c1.getStatus(), c2.getStatus()) &&
+                Objects.equals(c1.getReason(), c2.getReason()) &&
+                Objects.equals(c1.getMessage(), c2.getMessage());
+    }
+
+    private Condition buildReadyCondition(String condition) {
+        return buildCondition(condition, Boolean.TRUE, null, null);
+    }
+
+    private Condition buildCondition(String condition, boolean status, String reason, String message) {
+        return new ConditionBuilder()
+                .withType(condition)
+                .withStatus(ResourceUtils.toStatus(status))
+                .withReason(reason)
+                .withMessage(message)
+                .withLastTransitionTime(ResourceUtils.now())
+                .build();
+    }
+
+    protected Kafka createKafkaObj(ServiceDomainCluster sdc) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
                 .withName(sdc.getMetadata().getName())
