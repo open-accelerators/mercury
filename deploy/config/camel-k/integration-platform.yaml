@@ -5,7 +5,10 @@ metadata:
 spec:
   build:
     maven:
+      properties:
+        repo.url: https://maven.pkg.github.com/open-accelerators/mercury
       settings:
         configMapKeyRef:
-          key: mercury-mvn-settings
+          key: settings.xml
+          name: mercury-mvn-settings
   profile: Openshift

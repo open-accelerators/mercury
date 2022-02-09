@@ -14,7 +14,6 @@ import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpec;
 import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
 
-import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -46,8 +45,6 @@ import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDI
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_EXCEPTION;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_WAITING;
-import static com.redhat.mercury.operator.utils.ResourceUtils.now;
-import static com.redhat.mercury.operator.utils.ResourceUtils.toStatus;
 
 @ControllerConfiguration
 public class ServiceDomainClusterController extends AbstractController<ServiceDomainClusterSpec, ServiceDomainClusterStatus, ServiceDomainCluster> implements Reconciler<ServiceDomainCluster>, EventSourceInitializer<ServiceDomainCluster> {
@@ -57,6 +54,7 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     private static final String DEFAULT_PERSISTENT_STORAGE = "100Gi";
     public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
     private static final String KAFKA_VERSION = "3.0.0";
+    private static final String BROKER_PROTOCOL_VERSION = "3.0";
 
     @Override
     public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomainCluster> context) {
@@ -157,55 +155,6 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                 .build());
     }
 
-    private UpdateControl<ServiceDomainCluster> updateStatusWithCondition(ServiceDomainCluster resource, Condition condition) {
-        condition.setLastTransitionTime(now());
-        Condition current = resource.getStatus().getCondition(condition.getType());
-        if (areSameConditions(current, condition)) {
-            LOGGER.debug("ServiceDomainCluster {} Status not updated for condition {}.", resource.getMetadata().getName(), condition.getType());
-            return UpdateControl.noUpdate();
-        }
-        resource.getStatus().setCondition(condition);
-        boolean isReady = resource.getStatus()
-                .getConditions()
-                .stream()
-                .filter(c -> !c.getType().equals(CONDITION_READY))
-                .allMatch(c -> c.getStatus().equals(STATUS_TRUE));
-        if (isReady && !resource.getStatus().isReady()) {
-            LOGGER.debug("ServiceDomainCluster {} transition to READY  {}.", resource.getMetadata().getName(), condition.getType());
-            resource.getStatus().setCondition(buildReadyCondition(CONDITION_READY));
-        }
-        if (resource.getStatus().getCondition(CONDITION_READY) == null || (!isReady && resource.getStatus().isReady())) {
-            LOGGER.debug("ServiceDomainCluster {} transition to NOT READY  {}.", resource.getMetadata().getName(), condition.getType());
-            resource.getStatus().setCondition(buildCondition(CONDITION_READY, Boolean.FALSE, null, null));
-        }
-        LOGGER.debug("ServiceDomainCluster {} Status updated for condition {}.", resource.getMetadata().getName(), condition.getType());
-        return UpdateControl.updateStatus(resource);
-    }
-
-    // The only ignored field when comparing two conditions is the
-    // last transition time
-    public boolean areSameConditions(Condition c1, Condition c2) {
-        return ((c1 == null && c2 == null) || (c1 != null && c2 != null)) &&
-                Objects.equals(c1.getType(), c2.getType()) &&
-                Objects.equals(c1.getStatus(), c2.getStatus()) &&
-                Objects.equals(c1.getReason(), c2.getReason()) &&
-                Objects.equals(c1.getMessage(), c2.getMessage());
-    }
-
-    private Condition buildReadyCondition(String condition) {
-        return buildCondition(condition, Boolean.TRUE, null, null);
-    }
-
-    private Condition buildCondition(String condition, boolean status, String reason, String message) {
-        return new ConditionBuilder()
-                .withType(condition)
-                .withStatus(toStatus(status))
-                .withReason(reason)
-                .withMessage(message)
-                .withLastTransitionTime(now())
-                .build();
-    }
-
     protected Kafka createKafkaObj(ServiceDomainCluster sdc) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
@@ -233,7 +182,7 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                                         .build())
                         .withVersion(KAFKA_VERSION)
                         .withConfig(Map.of(
-                                "inter.broker.protocol.version", "3.0",
+                                "inter.broker.protocol.version", BROKER_PROTOCOL_VERSION,
                                 "default.replication.factor", sdc.getSpec().getKafka().getReplicas(),
                                 "offsets.topic.replication.factor", sdc.getSpec().getKafka().getReplicas(),
                                 "transaction.state.log.replication.factor", sdc.getSpec().getKafka().getReplicas(),

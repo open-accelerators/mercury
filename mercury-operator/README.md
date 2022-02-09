@@ -1,9 +1,8 @@
 # Mercury Operator (Beta)
 ## Prerequisites:
 
-- Kafka operator installed (minimum strimzi version 0.26.0)
-- Camel-K operator installed (version 1.8.0)
-- A namespace named mercury should be created if it doesn't already exist.
+- Kafka operator installed (minimum Strimzi version 0.26.x or 0.27.x)
+- Camel-K operator installed (version 1.8.x)
 
 ## Preparation
 
@@ -24,22 +23,23 @@ kubectl apply -f ../deploy/config/integrations
 kubectl apply -f ../deploy/config/openapi
 ```
 
-- A configMap containing a GitHub user/token with permissions to READ packages because our
-integrations depend on custom maven dependencies published on GitHub Packages.
+- A configMap containing a Maven settings, before doing so, replace the user/token 
+with permissions to READ packages because our integrations depend on custom Maven 
+dependencies published on GitHub Packages.
 
 ```shell
-kubectl create cm mercury-mvn-settings --from-literal repo.url=https://maven.pkg.github.com/open-accelerators/mercury --from-literal repo.pass=****** --from-literal repo.user=kermit -n mercury
+kubectl create cm mercury-mvn-settings --from-file ../deploy/config/camel-k/mercury-mvn-settings.xml
 ```
 
 - An Integration Platform pointing to this configMap
 
 ```shell
-kubectl apply -f ../deploy/config/camel-k/
+kubectl apply -f ../deploy/config/camel-k/integration-platform.yaml
 ```
 
 ## Simple Installation
 
-The operator will be created in the mercury namespace.
+The operator will be created in the mercury namespace so make sure the `mercury` namespace exists.
 
 To install the operator run:
 
@@ -53,7 +53,7 @@ We have created a Catalog containing the Mercury Operator. You can install this 
 Operator Lifecycle Manager and then just create a Subscription via the user interface.
 
 ```shell
-kubectl apply -n olm -f ../deploy/olm-catalog/<version>/catalog-source.yaml
+kubectl apply -n olm -f ../deploy/olm-catalog/1.0.1/catalog-source.yaml
 ```
 
 ## Functionality:

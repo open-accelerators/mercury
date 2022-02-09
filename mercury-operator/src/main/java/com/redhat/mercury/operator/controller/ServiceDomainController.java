@@ -19,6 +19,7 @@ import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
 
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
@@ -59,6 +60,8 @@ import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthenticationBuilder;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_INVALID_CONFIGURATION;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
@@ -163,11 +166,15 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 final String sdConfigMapName = "integration-" + toLowerHyphen(sd.getSpec().getType().toString()) + "-http";
                 ConfigMap sdConfigMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
 
-                final boolean validateSdConfigMap = validateSdConfigMap(sd, sdConfigMapName, sdConfigMap);
-                if (!validateSdConfigMap) {
-                    return updateStatus(sd);
+                String validationError = validateSdConfigMap(sd, sdConfigMapName, sdConfigMap);
+                if (validationError != null) {
+                    return updateStatusWithCondition(sd, new ConditionBuilder()
+                            .withType(CONDITION_READY)
+                            .withStatus(STATUS_FALSE)
+                            .withReason(REASON_INVALID_CONFIGURATION)
+                            .withMessage(validationError)
+                            .build());
                 }
-
                 createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
             } else if (sd.getSpec().getExpose() == null || !sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 deleteCamelHttpIntegration(sd);
@@ -179,9 +186,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
             setStatusCondition(sd, CONDITION_READY, REASON_FAILED, e.getMessage(), Boolean.FALSE);
         }
-
         updateSdReadyCondition(sd);
-
         return updateStatus(sd);
     }
 
@@ -254,25 +259,32 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         }
     }
 
-    private boolean validateSdConfigMap(ServiceDomain sd, String sdConfigMapName, ConfigMap camelRoutesConfigMap) {
+    private String validateSdConfigMap(ServiceDomain sd, String sdConfigMapName, ConfigMap camelRoutesConfigMap) {
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
         final String sdTypeAsString = toLowerHyphen(sdType.toString());
 
         if (camelRoutesConfigMap == null) {
-            LOGGER.error("{} config map is missing ", sdConfigMapName);
-            return false;
+            return logValidationError("%s configmap is missing", sdConfigMapName);
         }
 
         String sdCamelRouteYaml = camelRoutesConfigMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
         if (sdCamelRouteYaml == null) {
-            LOGGER.error("{} config map key with the direct routes is missing", sdTypeAsString + "-direct.yaml");
-            return false;
+            return logValidationError("%s configmap key with the direct routes is missing", sdTypeAsString + "-direct.yaml");
         }
-        if (client.configMaps().inNamespace(client.getNamespace()).withName(sdTypeAsString + OPENAPI_CM_SUFFIX).get() == null) {
-            LOGGER.error("{} config map with the OpenAPI spec is missing", sdTypeAsString);
-            return false;
+        ConfigMap openapi = client.configMaps().inNamespace(client.getNamespace()).withName(sdTypeAsString + OPENAPI_CM_SUFFIX).get();
+        if (openapi == null) {
+            return logValidationError("%s config map with the OpenAPI spec is missing", sdTypeAsString);
         }
-        return true;
+        if (!openapi.getData().containsKey(sdType + ".json")) {
+            return logValidationError("%s config map with the OpenAPI must contain the %s.json key", sdTypeAsString, sdType.toString());
+        }
+        return null;
+    }
+
+    private String logValidationError(String pattern, String... args) {
+        String errorMsg = String.format(pattern, args);
+        LOGGER.error(errorMsg);
+        return errorMsg;
     }
 
     private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdCamelRouteYaml) {

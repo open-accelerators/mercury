@@ -24,6 +24,7 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.utils.ResourceUtils.now;
 import static com.redhat.mercury.operator.utils.ResourceUtils.toStatus;
 import static java.util.Collections.EMPTY_SET;
@@ -107,5 +108,54 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
 
         current.setStatus(resource.getStatus());
         return UpdateControl.updateStatus(current);
+    }
+
+    protected UpdateControl<T> updateStatusWithCondition(T resource, Condition condition) {
+        condition.setLastTransitionTime(now());
+        Condition current = resource.getStatus().getCondition(condition.getType());
+        if (areSameConditions(current, condition)) {
+            LOGGER.debug("{} {} Status not updated for condition {}.", resource.getClass().getSimpleName(), resource.getMetadata().getName(), condition.getType());
+            return UpdateControl.noUpdate();
+        }
+        resource.getStatus().setCondition(condition);
+        boolean isReady = resource.getStatus()
+                .getConditions()
+                .stream()
+                .filter(c -> !c.getType().equals(CONDITION_READY))
+                .allMatch(c -> c.getStatus().equals(STATUS_TRUE));
+        if (isReady && !resource.getStatus().isReady()) {
+            LOGGER.debug("{} {} transition to READY  {}.", resource.getClass().getSimpleName(), resource.getMetadata().getName(), condition.getType());
+            resource.getStatus().setCondition(buildReadyCondition(CONDITION_READY));
+        }
+        if (resource.getStatus().getCondition(CONDITION_READY) == null || (!isReady && resource.getStatus().isReady())) {
+            LOGGER.debug("{} {} transition to NOT READY  {}.", resource.getClass().getSimpleName(), resource.getMetadata().getName(), condition.getType());
+            resource.getStatus().setCondition(buildCondition(CONDITION_READY, Boolean.FALSE, null, null));
+        }
+        LOGGER.debug("{} {} Status updated for condition {}.", resource.getClass().getSimpleName(), resource.getMetadata().getName(), condition.getType());
+        return UpdateControl.updateStatus(resource);
+    }
+
+    // The only ignored field when comparing two conditions is the
+    // last transition time
+    protected boolean areSameConditions(Condition c1, Condition c2) {
+        return ((c1 == null && c2 == null) || (c1 != null && c2 != null)) &&
+                Objects.equals(c1.getType(), c2.getType()) &&
+                Objects.equals(c1.getStatus(), c2.getStatus()) &&
+                Objects.equals(c1.getReason(), c2.getReason()) &&
+                Objects.equals(c1.getMessage(), c2.getMessage());
+    }
+
+    protected Condition buildReadyCondition(String condition) {
+        return buildCondition(condition, Boolean.TRUE, null, null);
+    }
+
+    protected Condition buildCondition(String condition, boolean status, String reason, String message) {
+        return new ConditionBuilder()
+                .withType(condition)
+                .withStatus(toStatus(status))
+                .withReason(reason)
+                .withMessage(message)
+                .withLastTransitionTime(now())
+                .build();
     }
 }
