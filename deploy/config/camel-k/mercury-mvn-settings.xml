@@ -26,8 +26,8 @@
     <servers>
         <server>
             <id>github</id>
-            <username>___github_user___</username>
-            <password>___github_token_with_packages_read_permission___</password>
+            <username>github_user</username>
+            <password>github_password</password>
         </server>
     </servers>
 </settings>

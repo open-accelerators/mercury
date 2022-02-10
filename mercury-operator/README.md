@@ -6,7 +6,10 @@
 
 ## Preparation
 
-Create the following configuration resources that will be used by the operator:
+### Common
+
+Create the following configuration resources that will be used by the operator (make sure
+they are created in the same namespace as the operator):
 
 - A ConfigMap per service domain that exposes a http route
   (with the name integration-<service-domain-name>-http e.g. integration-customer-offer-http)
@@ -23,15 +26,39 @@ kubectl apply -f ../deploy/config/integrations
 kubectl apply -f ../deploy/config/openapi
 ```
 
-- A configMap containing a Maven settings, before doing so, replace the user/token 
+The following resources must be created where the integrations are going to be built.
+
+- A configMap containing a Maven settings, before doing so, export the user/token 
 with permissions to READ packages because our integrations depend on custom Maven 
 dependencies published on GitHub Packages.
 
 ```shell
-kubectl create cm mercury-mvn-settings --from-file ../deploy/config/camel-k/mercury-mvn-settings.xml
+export GITHUB_USER=my-user
+export GITHUB_TOKEN=my-github-token-with-read-packages-permission
+SETTINGS=$(sed -e "s/github_user/$GITHUB_USER/" -e "s/github_password/$GITHUB_TOKEN/" ../deploy/config/camel-k/mercury-mvn-settings.xml) && kubectl create cm mercury-mvn-settings --from-literal=settings.xml=$SETTINGS
 ```
 
-- An Integration Platform pointing to this configMap
+- An Integration Platform pointing to this configMap.
+
+### On Minikube
+
+You will require the `registry` addon and then create the IntegrationPlatform
+pointing to the local registry. Check the [Camel-K documentation](https://camel.apache.org/camel-k/1.8.x/installation/registry/registry.html)
+to set up a different registry
+
+First extract the registry address:
+
+```shell
+export REGISTRY_ADDRESS=$(kubectl -n kube-system get service registry -o jsonpath='{.spec.clusterIP}')
+```
+Then use the existing integration platform definition with your internal registry configuration:
+
+```shell
+faq -f yaml -o yaml --args $REGISTRY_ADDRESS '.spec.build.registry = {address: $ARGS.positional[0], insecure: true}' ../deploy/config/camel-k/integration-platform.yaml | kubectl create -f -
+```
+
+### On Openshift
+Just create the integration platform:
 
 ```shell
 kubectl apply -f ../deploy/config/camel-k/integration-platform.yaml

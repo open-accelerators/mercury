@@ -18,6 +18,7 @@ import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
+import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -475,37 +476,35 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
     private void createOrUpdateService(ServiceDomain sd) {
         String sdNS = sd.getMetadata().getNamespace();
-        String sdName = sd.getMetadata().getName();
+        String svcName = ResourceUtils.toLowerHyphen(sd.getSpec().getType().toString());
 
         Service desiredService = new ServiceBuilder()
                 .withApiVersion("v1")
                 .withNewMetadata()
-                .withName(sdName)
+                .withName(svcName)
                 .withNamespace(sdNS)
-                .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName, SERVICE_DOMAIN_LABEL,
-                        sdName, MERCURY_BINDING_LABEL, INTERNAL,
+                .withLabels(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + svcName, SERVICE_DOMAIN_LABEL,
+                        svcName, MERCURY_BINDING_LABEL, INTERNAL,
                         MANAGED_BY_LABEL, OPERATOR_NAME))
+                .withOwnerReferences(List.of(new OwnerReferenceBuilder()
+                        .withName(sd.getMetadata().getName())
+                        .withUid(sd.getMetadata().getUid())
+                        .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                        .withApiVersion(MercuryConstants.API_VERSION).build()))
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(new ServicePortBuilder()
                         .withPort(SERVICE_PORT)
                         .withProtocol(TCP_PROTOCOL)
                         .withName(SERVICE_NAME).build())
-                .withSelector(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sdName))
+                .withSelector(Map.of(APP_LABEL, APP_LABEL_BIAN_PREFIX + sd.getMetadata().getName()))
                 .endSpec().build();
 
-        desiredService.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid())
-                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(MercuryConstants.API_VERSION)
-                .build()));
-
-        final Service sdService = client.services().inNamespace(sdNS).withName(sdName).get();
+        final Service sdService = client.services().inNamespace(sdNS).withName(svcName).get();
 
         if (sdService == null || !Objects.equals(sdService.getSpec(), desiredService.getSpec())) {
             client.services().inNamespace(sdNS).createOrReplace(desiredService);
-            LOGGER.debug("Service {} was created or updated", sdName);
+            LOGGER.debug("Service {} was created or updated", svcName);
         }
     }
 }

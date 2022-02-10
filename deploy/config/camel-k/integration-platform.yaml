@@ -11,4 +11,3 @@ spec:
         configMapKeyRef:
           key: settings.xml
           name: mercury-mvn-settings
-  profile: Openshift
