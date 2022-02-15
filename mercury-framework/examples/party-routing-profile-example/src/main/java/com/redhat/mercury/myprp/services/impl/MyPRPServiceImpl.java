@@ -43,7 +43,7 @@ public class MyPRPServiceImpl implements BQStatusService {
                 }
                 return RetrieveStatusResponse.newBuilder()
                         .setStatus(Status.newBuilder()
-                                .setCustomerRelationshipStatus(prpId)
+                                .setCustomerRelationshipStatus(state.getStatus())
                                 .build())
                         .build();
             }

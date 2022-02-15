@@ -1,8 +1,5 @@
 package com.redhat.mercury.myco.services.impl;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
@@ -32,10 +29,9 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
     private int customerOfferId = 1;
 
-    private Map<Integer, CustomerOfferProcedure> procedures = new HashMap<>();
-
     @Inject
     CustomerOfferNotificationService notificationService;
+    CustomerOfferService svc;
 
     @Override
     public Uni<ExecuteCustomerOfferProcedureResponse> execute(ExecuteRequest request) {
@@ -53,7 +49,7 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
                 .setCustomerReference(customerReference)
                 .setCustomerOfferProcessingTask("INITIATED")
                 .build();
-        procedures.put(id, procedure);
+        svc.updateProcedure(id, procedure);
         LOGGER.info("Initiate received for {}", customerReference);
         return notificationService.onCustomerOfferInitiated(id.toString())
                 .onItem()
@@ -79,14 +75,14 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
         Integer id = Integer.valueOf(request.getCustomerofferId());
         LOGGER.info("Update received for {}", id);
-        CustomerOfferProcedure procedure = procedures.get(id);
+        CustomerOfferProcedure procedure = svc.getProcedure(id);
         if (procedure == null) {
             return Uni.createFrom().nullItem();
         }
         CustomerOfferProcedure updated = CustomerOfferProcedure.newBuilder(procedure)
                 .setCustomerOfferProcessingTask("COMPLETED")
                 .build();
-        procedures.put(id, updated);
+        svc.updateProcedure(id, updated);
         return notificationService.onCustomerOfferCompleted(id.toString())
                 .onItem()
                 .transform(e -> CustomerOfferProcedure.newBuilder()
