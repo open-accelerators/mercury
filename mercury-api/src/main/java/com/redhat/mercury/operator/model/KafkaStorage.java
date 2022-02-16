@@ -21,7 +21,7 @@ import lombok.experimental.Accessors;
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class KafkaStorage {
 
-    private String type = "ephemeral";
+    private String type;
     private String size;
 
 }

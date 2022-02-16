@@ -12,19 +12,23 @@ import org.junit.jupiter.api.Test;
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
+import com.redhat.mercury.operator.model.ServiceDomainSpec;
+import com.redhat.mercury.operator.utils.ResourceUtils;
 
+import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 import io.strimzi.api.kafka.model.Kafka;
@@ -34,17 +38,18 @@ import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_MISSING;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_FOUND;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
+import static com.redhat.mercury.operator.utils.ResourceUtils.toLowerHyphen;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @WithKubernetesTestServer
@@ -52,89 +57,744 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
     @BeforeEach
     public void beforeEach() throws IOException {
+        mockServer.getKubernetesMockServer().clearExpectations();
+
+        createDefultNamespace();
+
+        createDefaultIntegrationConfigMap();
+
+        createOpenApiConfigMap();
+
+        createDefaultKafka();
+    }
+
+    @AfterEach
+    public void afterEach() {
+        mockServer.getKubernetesMockServer().clearExpectations();
+
+        deleteDeployment();
+
+        deleteService();
+
+        deleteKafkaTopic();
+
+        deleteIntegrationConfigMap();
+
+        deleteOpenAPIConfigMap();
+
+        deleteIntegration();
+
+        deleteServiceDomains();
+
+        deleteKafka();
+    }
+
+    @Test
+    public void testAddServiceDomain() {
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNotNull();
+        assertOwnerReference(sd, integration.getMetadata().getOwnerReferences());
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNotNull();
+        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+    }
+
+    @Test
+    public void testAddServiceDomainNoConfigMaps() {
+        deleteIntegrationConfigMap();
+
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition).isNull();
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+    }
+
+    @Test
+    public void testAddServiceDomainBadIntegrationConfigMap() throws IOException {
+        deleteIntegrationConfigMap();
+        createIntegrationConfigMap("badSdConfigMap.yaml");
+
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition).isNull();
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+    }
+
+    @Test
+    public void testAddServiceDomainWithNoOpenApiConfigMap(){
+        deleteOpenAPIConfigMap();
+
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain();
+        final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
+        final String sdTypeAsString = toLowerHyphen(sdType.toString());
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getMessage()).isEqualTo(sdTypeAsString + "-openapi" + " " + MESSAGE_CONFIG_MAP_MISSING);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition).isNull();
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+    }
+
+    @Test
+    void testAddSDWithException() {
+        ServiceDomain sd = createServiceDomain();
+        ServiceDomainCluster sdc = createReadySDC();
+
+        String exceptionMessage = "Test exception";
+        mockServer.expect().get()
+                .withPath("/apis/apps/v1/namespaces/test-service-domain/deployments/customer-offer")
+                .andReturn(500, new KubernetesClientException(exceptionMessage))
+                .always();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThat(update.isUpdateStatus()).isTrue();
+        assertThat(update.getResource().getStatus().isReady()).isFalse();
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);
+        assertThat(condition.getStatus()).isEqualTo(ResourceUtils.toStatus(Boolean.FALSE));
+        assertThat(condition.getReason()).isEqualTo(REASON_FAILED);
+        assertThat(condition.getMessage()).contains(exceptionMessage);
+        assertThat(condition.getLastTransitionTime()).isNotNull();
+    }
+
+    @Test
+    public void testUpdateServiceDomainToNoExpose() {
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNotNull();
+        assertOwnerReference(sd, integration.getMetadata().getOwnerReferences());
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNotNull();
+        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+
+        update.getResource().getSpec().setExpose(null);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition).isNull();
+
+        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+    }
+
+    @Test
+    public void testAddServiceDomainWithNoCluster() {
+        ServiceDomain sd = createServiceDomain();
+        final String sdcName = sd.getSpec().getServiceDomainCluster();
+
+        final UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        assertThat(condition.getReason()).isEqualTo(REASON_SDC);
+        assertThat(condition.getMessage()).isEqualTo(sdcName + " " + MESSAGE_SDC_NOT_FOUND);
+    }
+
+    @Test
+    public void testAddServiceDomainWithClusterNotReady() {
+        ServiceDomainCluster sdc = createNotReadySDC();
+        final String sdcName = sdc.getMetadata().getName();
+        ServiceDomain sd = createServiceDomain();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        final UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        assertThat(condition.getReason()).isEqualTo(REASON_SDC);
+        assertThat(condition.getMessage()).isEqualTo(sdcName + " " + MESSAGE_SDC_NOT_READY);
+    }
+
+    @Test
+    public void testAddServiceDomainWithoutExposeHttp() {
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain(SERVICE_DOMAIN_NAME, false);
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition).isNull();
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+
+        //Test Integration data
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNotNull();
+        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsNotReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+    }
+
+    @Test
+    public void testAddMultipleServiceDomain() {
+        ServiceDomainCluster sdc = createReadySDC();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        for (int i = 0; i < 3; i++) {
+            ServiceDomain sd = createServiceDomain();
+            final String sdNamespace = sd.getMetadata().getNamespace();
+            final String sdName = sd.getMetadata().getName() + i;
+            sd.getMetadata().setName(sdName);
+            final NamespacedKubernetesClient client = mockServer.getClient();
+
+            UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+            assertThatIsNotReady(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+            Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+            assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+            update = serviceDomainController.reconcile(update.getResource(), null);
+            assertThatIsNotReady(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+            condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+            assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+            final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+            ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                    .withGroup("camel.apache.org")
+                    .withVersion("v1")
+                    .withPlural("integrations")
+                    .withNamespaced(true)
+                    .build();
+
+            final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+            assertThat(integration).isNotNull();
+            assertOwnerReference(sd, integration.getMetadata().getOwnerReferences());
+
+            integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+            client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+            update = serviceDomainController.reconcile(update.getResource(), null);
+            assertThatIsNotReady(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+            condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+            assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+            update = serviceDomainController.reconcile(update.getResource(), null);
+            assertThatIsNotReady(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+            condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+            assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+            KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+            assertThat(kafkaTopic).isNotNull();
+            assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
+
+            kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+            client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+            update = serviceDomainController.reconcile(update.getResource(), null);
+            assertThatIsNotReady(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+            condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+            assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+            //Test deployment data
+            final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+            assertThat(deployment).isNotNull();
+            assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+            update = serviceDomainController.reconcile(update.getResource(), null);
+            assertThatIsReady(update);
+        }
+    }
+
+    @Test
+    public void testWatchDeletedObjectsTest() {
+        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
+                .andReturn(200, sdc)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        serviceDomainController.reconcile(update.getResource(), null);
+
+        Boolean deleted = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
+        assertThat(deleted).isTrue();
+
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
+        assertThat(deployment).isNull();
+
+        deleted = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
+        assertThat(deleted).isTrue();
+
+        final Service service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
+        assertThat(service).isNull();
+
+        deleted = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).delete();
+        assertThat(deleted).isTrue();
+
+        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+
+        deleted = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").delete();
+        assertThat(deleted).isTrue();
+
+        kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNull();
+    }
+
+    private void assertReadinessCommon(UpdateControl<ServiceDomain> update) {
+        assertThat(update.isUpdateStatus()).isTrue();
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);
+        assertThat(condition.getReason()).isNull();
+        assertThat(condition.getMessage()).isNull();
+        assertThat(condition.getLastTransitionTime()).isNotNull();
+    }
+
+    private void assertThatIsNotReady(UpdateControl<ServiceDomain> update) {
+        assertReadinessCommon(update);
+        assertThat(update.getResource().getStatus().isReady()).isFalse();
+    }
+
+    private void assertThatIsReady(UpdateControl<ServiceDomain> update) {
+        assertReadinessCommon(update);
+        assertThat(update.getResource().getStatus().isReady()).isTrue();
+    }
+
+    private void assertOwnerReference(ServiceDomain sd, List<OwnerReference> ownerReferences) {
+        assertThat(ownerReferences).isNotNull();
+        assertThat(ownerReferences).isNotEmpty();
+
+        OwnerReference ownerReference = ownerReferences.get(0);
+        assertThat(ownerReference).isNotNull();
+        assertThat(sd.getMetadata().getName()).isEqualTo(ownerReference.getName());
+        assertThat(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND).isEqualTo(ownerReference.getKind());
+        assertThat(MercuryConstants.API_VERSION).isEqualTo(ownerReference.getApiVersion());
+    }
+
+    private void createDefultNamespace() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         final Namespace namespace = client.namespaces().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).get();
         if (namespace == null) {
             client.namespaces().create(new NamespaceBuilder().withNewMetadata().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).endMetadata().build());
         }
+    }
 
-        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
-        ConfigMap configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
-        if (configMap == null) {
-            try (final InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("sdConfigMap.yaml")) {
-                if (inputStream != null) {
-                    client.configMaps().inNamespace(client.getNamespace()).load(inputStream).create();
-                    await().atMost(2, MINUTES).until(() -> client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get() != null);
-                    configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
-                    assertNotNull(configMap);
-                }
-            }
+    private void createDefaultKafka() {
+        final NamespacedKubernetesClient client = mockServer.getClient();
+        //Hack so that the cluster will already have a kafka broker
+        ServiceDomainCluster sdc = createReadySDC();
+
+        Kafka expectedKafka = getExpectedKafKa(sdc);
+
+        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        if (fetchedKafka == null) {
+            client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).create(expectedKafka);
+            fetchedKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+            assertThat(fetchedKafka).isNotNull();
         }
+    }
 
-        String openApiConfigMap = "customer-offer-openapi";
+    private void createOpenApiConfigMap() {
+        final NamespacedKubernetesClient client = mockServer.getClient();
         ConfigMap openAPIConfigMap = client.configMaps()
                 .inNamespace(client.getNamespace())
                 .load(this.getClass().getClassLoader().getResourceAsStream("openAPIConfigMap.yaml"))
                 .create();
-        await().atMost(2, MINUTES).until(() -> client.configMaps().inNamespace(client.getNamespace()).withName(openApiConfigMap).get() != null);
-        assertNotNull(openAPIConfigMap);
+        assertThat(openAPIConfigMap).isNotNull();
+    }
 
-        //Hack so that the cluster will already have a kafka broker
-        ServiceDomainCluster sdc = new ServiceDomainCluster();
-        sdc.setMetadata(new ObjectMetaBuilder().withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).build());
-        sdc.setSpec(new ServiceDomainClusterSpecBuilder().build());
-        Kafka expectedKafka = getExpectedKafKa(sdc);
-        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if (fetchedKafka == null) {
-            client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).create(expectedKafka);
-            await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
-            fetchedKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-            assertNotNull(fetchedKafka);
-        }
+    private void createDefaultIntegrationConfigMap() throws IOException {
+        createIntegrationConfigMap("sdConfigMap.yaml");
+    }
 
-        ServiceDomainCluster fetchedCluster = client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if (fetchedCluster == null) {
-            ServiceDomainCluster desiredCluster = createServiceDomainCluster();
-            fetchedCluster = client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).create(desiredCluster);
-            await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
-        }
-
-        final String sdcNamespace = fetchedCluster.getMetadata().getNamespace();
-        //update the kafka broker owner with the cluster uid
-        expectedKafka = getExpectedKafKa(fetchedCluster);
-        fetchedKafka = client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if (fetchedKafka != null) {
-            client.resources(Kafka.class).inNamespace(sdcNamespace).replace(expectedKafka);
-            await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
+    private void createIntegrationConfigMap(String fileName) throws IOException {
+        final NamespacedKubernetesClient client = mockServer.getClient();
+        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
+        ConfigMap configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
+        if (configMap == null) {
+            try (final InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(fileName)) {
+                if (inputStream != null) {
+                    client.configMaps().inNamespace(client.getNamespace()).load(inputStream).create();
+                    configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
+                    assertThat(configMap).isNotNull();
+                }
+            }
         }
     }
 
-    @AfterEach
-    public void afterEach() {
+    private void deleteKafka() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        Deployment sdDeployment = client.apps().deployments().inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
-        if (sdDeployment != null) {
-            client.resources(Deployment.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sdDeployment);
+        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        if (kafka != null) {
+            client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafka);
         }
+    }
 
-        Service service = client.services().inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
-        if (service != null) {
-            client.resources(Service.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(service);
-        }
+    private void deleteServiceDomains() {
+        final NamespacedKubernetesClient client = mockServer.getClient();
 
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME + "-topic").get();
-        if (kafkaTopic != null) {
-            client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafkaTopic);
+        final KubernetesResourceList<ServiceDomain> sdList = client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).list();
+        if (sdList != null && sdList.getItems() != null && !sdList.getItems().isEmpty()) {
+            for (ServiceDomain sd : sdList.getItems()) {
+                client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sd);
+                assertThat(client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sd.getMetadata().getName()).get()).isNull();
+            }
         }
+    }
 
-        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
-        final ConfigMap configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
-        if (configMap != null) {
-            client.configMaps().inNamespace(client.getNamespace()).delete(configMap);
-        }
-        client.configMaps().inNamespace(client.getNamespace()).withName("customer-offer-openapi").delete();
+    private void deleteIntegration() {
+        final NamespacedKubernetesClient client = mockServer.getClient();
 
         final String integrationName = SERVICE_DOMAIN_NAME + INTEGRATION_SUFFIX;
         ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
@@ -148,517 +808,51 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         if (integration != null) {
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(integration);
         }
+    }
 
-        final KubernetesResourceList<ServiceDomain> sdList = client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).list();
-        if (sdList != null && sdList.getItems() != null && !sdList.getItems().isEmpty()) {
-            for (ServiceDomain sd : sdList.getItems()) {
-                client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sd);
-                await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sd.getMetadata().getName()).get() == null);
-            }
-        }
+    private void deleteIntegrationConfigMap() {
+        final NamespacedKubernetesClient client = mockServer.getClient();
 
-        ServiceDomainCluster fetchedCluster = client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if (fetchedCluster != null) {
-            client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(fetchedCluster);
-        }
-
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        if (kafka != null) {
-            client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafka);
+        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
+        final ConfigMap configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
+        if (configMap != null) {
+            client.configMaps().inNamespace(client.getNamespace()).delete(configMap);
         }
     }
 
-    @Test
-    public void addServiceDomainTest() {
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
+    private void deleteOpenAPIConfigMap() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get() != null);
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
-        assertNotNull(deployment);
-
-        List<OwnerReference> ownerReferences = deployment.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        OwnerReference ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName).get() != null);
-        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
-        assertNotNull(service);
-
-        ownerReferences = service.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        //Test Kafka Broker data
-        await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
-        final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker();
-        assertNotNull(kafkaBrokerUrl);
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() != null);
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertNotNull(integration);
-
-        ownerReferences = integration.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
-        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertNotNull(kafkaTopic);
-
-        ownerReferences = kafkaTopic.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
-                .inNamespace(sdNamespace)
-                .withName(sdName)
-                .get().getStatus().isReady());
-        await().atMost(2, MINUTES).until(() -> {
-            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
-                    .inNamespace(sdNamespace)
-                    .withName(sdName)
-                    .get();
-
-            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
-        });
+        final Resource<ConfigMap> configMapResource = client.configMaps().inNamespace(client.getNamespace()).withName("customer-offer-openapi");
+        if(configMapResource != null) {
+           configMapResource.delete();
+        }
     }
 
-    @Test
-    public void updateServiceDomainNoExposeTest() {
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
+    private void deleteKafkaTopic() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get() != null);
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
-        assertNotNull(deployment);
-
-        List<OwnerReference> ownerReferences = deployment.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        OwnerReference ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName).get() != null);
-        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
-        assertNotNull(service);
-
-        ownerReferences = service.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        //Test Kafka Broker data
-        await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
-        final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker();
-        assertNotNull(kafkaBrokerUrl);
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() != null);
-        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertNotNull(integration);
-
-        ownerReferences = integration.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
-        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertNotNull(kafkaTopic);
-
-        ownerReferences = kafkaTopic.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
-                .inNamespace(sdNamespace)
-                .withName(sdName)
-                .get().getStatus().isReady());
-        await().atMost(2, MINUTES).until(() -> {
-            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
-                    .inNamespace(sdNamespace)
-                    .withName(sdName)
-                    .get();
-
-            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
-        });
-
-        sd.getSpec().setExpose(null);
-        client.resources(ServiceDomain.class).inNamespace(sdNamespace).replace(sd);
-
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() == null);
-        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertNull(integration);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
-                .inNamespace(sdNamespace)
-                .withName(sdName)
-                .get().getStatus().isReady());
-        await().atMost(2, MINUTES).until(() -> {
-            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
-                    .inNamespace(sdNamespace)
-                    .withName(sdName)
-                    .get();
-
-            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY);
-        });
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME + "-topic").get();
+        if (kafkaTopic != null) {
+            client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafkaTopic);
+        }
     }
 
-    @Test
-    public void addServiceDomainWithNoClusterTest() {
+    private void deleteService() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
-
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-        client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        await().atMost(2, MINUTES).until(() -> !client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(sdName).get().getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY));
+        Service service = client.services().inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
+        if (service != null) {
+            client.resources(Service.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(service);
+        }
     }
 
-    @Test
-    public void addServiceDomainWithNoKafkaBrokerUrlTest() {
+    private void deleteDeployment() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).delete();
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
-
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
-        client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafka);
-        await().atMost(2, MINUTES).until(() -> client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() == null);
-
-        ServiceDomainCluster desiredCluster = createServiceDomainCluster();
-        final String sdcNamespace = desiredCluster.getMetadata().getNamespace();
-
-        client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).create(desiredCluster);
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomainCluster.class).inNamespace(sdcNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get() != null);
-
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-
-        client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        await().atMost(2, MINUTES).until(() -> !client.resources(ServiceDomain.class).inNamespace(sdNamespace).withName(sdName).get().getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY));
-    }
-
-    @Test
-    public void addServiceDomainWithoutExposeHttpTest() {
-        ServiceDomain sd = createServiceDomain(SERVICE_DOMAIN_NAME, false);
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-        final NamespacedKubernetesClient client = mockServer.getClient();
-
-        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        //Test deployment data
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(deployment);
-
-        List<OwnerReference> ownerReferences = deployment.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        OwnerReference ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        //Test Service data
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        final Service service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(service);
-
-        ownerReferences = service.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        //Test Kafka Broker data
-        await().atMost(20, SECONDS).until(() -> isServiceDomainClusterStatusUpdatedWithKafkaBrokerUrl(SERVICE_DOMAIN_CLUSTER_NAME));
-        final String kafkaBrokerUrl = client.resources(ServiceDomainCluster.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_CLUSTER_NAME).get().getStatus().getKafkaBroker();
-        assertNotNull(kafkaBrokerUrl);
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertNull(integration);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertNotNull(kafkaTopic);
-
-        ownerReferences = kafkaTopic.getMetadata().getOwnerReferences();
-        assertNotNull(ownerReferences);
-        assertFalse(ownerReferences.isEmpty());
-
-        ownerReference = ownerReferences.get(0);
-        assertNotNull(ownerReference);
-        assertEquals(sd.getMetadata().getName(), ownerReference.getName());
-        assertEquals(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND, ownerReference.getKind());
-        assertEquals(MercuryConstants.API_VERSION, ownerReference.getApiVersion());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
-                .inNamespace(sdNamespace)
-                .withName(sdName)
-                .get().getStatus().isReady());
-        await().atMost(2, MINUTES).until(() -> {
-            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
-                    .inNamespace(sdNamespace)
-                    .withName(sdName)
-                    .get();
-
-            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY);
-        });
-    }
-
-    @Test
-    public void addMultipleServiceDomainTest() {
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-        final NamespacedKubernetesClient client = mockServer.getClient();
-
-        client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        Deployment sdDeployment = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(sdDeployment);
-
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-        Service service = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get();
-        assertNotNull(service);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + "-topic").get() != null);
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + "-topic").get();
-        assertNotNull(kafkaTopic);
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() != null);
-        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertNotNull(integration);
-
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
-        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
-                .inNamespace(sdNamespace)
-                .withName(sdName)
-                .get().getStatus().isReady());
-        await().atMost(2, MINUTES).until(() -> {
-            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
-                    .inNamespace(sdNamespace)
-                    .withName(sdName)
-                    .get();
-
-            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
-        });
-
-        sd = createServiceDomain(sdName + 2);
-        final String integrationName2 = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        final String sdName2 = sd.getMetadata().getName();
-        client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(sdName2).get() != null);
-        sdDeployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName2).get();
-        assertNotNull(sdDeployment);
-
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(sdName2).get() != null);
-        service = client.services().inNamespace(sdNamespace).withName(sdName2).get();
-        assertNotNull(service);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME + 2 + "-topic").get() != null);
-        kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName2 + "-topic").get();
-        assertNotNull(kafkaTopic);
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName2 + "-topic").replace(kafkaTopic);
-
-        //Test Integration data
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).get() != null);
-        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).get();
-        assertNotNull(integration);
-
-        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
-        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName2).replace(integration);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(ServiceDomain.class)
-                .inNamespace(sdNamespace)
-                .withName(sdName2)
-                .get().getStatus().isReady());
-        await().atMost(2, MINUTES).until(() -> {
-            final ServiceDomain serviceDomain = client.resources(ServiceDomain.class)
-                    .inNamespace(sdNamespace)
-                    .withName(sdName2)
-                    .get();
-
-            return serviceDomain.getStatus().isSpecificConditionReady(CONDITION_SERVICE_DOMAIN_CLUSTER_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_KAFKA_TOPIC_READY) &&
-                    serviceDomain.getStatus().isSpecificConditionReady(CONDITION_INTEGRATION_READY);
-        });
-    }
-
-    @Test
-    public void watchDeletedObjectsTest() {
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-        final NamespacedKubernetesClient client = mockServer.getClient();
-
-        sd = client.resources(ServiceDomain.class).inNamespace(sdNamespace).create(sd);
-
-        Boolean deleted = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
-        assertTrue(deleted);
-
-        await().atMost(2, MINUTES).until(() -> client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-
-        deleted = client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
-        assertTrue(deleted);
-
-        await().atMost(2, MINUTES).until(() -> client.services().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).get() != null);
-
-        //Test Integration data
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        deleted = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).delete();
-        assertTrue(deleted);
-
-        await().atMost(2, MINUTES).until(() -> client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get() != null);
-
-        deleted = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").delete();
-        assertTrue(deleted);
-
-        await().atMost(2, MINUTES).until(() -> client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get() != null);
+        Deployment sdDeployment = client.apps().deployments().inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
+        if (sdDeployment != null) {
+            client.resources(Deployment.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sdDeployment);
+        }
     }
 }

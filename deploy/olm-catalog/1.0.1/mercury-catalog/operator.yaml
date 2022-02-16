@@ -1,5 +1,5 @@
 ---
-defaultChannel: preview
+defaultChannel: 1.0.x
 description: |2
 
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -116,6 +116,6 @@ schema: olm.bundle
 ---
 schema: olm.channel
 package: mercury-operator
-name: preview
+name: 1.0.x
 entries:
   - name: mercury-operator.1.0.1
