@@ -1,10 +1,7 @@
 package com.redhat.mercury.operator.model;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -36,7 +33,6 @@ public abstract class AbstractResourceStatus {
     public static final String STATUS_FALSE = "False";
     public static final String STATUS_TRUE = "True";
 
-
     private List<Condition> conditions = new ArrayList<>();
 
     public Condition getCondition(String key) {
@@ -66,13 +62,5 @@ public abstract class AbstractResourceStatus {
         //Add the new condition
         conditions.add(condition);
         return this;
-    }
-
-    public List<Condition> getConditions() {
-        return conditions;
-    }
-
-    public void setConditions(Collection<Condition> conditions) {
-        this.conditions = new ArrayList<>(conditions);
     }
 }

@@ -2,9 +2,8 @@ package com.redhat.mercury.operator.controller;
 
 import java.util.Optional;
 
-import javax.inject.Inject;
-
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.redhat.mercury.operator.model.KafkaStorageBuilder;
@@ -38,16 +37,16 @@ import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDI
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_EXCEPTION;
 import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_WAITING;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @WithKubernetesTestServer
 public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
-    @Inject
-    ServiceDomainClusterController controller;
+    @BeforeEach
+    public void beforeEach() {
+        mockServer.getKubernetesMockServer().clearExpectations();
+    }
 
     @AfterEach
     public void afterEach() {
@@ -60,24 +59,17 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                             .inNamespace(sdc.getMetadata().getNamespace())
                             .withName(sdc.getMetadata().getName())
                             .delete();
-                    await().atMost(2, MINUTES)
-                            .until(() -> client.resources(ServiceDomainCluster.class)
+                    assertThat(client.resources(ServiceDomainCluster.class)
                                     .inNamespace(sdc.getMetadata().getNamespace())
-                                    .withName(sdc.getMetadata().getName()).get() == null);
+                                    .withName(sdc.getMetadata().getName()).get()).isNull();
                 });
 
         client.resources(Kafka.class).inAnyNamespace().list()
                 .getItems().forEach(kafka ->
-                {
-                    client.resources(Kafka.class)
-                            .inNamespace(kafka.getMetadata().getNamespace())
-                            .withName(kafka.getMetadata().getName())
-                            .delete();
-                    await().atMost(2, MINUTES)
-                            .until(() -> client.resources(Kafka.class)
-                                    .inNamespace(kafka.getMetadata().getNamespace())
-                                    .withName(kafka.getMetadata().getName()).get() == null);
-                });
+                        client.resources(Kafka.class)
+                                .inNamespace(kafka.getMetadata().getNamespace())
+                                .withName(kafka.getMetadata().getName())
+                                .delete());
     }
 
     @Test
@@ -85,7 +77,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         ServiceDomainCluster sdc = buildDefaultSDC();
         sdc.getSpec().getKafka()
                 .setStorage(new KafkaStorageBuilder().withType("invalid type").build());
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getScheduleDelay()).isEmpty();
@@ -112,7 +104,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                 .andReturn(500, new KubernetesClientException(exceptionMessage))
                 .once();
 
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -132,7 +124,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
     @Test
     void testCreateDefaultKafka() {
         ServiceDomainCluster sdc = buildDefaultSDC();
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -161,7 +153,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdc")
                 .andReturn(200, current).once();
 
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -183,7 +175,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         ServiceDomainCluster sdc = buildDefaultSDC();
 
         // Create Kafka
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -200,7 +192,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertEphemeralKafka(kafka);
 
         // Update Kafka
-        update = controller.reconcile(sdc, null);
+        update = serviceDomainClusterController.reconcile(sdc, null);
         assertThat(update.isNoUpdate()).isTrue();
     }
 
@@ -209,7 +201,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         ServiceDomainCluster sdc = buildDefaultSDC();
 
         // Create Kafka
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -239,9 +231,9 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                                 .build())
                 .build());
         mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdc")
-                .andReturn(200, kafka).times(2);
-        update = controller.reconcile(sdc, null);
-        assertThat(update.getResource().getStatus().isReady()).isTrue();
+                .andReturn(200, kafka).always();
+        update = serviceDomainClusterController.reconcile(sdc, null);
+        assertThat(update.getResource().getStatus().isReady()).isFalse();
         assertThat(update.getResource().getStatus().getKafkaBroker()).isEqualTo("my-kafka.example.com:9092");
 
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_BROKER_READY);
@@ -249,6 +241,9 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getLastTransitionTime()).isNotBlank();
         assertThat(condition.getReason()).isNull();
         assertThat(condition.getMessage()).isNull();
+
+        update = serviceDomainClusterController.reconcile(sdc, null);
+        assertThat(update.getResource().getStatus().isReady()).isTrue();
     }
 
     @Test
@@ -268,7 +263,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                         .endKafka()
                         .build())
                 .build();
-        UpdateControl<ServiceDomainCluster> update = controller.reconcile(sdc, null);
+        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();

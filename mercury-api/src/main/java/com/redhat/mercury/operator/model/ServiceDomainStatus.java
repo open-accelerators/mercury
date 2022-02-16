@@ -24,14 +24,21 @@ import lombok.experimental.Accessors;
 })
 public class ServiceDomainStatus extends AbstractResourceStatus {
 
-    public static final String CONDITION_SERVICE_DOMAIN_CLUSTER_READY = "ServiceDomainClusterReady";
     public static final String REASON_SDC = "ServiceDomainCluster";
+    public static final String REASON_INTEGRATION = "Integration";
+    public static final String REASON_INTEGRATION_WAITING = "WaitingForIntegration";
+    public static final String REASON_KAFKA_TOPIC_WAITING = "WaitingForKafkaTopic";
+
     public static final String MESSAGE_SDC_NOT_FOUND = "Service Domain Cluster not found";
     public static final String MESSAGE_SDC_NOT_READY = "Service Domain Cluster is not ready";
+    public static final String MESSAGE_INTEGRATION_NOT_READY = "Integration not ready";
+    public static final String MESSAGE_KAFKA_TOPIC_NOT_READY = "Kafka Topic not ready";
+    public static final String MESSAGE_CONFIG_MAP_MISSING = "config map is missing";
+    public static final String MESSAGE_CONFIG_MAP_KEY_MISSING = "config map key with the direct routes is missing";
+
+    public static final String CONDITION_SERVICE_DOMAIN_CLUSTER_READY = "ServiceDomainClusterReady";
     public static final String CONDITION_KAFKA_TOPIC_READY = "KafkaTopicReady";
     public static final String CONDITION_INTEGRATION_READY = "IntegrationReady";
-    public static final String MESSAGE_INTEGRATION_NOT_READY = "Integration not ready";
-    public static final String REASON_INTEGRATION = "Integration";
 
     private String kafkaTopic;
     private String kafkaUser;

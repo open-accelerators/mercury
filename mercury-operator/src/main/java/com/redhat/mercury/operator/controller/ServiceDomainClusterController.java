@@ -68,12 +68,24 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
 
     @Override
     public UpdateControl<ServiceDomainCluster> reconcile(ServiceDomainCluster sdc, Context context) {
+        setStatusCondition(sdc, CONDITION_READY, Boolean.FALSE);
+
         try {
             UpdateControl<ServiceDomainCluster> control = createOrUpdateKafkaBroker(sdc);
             if (control.isUpdateStatus()) {
                 return control;
             }
-            return updateStatusWithKafkaBrokerUrl(sdc);
+
+            control = updateStatusWithKafkaBrokerUrl(sdc);
+            if (control.isUpdateStatus()) {
+                return control;
+            }
+
+            if(areAllConditionsReady(sdc)){
+                return updateStatusWithCondition(sdc, buildReadyCondition(CONDITION_READY));
+            }
+
+            return UpdateControl.noUpdate();
         } catch (Exception e) {
             LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
             return updateStatusWithCondition(sdc, new ConditionBuilder()
@@ -114,7 +126,7 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     }
 
     private boolean isKafkaBrokerReady(Kafka kafka) {
-        if (kafka == null || kafka.getStatus() == null) {
+        if (kafka == null || kafka.getStatus() == null || kafka.getStatus().getConditions() == null) {
             return false;
         }
         Optional<io.strimzi.api.kafka.model.status.Condition> condition = kafka.getStatus()
@@ -146,13 +158,6 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
         }
         LOGGER.debug("Kafka {} was not updated", sdcName);
         return UpdateControl.noUpdate();
-    }
-
-    private UpdateControl<ServiceDomainCluster> updateStatusWithReadyCondition(ServiceDomainCluster resource, String condition) {
-        return updateStatusWithCondition(resource, new ConditionBuilder()
-                .withType(condition)
-                .withStatus(STATUS_TRUE)
-                .build());
     }
 
     protected Kafka createKafkaObj(ServiceDomainCluster sdc) {

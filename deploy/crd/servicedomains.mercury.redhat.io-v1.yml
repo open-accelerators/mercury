@@ -120,9 +120,9 @@ spec:
             type: object
           status:
             properties:
-              kafkaUser:
-                type: string
               kafkaTopic:
+                type: string
+              kafkaUser:
                 type: string
               conditions:
                 items:
