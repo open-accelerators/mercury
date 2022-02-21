@@ -2,6 +2,7 @@ package com.redhat.mercury.myco.services.impl;
 
 import javax.inject.Inject;
 
+import org.graalvm.collections.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,10 +28,10 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCOServiceImpl.class);
 
-    private int customerOfferId = 1;
-
     @Inject
     CustomerOfferNotificationService notificationService;
+
+    @Inject
     CustomerOfferService svc;
 
     @Override
@@ -40,23 +41,18 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
     @Override
     public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
-        Integer id = getId();
         Any customerReference = request
                 .getInitiateCustomerOfferProcedureRequest()
                 .getCustomerOfferProcedure()
                 .getCustomerReference();
-        final CustomerOfferProcedure procedure = CustomerOfferProcedure.newBuilder()
-                .setCustomerReference(customerReference)
-                .setCustomerOfferProcessingTask("INITIATED")
-                .build();
-        svc.updateProcedure(id, procedure);
         LOGGER.info("Initiate received for {}", customerReference);
-        return notificationService.onCustomerOfferInitiated(id.toString())
+        Pair<Integer, CustomerOfferProcedure> procedure = svc.initiateProcedure(customerReference);
+        return notificationService.onCustomerOfferInitiated(procedure.getLeft().toString())
                 .onItem()
                 .transform(e -> InitiateCustomerOfferProcedureResponse.newBuilder()
                         .setCustomerOfferProcedure(InitiateCustomerOfferProcedureResponseCustomerOfferProcedure.newBuilder()
-                                .setCustomerOfferProcessingTask(id.toString())
-                                .setCustomerOfferProcessingTaskResult(procedure.getCustomerOfferProcessingTask())
+                                .setCustomerOfferProcessingTask(procedure.getLeft().toString())
+                                .setCustomerOfferProcessingTaskResult(procedure.getRight().getCustomerOfferProcessingTask())
                                 .build())
                         .build());
     }
@@ -75,24 +71,15 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
         Integer id = Integer.valueOf(request.getCustomerofferId());
         LOGGER.info("Update received for {}", id);
-        CustomerOfferProcedure procedure = svc.getProcedure(id);
+        CustomerOfferProcedure procedure = svc.updateProcedure(id);
         if (procedure == null) {
             return Uni.createFrom().nullItem();
         }
-        CustomerOfferProcedure updated = CustomerOfferProcedure.newBuilder(procedure)
-                .setCustomerOfferProcessingTask("COMPLETED")
-                .build();
-        svc.updateProcedure(id, updated);
         return notificationService.onCustomerOfferCompleted(id.toString())
                 .onItem()
                 .transform(e -> CustomerOfferProcedure.newBuilder()
                         .setCustomerOfferProcessingTask(id.toString())
-                        .setCustomerOfferProcessingTaskResult(updated.getCustomerOfferProcessingTask())
+                        .setCustomerOfferProcessingTaskResult(procedure.getCustomerOfferProcessingTask())
                         .build());
     }
-
-    private synchronized Integer getId() {
-        return customerOfferId++;
-    }
-
 }
