@@ -2,11 +2,11 @@ package com.redhat.mercury.myco.services.impl;
 
 import javax.inject.Inject;
 
-import org.graalvm.collections.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.StringValue;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 import com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.ExecuteCustomerOfferProcedureResponseOuterClass.ExecuteCustomerOfferProcedureResponse;
@@ -19,6 +19,7 @@ import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
+import com.redhat.mercury.myco.model.CustomerOfferState;
 
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
@@ -41,18 +42,25 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
     @Override
     public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
-        Any customerReference = request
-                .getInitiateCustomerOfferProcedureRequest()
-                .getCustomerOfferProcedure()
-                .getCustomerReference();
+        String customerReference = null;
+        try {
+            customerReference = request
+                    .getInitiateCustomerOfferProcedureRequest()
+                    .getCustomerOfferProcedure()
+                    .getCustomerReference()
+                    .unpack(StringValue.class).getValue();
+        } catch (InvalidProtocolBufferException e) {
+            LOGGER.error("Invalid customerReference", e);
+            return Uni.createFrom().failure(e);
+        }
         LOGGER.info("Initiate received for {}", customerReference);
-        Pair<Integer, CustomerOfferProcedure> procedure = svc.initiateProcedure(customerReference);
-        return notificationService.onCustomerOfferInitiated(procedure.getLeft().toString())
+        CustomerOfferState procedure = svc.initiateProcedure(customerReference);
+        return notificationService.onCustomerOfferInitiated(procedure.getId().toString())
                 .onItem()
                 .transform(e -> InitiateCustomerOfferProcedureResponse.newBuilder()
                         .setCustomerOfferProcedure(InitiateCustomerOfferProcedureResponseCustomerOfferProcedure.newBuilder()
-                                .setCustomerOfferProcessingTask(procedure.getLeft().toString())
-                                .setCustomerOfferProcessingTaskResult(procedure.getRight().getCustomerOfferProcessingTask())
+                                .setCustomerOfferProcessingTask(procedure.getId().toString())
+                                .setCustomerOfferProcessingTaskResult(procedure.getStatus())
                                 .build())
                         .build());
     }
@@ -71,7 +79,7 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
         Integer id = Integer.valueOf(request.getCustomerofferId());
         LOGGER.info("Update received for {}", id);
-        CustomerOfferProcedure procedure = svc.updateProcedure(id);
+        CustomerOfferState procedure = svc.updateProcedure(id);
         if (procedure == null) {
             return Uni.createFrom().nullItem();
         }
@@ -79,7 +87,7 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
                 .onItem()
                 .transform(e -> CustomerOfferProcedure.newBuilder()
                         .setCustomerOfferProcessingTask(id.toString())
-                        .setCustomerOfferProcessingTaskResult(procedure.getCustomerOfferProcessingTask())
+                        .setCustomerOfferProcessingTaskResult(procedure.getStatus())
                         .build());
     }
 }

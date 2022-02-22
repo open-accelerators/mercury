@@ -6,49 +6,35 @@ import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.graalvm.collections.Pair;
-
-import com.google.protobuf.Any;
-import com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
 import com.redhat.mercury.myco.model.CustomerOfferState;
 
 @ApplicationScoped
 public class CustomerOfferService {
 
     private int customerOfferId = 1;
-    private static final Map<Integer, CustomerOfferProcedure> procedures = new HashMap<>();
     private static final Map<Integer, CustomerOfferState> states = new HashMap<>();
 
-    public Map<Integer, CustomerOfferProcedure> getProcedures() {
-        return procedures;
-    }
+    public static final String INITIATED_STATUS = "INITIATED";
+    public static final String COMPLETED_STATUS = "COMPLETED";
 
     public Collection<CustomerOfferState> getStates() {
         return states.values();
     }
 
-    public Pair<Integer, CustomerOfferProcedure> initiateProcedure(Any customerReference) {
+    public CustomerOfferState initiateProcedure(String customerReference) {
         Integer id = getId();
-        states.put(id, new CustomerOfferState().setCustomerReference(customerReference.getTypeUrl()).setStatus("INITIATED"));
-        final CustomerOfferProcedure procedure = CustomerOfferProcedure.newBuilder()
-                .setCustomerReference(customerReference)
-                .setCustomerOfferProcessingTask("INITIATED")
-                .build();
-        procedures.put(id, procedure);
-        return Pair.create(id, procedure);
+        CustomerOfferState current = new CustomerOfferState().setId(id).setCustomerReference(customerReference).setStatus(INITIATED_STATUS);
+        states.put(id, current);
+        return current;
     }
 
-    public CustomerOfferProcedure updateProcedure(Integer id) {
-        CustomerOfferProcedure procedure = procedures.get(id);
+    public CustomerOfferState updateProcedure(Integer id) {
+        CustomerOfferState procedure = states.get(id);
         if (procedure == null) {
             return null;
         }
-        states.get(id).setStatus("COMPLETED");
-        CustomerOfferProcedure updated = CustomerOfferProcedure.newBuilder(procedure)
-                .setCustomerOfferProcessingTask("COMPLETED")
-                .build();
-        procedures.put(id, updated);
-        return updated;
+        states.get(id).setStatus(COMPLETED_STATUS);
+        return procedure;
     }
 
     private synchronized Integer getId() {
