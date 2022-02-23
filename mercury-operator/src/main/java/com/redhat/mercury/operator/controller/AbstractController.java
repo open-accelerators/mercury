@@ -1,6 +1,5 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -11,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.mercury.operator.model.AbstractResourceStatus;
-import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
@@ -26,6 +24,9 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
+import static com.redhat.mercury.operator.utils.ResourceUtils.now;
+import static com.redhat.mercury.operator.utils.ResourceUtils.toStatus;
 import static java.util.Collections.EMPTY_SET;
 
 public abstract class AbstractController<K, E extends AbstractResourceStatus, T extends CustomResource<K, E>> {
@@ -52,12 +53,25 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         setStatusCondition(resource, type, null, null, status);
     }
 
-    protected void removeStatusCondition(T resource, String type) {
+    protected UpdateControl<T> removeStatusCondition(T resource, String type) {
+        final String resourceClassName = resource.getClass().getSimpleName();
+
         if (resource.getStatus() == null) {
-            return;
+            return UpdateControl.noUpdate();
         }
 
         resource.getStatus().removeCondition(type);
+
+        LOGGER.debug("{} {} Status updated for condition {}.", resourceClassName, resource.getMetadata().getName(), type);
+        return UpdateControl.updateStatus(resource);
+    }
+
+    protected boolean areAllConditionsReady(T resource){
+        return resource.getStatus()
+                .getConditions()
+                .stream()
+                .filter(c -> !c.getType().equals(CONDITION_READY))
+                .allMatch(c -> c.getStatus().equals(STATUS_TRUE));
     }
 
     protected void setStatusCondition(T resource, String type, String reason, String message, Boolean status) {
@@ -65,7 +79,7 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
                 .withType(type)
                 .withMessage(message)
                 .withReason(reason)
-                .withStatus(ResourceUtils.capitalize(status))
+                .withStatus(toStatus(status))
                 .build());
     }
 
@@ -75,37 +89,59 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         }
         Condition current = resource.getStatus().getCondition(condition.getType());
         if (current != null) {
-            condition.setLastTransitionTime(ResourceUtils.now());
+            condition.setLastTransitionTime(now());
         }
         if (!condition.equals(current)) {
-            condition.setLastTransitionTime(ResourceUtils.now());
+            condition.setLastTransitionTime(now());
             resource.getStatus().setCondition(condition);
             LOGGER.debug("Set status condition for {} to {}", resource.getMetadata().getName(), condition);
         }
     }
 
-    protected UpdateControl<T> updateStatus(T resource) {
-        if (resource.getStatus().getCondition(CONDITION_READY) == null) {
-            setStatusCondition(resource, CONDITION_READY, Boolean.FALSE);
-        }
+    protected UpdateControl<T> updateStatusWithReadyCondition(T resource, String condition) {
+        return updateStatusWithCondition(resource, new ConditionBuilder()
+                .withType(condition)
+                .withStatus(STATUS_TRUE)
+                .build());
+    }
 
-        final Class<? extends CustomResource> aClass = resource.getClass();
+    protected UpdateControl<T> updateStatusWithCondition(T resource, Condition condition) {
+        final String resourceClassName = resource.getClass().getSimpleName();
 
-        T current = (T) client.resources(aClass)
-                .inNamespace(resource.getMetadata().getNamespace())
-                .withName(resource.getMetadata().getName())
-                .get();
+        condition.setLastTransitionTime(now());
+        Condition current = resource.getStatus().getCondition(condition.getType());
 
-        if (current == null) {
+        if (areSameConditions(current, condition)) {
+            LOGGER.debug("{} {} Status not updated for condition {}.", resourceClassName, resource.getMetadata().getName(), condition.getType());
             return UpdateControl.noUpdate();
         }
+        resource.getStatus().setCondition(condition);
 
-        E currentStatus = current.getStatus();
-        if (Objects.equals(currentStatus, resource.getStatus())) {
-            return UpdateControl.noUpdate();
-        }
+        LOGGER.debug("{} {} Status updated for condition {}.", resourceClassName, resource.getMetadata().getName(), condition.getType());
+        return UpdateControl.updateStatus(resource);
+    }
 
-        current.setStatus(resource.getStatus());
-        return UpdateControl.updateStatus(current);
+    // The only ignored field when comparing two conditions is the
+    // last transition time
+    protected boolean areSameConditions(Condition c1, Condition c2) {
+        return ((c1 == null && c2 == null) || (c1 != null && c2 != null)) &&
+                Objects.equals(c1.getType(), c2.getType()) &&
+                Objects.equals(c1.getStatus(), c2.getStatus()) &&
+                Objects.equals(c1.getReason(), c2.getReason()) &&
+                Objects.equals(c1.getMessage(), c2.getMessage());
+    }
+
+    protected Condition buildReadyCondition(String condition) {
+        return buildCondition(condition, Boolean.TRUE, null, null);
+    }
+
+    protected Condition buildCondition(String condition, boolean status, String reason, String message) {
+        return new ConditionBuilder()
+                .withType(condition)
+                .withStatus(toStatus(status))
+                .withReason(reason)
+                .withMessage(message)
+                .withLastTransitionTime(now())
+                .build();
     }
 }

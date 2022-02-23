@@ -46,9 +46,13 @@ spec:
                     lastTransitionTime:
                       type: string
                     observedGeneration:
-                      type: integer
+                      type: number
                     type:
                       type: string
+                    additionalProperties:
+                      additionalProperties:
+                        type: string
+                      type: object
                     message:
                       type: string
                   type: object

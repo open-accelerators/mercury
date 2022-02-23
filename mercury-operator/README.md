@@ -1,13 +1,15 @@
 # Mercury Operator (Beta)
 ## Prerequisites:
 
-- Kafka operator installed (minimum strimzi version 0.26.0)
-- Camel-K operator installed (version 1.8.0)
-- A namespace named mercury should be created if it doesn't already exist.
+- Kafka operator installed (minimum Strimzi version 0.26.x or 0.27.x)
+- Camel-K operator installed (version 1.8.x)
 
 ## Preparation
 
-Create the following configuration resources that will be used by the operator:
+### Common
+
+Create the following configuration resources that will be used by the operator (make sure
+they are created in the same namespace as the operator):
 
 - A ConfigMap per service domain that exposes a http route
   (with the name integration-<service-domain-name>-http e.g. integration-customer-offer-http)
@@ -24,22 +26,47 @@ kubectl apply -f ../deploy/config/integrations
 kubectl apply -f ../deploy/config/openapi
 ```
 
-- A configMap containing a GitHub user/token with permissions to READ packages because our
-integrations depend on custom maven dependencies published on GitHub Packages.
+The following resources must be created where the integrations are going to be built.
+
+- A configMap containing a Maven settings, before doing so, export the user/token 
+with permissions to READ packages because our integrations depend on custom Maven 
+dependencies published on GitHub Packages.
 
 ```shell
-kubectl create cm mercury-mvn-settings --from-literal repo.url=https://maven.pkg.github.com/open-accelerators/mercury --from-literal repo.pass=****** --from-literal repo.user=ruromero -n mercury
+export GITHUB_USER=my-user
+export GITHUB_TOKEN=my-github-token-with-read-packages-permission
+SETTINGS=$(sed -e "s/github_user/$GITHUB_USER/" -e "s/github_password/$GITHUB_TOKEN/" ../deploy/config/camel-k/mercury-mvn-settings.xml) && kubectl create cm mercury-mvn-settings --from-literal=settings.xml=$SETTINGS
 ```
 
-- An Integration Platform pointing to this configMap
+- An Integration Platform pointing to this configMap.
+
+### On Minikube
+
+You will require the `registry` addon and then create the IntegrationPlatform
+pointing to the local registry. Check the [Camel-K documentation](https://camel.apache.org/camel-k/1.8.x/installation/registry/registry.html)
+to set up a different registry
+
+First extract the registry address:
 
 ```shell
-kubectl apply -f ../deploy/config/camel-k/
+export REGISTRY_ADDRESS=$(kubectl -n kube-system get service registry -o jsonpath='{.spec.clusterIP}')
+```
+Then use the existing integration platform definition with your internal registry configuration:
+
+```shell
+faq -f yaml -o yaml --args $REGISTRY_ADDRESS '.spec.build.registry = {address: $ARGS.positional[0], insecure: true}' ../deploy/config/camel-k/integration-platform.yaml | kubectl create -f -
+```
+
+### On Openshift
+Just create the integration platform:
+
+```shell
+kubectl apply -f ../deploy/config/camel-k/integration-platform.yaml
 ```
 
 ## Simple Installation
 
-The operator will be created in the mercury namespace.
+The operator will be created in the mercury namespace so make sure the `mercury` namespace exists.
 
 To install the operator run:
 
@@ -53,7 +80,7 @@ We have created a Catalog containing the Mercury Operator. You can install this 
 Operator Lifecycle Manager and then just create a Subscription via the user interface.
 
 ```shell
-kubectl apply -n olm -f ../deploy/olm-catalog/<version>/catalog-source.yaml
+kubectl apply -n olm -f ../deploy/olm-catalog/1.0.1/catalog-source.yaml
 ```
 
 ## Functionality:
@@ -111,24 +138,4 @@ spec:
 To create a service domain run the following command
 ```shell
 kubectl create -f customer-offer-service-domain.yaml
-```
-
-When exposing a http endpoint for a SD, it is mandatory that a config map with the OpenApi spec
-exists. The expected name is `<service-domain-name-in-lower-case-seperated-by-hyphen>-openapi`. It can be created
-as follows:
-
-```shell
-kubectl create configmap customer-credit-rating-openapi --from-file=CustomerCreditRating.json
-```
-
-For the Camel-K routes configuration it is required to also create a config map containing the direct routes
-from the generated OpenAPI to the GRPC service. This route definitions are available in the
-[integrations](../integrations/camel-k) folder.
-
-They include a mandatory property called `directs.yaml` with the routes definitions.
-
-An example of how to create a config map:
-
-```shell
-kubectl create configmap integration-customer-offer-http --from-file=directs.yaml=customer-offer-direct.yaml
 ```
