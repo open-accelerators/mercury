@@ -78,11 +78,12 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
 
             control = updateStatusWithKafkaBrokerUrl(sdc);
             if (control.isUpdateStatus()) {
-                return control;
-            }
 
-            if(areAllConditionsReady(sdc)){
-                return updateStatusWithCondition(sdc, buildReadyCondition(CONDITION_READY));
+                if(areAllConditionsReady(sdc)){
+                    control = updateStatusWithCondition(sdc, buildReadyCondition(CONDITION_READY));
+                }
+
+                return control;
             }
 
             return UpdateControl.noUpdate();
