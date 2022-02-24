@@ -233,7 +233,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdc")
                 .andReturn(200, kafka).always();
         update = serviceDomainClusterController.reconcile(sdc, null);
-        assertThat(update.getResource().getStatus().isReady()).isFalse();
+        assertThat(update.getResource().getStatus().isReady()).isTrue();
         assertThat(update.getResource().getStatus().getKafkaBroker()).isEqualTo("my-kafka.example.com:9092");
 
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_BROKER_READY);
@@ -241,9 +241,6 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getLastTransitionTime()).isNotBlank();
         assertThat(condition.getReason()).isNull();
         assertThat(condition.getMessage()).isNull();
-
-        update = serviceDomainClusterController.reconcile(sdc, null);
-        assertThat(update.getResource().getStatus().isReady()).isTrue();
     }
 
     @Test
