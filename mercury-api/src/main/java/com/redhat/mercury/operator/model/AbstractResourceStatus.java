@@ -29,6 +29,9 @@ public abstract class AbstractResourceStatus {
 
     public static final String REASON_SUCCESS = "Success";
     public static final String REASON_FAILED = "Failed";
+    public static final String REASON_WAITING = "Waiting";
+
+    public static final String MESSAGE_WAITING = "Waiting for other resources to become Ready";
 
     public static final String STATUS_FALSE = "False";
     public static final String STATUS_TRUE = "True";

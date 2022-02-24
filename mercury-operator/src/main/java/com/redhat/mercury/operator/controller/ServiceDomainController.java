@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
 import com.redhat.mercury.operator.utils.ResourceUtils;
 
+import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -52,8 +54,11 @@ import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
@@ -134,10 +139,12 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
     @Override
     public UpdateControl<ServiceDomain> reconcile(ServiceDomain sd, Context context) {
-        setStatusCondition(sd, CONDITION_READY, Boolean.FALSE);
-
-        UpdateControl<ServiceDomain> control;
-
+        setStatusCondition(sd, new ConditionBuilder()
+                .withType(CONDITION_READY)
+                .withStatus(STATUS_FALSE)
+                .withReason(REASON_WAITING)
+                .withMessage(MESSAGE_WAITING)
+                .build());
         String sdName = sd.getMetadata().getName();
         final String sdcName = sd.getSpec().getServiceDomainCluster();
         ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).inNamespace(sd.getMetadata().getNamespace()).withName(sdcName).get();
@@ -159,13 +166,13 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                     .withStatus(STATUS_FALSE)
                     .withReason(REASON_SDC)
                     .withMessage(sdcName + " " + MESSAGE_SDC_NOT_READY)
-                    .build());
+                    .build())
+                    .rescheduleAfter(10, TimeUnit.SECONDS);
         }
-
-        control = updateStatusWithReadyCondition(sd, CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
-        if(control.isUpdateStatus()){
-            return control;
-        }
+        setStatusCondition(sd, new ConditionBuilder()
+                .withType(CONDITION_SERVICE_DOMAIN_CLUSTER_READY)
+                .withStatus(STATUS_TRUE)
+                .build());
 
         try {
             createOrUpdateDeployment(sd, sdc.getStatus().getKafkaBroker());
@@ -207,31 +214,26 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                             .build());
                 }
 
-                control = createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
-                if (control.isUpdateStatus()) {
-                    return control;
+                Condition integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
+                setStatusCondition(sd, integrationCondition);
+                if (STATUS_FALSE.equals(integrationCondition.getStatus())) {
+                    return updateStatus(sd);
                 }
-            } else if (sd.getSpec().getExpose() == null || !sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
-                control = deleteCamelHttpIntegration(sd);
-                if (control.isUpdateStatus()) {
-                    return control;
-                }
+            } else {
+                deleteCamelHttpIntegration(sd);
+                removeStatusCondition(sd, CONDITION_INTEGRATION_READY);
             }
 
-            control = createKafkaTopic(sd, sdc.getMetadata().getNamespace());
-            if (control.isUpdateStatus()) {
-                return control;
+            Condition kafkaTopicCondition = createKafkaTopic(sd, sdc.getMetadata().getNamespace());
+            setStatusCondition(sd, kafkaTopicCondition);
+            if (kafkaTopicCondition != null && STATUS_FALSE.equals(kafkaTopicCondition.getStatus())) {
+                return updateStatus(sd);
             }
 
-            if(areAllConditionsReady(sd)){
-                control = updateStatusWithCondition(sd, buildReadyCondition(CONDITION_READY));
-
-                if (control.isUpdateStatus()) {
-                    return control;
-                }
+            if (areAllConditionsReady(sd)) {
+                return updateStatusWithReadyCondition(sd, CONDITION_READY);
             }
-
-            return UpdateControl.noUpdate();
+            return updateStatus(sd);
         } catch (Exception e) {
             LOGGER.error("{} service domain failed to be created/updated", sdName, e);
             return updateStatusWithCondition(sd, new ConditionBuilder()
@@ -243,7 +245,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         }
     }
 
-    private UpdateControl<ServiceDomain> deleteCamelHttpIntegration(ServiceDomain sd) {
+    private void deleteCamelHttpIntegration(ServiceDomain sd) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
 
         ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
@@ -256,13 +258,10 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
         if (integration != null) {
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).delete();
-            return removeStatusCondition(sd, CONDITION_INTEGRATION_READY);
         }
-
-        return UpdateControl.noUpdate();
     }
 
-    private UpdateControl<ServiceDomain> createOrUpdateCamelKHttpIntegration(ServiceDomain sd, ConfigMap configMap) {
+    private Condition createOrUpdateCamelKHttpIntegration(ServiceDomain sd, ConfigMap configMap) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
         String sdCamelRouteYaml = configMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
 
@@ -284,25 +283,30 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withName(integrationName)
                 .get();
 
-        if (current == null || !Objects.equals(current.getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY), expected.get().getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY))) {
+        if (current == null || !Objects.equals(
+                current.getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY),
+                expected.get().getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY))
+        ) {
             LOGGER.debug("Creating or replacing Integration {}", integrationName);
             client.genericKubernetesResources(resourceDefinitionContext)
                     .inNamespace(sd.getMetadata().getNamespace())
                     .createOrReplace(expected.get());
             LOGGER.debug("Created or replaced Integration {}", integrationName);
-            return updateStatusWithCondition(sd, new ConditionBuilder()
+        }
+
+        if (isIntegrationReady(current)) {
+            return new ConditionBuilder()
                     .withType(CONDITION_INTEGRATION_READY)
-                    .withStatus(STATUS_FALSE)
-                    .withReason(REASON_INTEGRATION_WAITING)
-                    .withMessage(MESSAGE_INTEGRATION_NOT_READY)
-                    .build());
+                    .withStatus(STATUS_TRUE)
+                    .build();
         }
 
-        if(isIntegrationReady(current)){
-            return updateStatusWithReadyCondition(sd, CONDITION_INTEGRATION_READY);
-        }
-
-        return UpdateControl.noUpdate();
+        return new ConditionBuilder()
+                .withType(CONDITION_INTEGRATION_READY)
+                .withStatus(STATUS_FALSE)
+                .withReason(REASON_INTEGRATION_WAITING)
+                .withMessage(MESSAGE_INTEGRATION_NOT_READY)
+                .build();
     }
 
     private boolean isIntegrationReady(GenericKubernetesResource current) {
@@ -352,7 +356,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         return yaml.dumpAsMap(data);
     }
 
-    private UpdateControl<ServiceDomain> createKafkaTopic(ServiceDomain sd, String sdcNamespace) {
+    private Condition createKafkaTopic(ServiceDomain sd, String sdcNamespace) {
         final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
 
         KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
@@ -381,20 +385,23 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
             LOGGER.debug("Create or replace KafkaTopic {}", kafkaTopicName);
             client.resources(KafkaTopic.class).inNamespace(sdcNamespace).create(desiredKafkaTopic);
             LOGGER.debug("Created or replaced KafkaTopic {}", kafkaTopicName);
-            return updateStatusWithCondition(sd, new ConditionBuilder()
+            return new ConditionBuilder()
                     .withType(CONDITION_KAFKA_TOPIC_READY)
                     .withStatus(STATUS_FALSE)
                     .withReason(REASON_KAFKA_TOPIC_WAITING)
                     .withMessage(MESSAGE_KAFKA_TOPIC_NOT_READY)
-                    .build());
+                    .build();
         }
 
         if (isKafkaTopicReady(kafkaTopic)) {
             sd.getStatus().setKafkaTopic(kafkaTopicName);
-            return updateStatusWithReadyCondition(sd, CONDITION_KAFKA_TOPIC_READY);
+            return new ConditionBuilder()
+                    .withType(CONDITION_KAFKA_TOPIC_READY)
+                    .withStatus(STATUS_TRUE)
+                    .build();
         }
 
-        return UpdateControl.noUpdate();
+        return null;
     }
 
     private boolean isKafkaTopicReady(KafkaTopic kafkaTopic) {

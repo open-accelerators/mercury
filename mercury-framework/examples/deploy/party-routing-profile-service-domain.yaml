@@ -1,7 +1,7 @@
 apiVersion: mercury.redhat.io/v1alpha1
 kind: ServiceDomain
 metadata:
-  name: party-routing-profile
+  name: example-party-routing-profile
   labels:
     service-domain: party-routing-profile
 spec:
