@@ -49,24 +49,17 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         });
     }
 
-    protected void setStatusCondition(T resource, String type, Boolean status) {
-        setStatusCondition(resource, type, null, null, status);
-    }
-
-    protected UpdateControl<T> removeStatusCondition(T resource, String type) {
+    protected boolean removeStatusCondition(T resource, String type) {
         final String resourceClassName = resource.getClass().getSimpleName();
-
         if (resource.getStatus() == null) {
-            return UpdateControl.noUpdate();
+            return false;
         }
-
         resource.getStatus().removeCondition(type);
-
         LOGGER.debug("{} {} Status updated for condition {}.", resourceClassName, resource.getMetadata().getName(), type);
-        return UpdateControl.updateStatus(resource);
+        return true;
     }
 
-    protected boolean areAllConditionsReady(T resource){
+    protected boolean areAllConditionsReady(T resource) {
         return resource.getStatus()
                 .getConditions()
                 .stream()
@@ -74,8 +67,12 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
                 .allMatch(c -> c.getStatus().equals(STATUS_TRUE));
     }
 
-    protected void setStatusCondition(T resource, String type, String reason, String message, Boolean status) {
-        setStatusCondition(resource, new ConditionBuilder()
+    protected boolean setStatusCondition(T resource, String type, Boolean status) {
+        return setStatusCondition(resource, type, null, null, status);
+    }
+
+    protected boolean setStatusCondition(T resource, String type, String reason, String message, Boolean status) {
+        return setStatusCondition(resource, new ConditionBuilder()
                 .withType(type)
                 .withMessage(message)
                 .withReason(reason)
@@ -83,19 +80,24 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
                 .build());
     }
 
-    protected void setStatusCondition(T resource, Condition condition) {
+    protected boolean setStatusCondition(T resource, Condition condition) {
         if (resource.getStatus() == null) {
-            return;
+            throw new IllegalStateException("Missing status for resource: " + resource.getMetadata().getName());
+        }
+        if (condition == null) {
+            return false;
         }
         Condition current = resource.getStatus().getCondition(condition.getType());
         if (current != null) {
             condition.setLastTransitionTime(now());
         }
-        if (!condition.equals(current)) {
+        if (!areSameConditions(condition, current)) {
             condition.setLastTransitionTime(now());
             resource.getStatus().setCondition(condition);
             LOGGER.debug("Set status condition for {} to {}", resource.getMetadata().getName(), condition);
+            return true;
         }
+        return false;
     }
 
     protected UpdateControl<T> updateStatusWithReadyCondition(T resource, String condition) {
@@ -106,19 +108,32 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
     }
 
     protected UpdateControl<T> updateStatusWithCondition(T resource, Condition condition) {
-        final String resourceClassName = resource.getClass().getSimpleName();
-
-        condition.setLastTransitionTime(now());
-        Condition current = resource.getStatus().getCondition(condition.getType());
-
-        if (areSameConditions(current, condition)) {
-            LOGGER.debug("{} {} Status not updated for condition {}.", resourceClassName, resource.getMetadata().getName(), condition.getType());
-            return UpdateControl.noUpdate();
+        if (setStatusCondition(resource, condition)) {
+            return UpdateControl.updateStatus(resource);
         }
-        resource.getStatus().setCondition(condition);
+        return updateStatus(resource);
+    }
 
-        LOGGER.debug("{} {} Status updated for condition {}.", resourceClassName, resource.getMetadata().getName(), condition.getType());
-        return UpdateControl.updateStatus(resource);
+    protected UpdateControl<T> updateStatus(T resource) {
+        T currentResource = (T) client.resources(resource.getClass())
+                .inNamespace(resource.getMetadata().getNamespace())
+                .withName(resource.getMetadata().getName())
+                .get();
+        if (currentResource == null) {
+            return UpdateControl.updateStatus(resource);
+        }
+        if (resource.getStatus().getConditions()
+                .stream()
+                .anyMatch(c -> areSameConditions(c, currentResource.getStatus().getCondition(c.getType())))) {
+            return UpdateControl.updateStatus(resource);
+        }
+        if (currentResource.getStatus()
+                .getConditions()
+                .stream()
+                .anyMatch(c -> resource.getStatus().getCondition(c.getType()) == null)) {
+            return UpdateControl.updateStatus(resource);
+        }
+        return UpdateControl.noUpdate();
     }
 
     // The only ignored field when comparing two conditions is the

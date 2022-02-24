@@ -89,7 +89,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).isEqualTo("Unsupported kafka storage type: invalid type supported values are 'ephemeral' and 'persistent-volume-claim'");
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertThat(kafka).isNull();
@@ -115,7 +115,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).contains(exceptionMessage);
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertThat(kafka).isNull();
@@ -135,7 +135,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).isEqualTo(MESSAGE_KAFKA_BROKER_NOT_READY);
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
@@ -164,7 +164,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).isEqualTo(MESSAGE_KAFKA_BROKER_NOT_READY);
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
@@ -186,14 +186,10 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).isEqualTo(MESSAGE_KAFKA_BROKER_NOT_READY);
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
-
-        // Update Kafka
-        update = serviceDomainClusterController.reconcile(sdc, null);
-        assertThat(update.isNoUpdate()).isTrue();
     }
 
     @Test
@@ -212,7 +208,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).isEqualTo(MESSAGE_KAFKA_BROKER_NOT_READY);
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
@@ -241,6 +237,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getLastTransitionTime()).isNotBlank();
         assertThat(condition.getReason()).isNull();
         assertThat(condition.getMessage()).isNull();
+        assertThatIsReady(update);
     }
 
     @Test
@@ -271,7 +268,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getMessage()).isEqualTo(MESSAGE_KAFKA_BROKER_NOT_READY);
         assertThat(condition.getLastTransitionTime()).isNotNull();
 
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
 
         Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
         assertThat(kafka).isNotNull();

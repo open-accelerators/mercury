@@ -38,7 +38,9 @@ import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
@@ -60,11 +62,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         mockServer.getKubernetesMockServer().clearExpectations();
 
         createDefultNamespace();
-
         createDefaultIntegrationConfigMap();
-
         createOpenApiConfigMap();
-
         createDefaultKafka();
     }
 
@@ -73,19 +72,12 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         mockServer.getKubernetesMockServer().clearExpectations();
 
         deleteDeployment();
-
         deleteService();
-
         deleteKafkaTopic();
-
         deleteIntegrationConfigMap();
-
         deleteOpenAPIConfigMap();
-
         deleteIntegration();
-
         deleteServiceDomains();
-
         deleteKafka();
     }
 
@@ -103,13 +95,13 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -130,14 +122,10 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
 
@@ -149,7 +137,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsReady(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
@@ -163,9 +151,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
         assertThat(service).isNotNull();
         assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsReady(update);
     }
 
     @Test
@@ -184,8 +169,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
@@ -201,7 +186,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertThat(integration).isNull();
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -236,8 +221,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
@@ -253,7 +238,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertThat(integration).isNull();
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -289,25 +274,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertThat(integration).isNull();
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getMessage()).isEqualTo(sdTypeAsString + "-openapi" + " " + MESSAGE_CONFIG_MAP_MISSING);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -368,13 +339,13 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -395,14 +366,10 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
 
@@ -414,7 +381,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsReady(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
@@ -435,16 +402,13 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         update.getResource().getSpec().setExpose(null);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsReady(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition).isNull();
 
         integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertThat(integration).isNull();
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsReady(update);
     }
 
     @Test
@@ -453,7 +417,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         final String sdcName = sd.getSpec().getServiceDomainCluster();
 
         final UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -473,7 +437,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         final UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
+        assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -495,14 +459,10 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition).isNull();
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
@@ -538,13 +498,10 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsNotReady(update);
+        assertThatIsReady(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsReady(update);
     }
 
     @Test
@@ -564,13 +521,13 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
             final NamespacedKubernetesClient client = mockServer.getClient();
 
             UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-            assertThatIsNotReady(update);
-            assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
+            assertThatIsWaiting(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
             Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
             update = serviceDomainController.reconcile(update.getResource(), null);
-            assertThatIsNotReady(update);
+            assertThatIsWaiting(update);
             assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
             condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
@@ -591,14 +548,10 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
             update = serviceDomainController.reconcile(update.getResource(), null);
-            assertThatIsNotReady(update);
-            assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+            assertThatIsWaiting(update);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
             condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-
-            update = serviceDomainController.reconcile(update.getResource(), null);
-            assertThatIsNotReady(update);
-            assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
             condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
 
@@ -610,7 +563,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
             client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
             update = serviceDomainController.reconcile(update.getResource(), null);
-            assertThatIsNotReady(update);
+            assertThatIsReady(update);
             assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
             condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
@@ -619,9 +572,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
             final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
             assertThat(deployment).isNotNull();
             assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
-
-            update = serviceDomainController.reconcile(update.getResource(), null);
-            assertThatIsReady(update);
         }
     }
 
@@ -689,24 +639,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
         kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
         assertThat(kafkaTopic).isNull();
-    }
-
-    private void assertReadinessCommon(UpdateControl<ServiceDomain> update) {
-        assertThat(update.isUpdateStatus()).isTrue();
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);
-        assertThat(condition.getReason()).isNull();
-        assertThat(condition.getMessage()).isNull();
-        assertThat(condition.getLastTransitionTime()).isNotNull();
-    }
-
-    private void assertThatIsNotReady(UpdateControl<ServiceDomain> update) {
-        assertReadinessCommon(update);
-        assertThat(update.getResource().getStatus().isReady()).isFalse();
-    }
-
-    private void assertThatIsReady(UpdateControl<ServiceDomain> update) {
-        assertReadinessCommon(update);
-        assertThat(update.getResource().getStatus().isReady()).isTrue();
     }
 
     private void assertOwnerReference(ServiceDomain sd, List<OwnerReference> ownerReferences) {

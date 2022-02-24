@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
 
+import com.redhat.mercury.operator.model.AbstractResourceStatus;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainCluster;
 import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
@@ -11,8 +12,11 @@ import com.redhat.mercury.operator.model.ServiceDomainClusterStatusBuilder;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainSpecBuilder;
 
+import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
+import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
@@ -23,9 +27,13 @@ import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
+import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractControllerTest {
 
@@ -126,5 +134,23 @@ public abstract class AbstractControllerTest {
                     .build());
         }
         return sd;
+    }
+
+    protected <T extends CustomResource<?, ? extends AbstractResourceStatus>> void assertThatIsReady(UpdateControl<T> update) {
+        assertThat(update.isUpdateStatus()).isTrue();
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+        assertThat(condition.getReason()).isNull();
+        assertThat(condition.getMessage()).isNull();
+        assertThat(condition.getLastTransitionTime()).isNotNull();
+    }
+
+    protected <T extends CustomResource<?, ? extends AbstractResourceStatus>> void assertThatIsWaiting(UpdateControl<T> update) {
+        assertThat(update.isUpdateStatus()).isTrue();
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        assertThat(condition.getReason()).isEqualTo(REASON_WAITING);
+        assertThat(condition.getMessage()).isEqualTo(MESSAGE_WAITING);
+        assertThat(condition.getLastTransitionTime()).isNotNull();
     }
 }
