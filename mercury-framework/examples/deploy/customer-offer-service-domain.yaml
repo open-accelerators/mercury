@@ -1,7 +1,7 @@
 apiVersion: mercury.redhat.io/v1alpha1
 kind: ServiceDomain
 metadata:
-  name: customer-offer
+  name: example-customer-offer
   labels:
     service-domain: customer-offer
 spec:

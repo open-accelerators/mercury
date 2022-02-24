@@ -219,7 +219,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         // Update Kafka
         kafka.setStatus(new KafkaStatusBuilder().withListeners(new ListenerStatusBuilder()
-                        .withType(KAFKA_LISTENER_TYPE_PLAIN)
+                        .withName(KAFKA_LISTENER_TYPE_PLAIN)
                         .withAddresses(new ListenerAddressBuilder()
                                 .withHost("my-kafka.example.com")
                                 .withPort(9092)

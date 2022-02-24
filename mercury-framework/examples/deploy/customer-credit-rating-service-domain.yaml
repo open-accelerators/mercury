@@ -1,7 +1,7 @@
 apiVersion: mercury.redhat.io/v1alpha1
 kind: ServiceDomain
 metadata:
-  name: customer-credit-rating
+  name: example-customer-credit-rating
   labels:
     service-domain: customer-credit-rating
 spec:

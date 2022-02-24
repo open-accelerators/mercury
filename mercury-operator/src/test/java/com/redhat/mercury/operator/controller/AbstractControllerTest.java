@@ -46,7 +46,7 @@ public abstract class AbstractControllerTest {
         final Kafka kafka = serviceDomainClusterController.createKafkaObj(sdc);
 
         final KafkaStatus status = new KafkaStatusBuilder().withListeners(new ListenerStatusBuilder()
-                        .withType(KAFKA_LISTENER_TYPE_PLAIN)
+                        .withName(KAFKA_LISTENER_TYPE_PLAIN)
                         .withAddresses(List.of(new ListenerAddressBuilder()
                                 .withHost("www.test.com")
                                 .build()))
