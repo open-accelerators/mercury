@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - run:
+          name: Analyze on SonarCloud
+          command: mvn install sonar:sonar -Dsonar.projectKey=open-accelerators_mercury
+
+workflows:
+  main:
+    jobs:
+      - build:
+          context: SonarCloud
