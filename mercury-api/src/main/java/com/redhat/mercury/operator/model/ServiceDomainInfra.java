@@ -10,16 +10,16 @@ import io.sundr.builder.annotations.BuildableReference;
 
 @Group(MercuryConstants.GROUP)
 @Version(MercuryConstants.VERSION)
-@ShortNames("sdc")
+@ShortNames("sdi")
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", refs = {
         @BuildableReference(CustomResource.class),
 })
-public class ServiceDomainCluster extends CustomResource<ServiceDomainClusterSpec, ServiceDomainClusterStatus> implements Namespaced {
+public class ServiceDomainInfra extends CustomResource<ServiceDomainInfraSpec, ServiceDomainInfraStatus> implements Namespaced {
 
-    public ServiceDomainCluster() {
+    public ServiceDomainInfra() {
         super();
-        this.setSpec(new ServiceDomainClusterSpec());
-        this.setStatus(new ServiceDomainClusterStatus());
+        this.setSpec(new ServiceDomainInfraSpec());
+        this.setStatus(new ServiceDomainInfraStatus());
     }
 
 }

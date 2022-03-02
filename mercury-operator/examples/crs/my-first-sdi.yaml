@@ -1,7 +1,7 @@
 apiVersion: mercury.redhat.io/v1alpha1
-kind: ServiceDomainCluster
+kind: ServiceDomainInfra
 metadata:
-  name: my-first-sdc
+  name: my-first-sdi
   labels:
     app: examples
 spec:

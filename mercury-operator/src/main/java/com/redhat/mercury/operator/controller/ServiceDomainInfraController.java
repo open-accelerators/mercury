@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.mercury.operator.model.KafkaConfig;
 import com.redhat.mercury.operator.model.MercuryConstants;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import com.redhat.mercury.operator.model.ServiceDomainClusterSpec;
-import com.redhat.mercury.operator.model.ServiceDomainClusterStatus;
+import com.redhat.mercury.operator.model.ServiceDomainInfra;
+import com.redhat.mercury.operator.model.ServiceDomainInfraSpec;
+import com.redhat.mercury.operator.model.ServiceDomainInfraStatus;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
@@ -43,16 +43,16 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_W
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_KAFKA_BROKER_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_EXCEPTION;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_WAITING;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.CONDITION_KAFKA_BROKER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.CONDITION_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_EXCEPTION;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_WAITING;
 
 @ControllerConfiguration
-public class ServiceDomainClusterController extends AbstractController<ServiceDomainClusterSpec, ServiceDomainClusterStatus, ServiceDomainCluster> implements Reconciler<ServiceDomainCluster>, EventSourceInitializer<ServiceDomainCluster> {
+public class ServiceDomainInfraController extends AbstractController<ServiceDomainInfraSpec, ServiceDomainInfraStatus, ServiceDomainInfra> implements Reconciler<ServiceDomainInfra>, EventSourceInitializer<ServiceDomainInfra> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainClusterController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainInfraController.class);
 
     private static final String DEFAULT_PERSISTENT_STORAGE = "100Gi";
     public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
@@ -60,7 +60,7 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     private static final String BROKER_PROTOCOL_VERSION = "3.0";
 
     @Override
-    public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomainCluster> context) {
+    public List<EventSource> prepareEventSources(EventSourceContext<ServiceDomainInfra> context) {
         SharedIndexInformer<Kafka> kafkaInformer = client.resources(Kafka.class)
                 .inAnyNamespace()
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
@@ -70,30 +70,30 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
     }
 
     @Override
-    public UpdateControl<ServiceDomainCluster> reconcile(ServiceDomainCluster sdc, Context context) {
-        setStatusCondition(sdc, new ConditionBuilder()
+    public UpdateControl<ServiceDomainInfra> reconcile(ServiceDomainInfra sdi, Context context) {
+        setStatusCondition(sdi, new ConditionBuilder()
                 .withType(CONDITION_READY)
                 .withStatus(STATUS_FALSE)
                 .withReason(REASON_WAITING)
                 .withMessage(MESSAGE_WAITING)
                 .build());
         try {
-            Condition kafkaCondition = createOrUpdateKafkaBroker(sdc);
+            Condition kafkaCondition = createOrUpdateKafkaBroker(sdi);
             if (kafkaCondition != null) {
-                return updateStatusWithCondition(sdc, kafkaCondition);
+                return updateStatusWithCondition(sdi, kafkaCondition);
             }
-            kafkaCondition = setKafkaBrokerUrl(sdc);
+            kafkaCondition = setKafkaBrokerUrl(sdi);
             if (STATUS_FALSE.equals(kafkaCondition.getStatus())) {
-                return updateStatusWithCondition(sdc, kafkaCondition);
+                return updateStatusWithCondition(sdi, kafkaCondition);
             }
-            setStatusCondition(sdc, kafkaCondition);
-            if (areAllConditionsReady(sdc)) {
-                return updateStatusWithCondition(sdc, buildReadyCondition(CONDITION_READY));
+            setStatusCondition(sdi, kafkaCondition);
+            if (areAllConditionsReady(sdi)) {
+                return updateStatusWithCondition(sdi, buildReadyCondition(CONDITION_READY));
             }
-            return updateStatus(sdc);
+            return updateStatus(sdi);
         } catch (Exception e) {
-            LOGGER.error("{} service domain cluster failed to be created/updated", sdc.getMetadata().getName(), e);
-            return updateStatusWithCondition(sdc, new ConditionBuilder()
+            LOGGER.error("{} service domain infra failed to be created/updated", sdi.getMetadata().getName(), e);
+            return updateStatusWithCondition(sdi, new ConditionBuilder()
                     .withType(CONDITION_KAFKA_BROKER_READY)
                     .withStatus(STATUS_FALSE)
                     .withReason(REASON_KAFKA_EXCEPTION)
@@ -102,29 +102,29 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
         }
     }
 
-    private Condition setKafkaBrokerUrl(ServiceDomainCluster sdc) {
+    private Condition setKafkaBrokerUrl(ServiceDomainInfra sdi) {
         Kafka kafka = client.resources(Kafka.class)
-                .inNamespace(sdc.getMetadata().getNamespace())
-                .withName(sdc.getMetadata().getName())
+                .inNamespace(sdi.getMetadata().getNamespace())
+                .withName(sdi.getMetadata().getName())
                 .get();
 
         if (isKafkaBrokerReady(kafka)) {
-            LOGGER.debug("KafkaBroker for {} is Ready", sdc.getMetadata().getName());
+            LOGGER.debug("KafkaBroker for {} is Ready", sdi.getMetadata().getName());
             List<ListenerStatus> listeners = kafka.getStatus().getListeners();
             Optional<ListenerStatus> listenerStatus = listeners.stream()
                     .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
                     .findFirst();
             if (listenerStatus.isPresent()) {
                 LOGGER.debug("Assigning Kafka bootstrapServer with value {} to {}",
-                        listenerStatus.get().getBootstrapServers(), sdc.getMetadata().getName());
-                sdc.getStatus().setKafkaBroker(listenerStatus.get().getBootstrapServers());
+                        listenerStatus.get().getBootstrapServers(), sdi.getMetadata().getName());
+                sdi.getStatus().setKafkaBroker(listenerStatus.get().getBootstrapServers());
             }
             return new ConditionBuilder()
                     .withType(CONDITION_KAFKA_BROKER_READY)
                     .withStatus(STATUS_TRUE)
                     .build();
         }
-        LOGGER.debug("KafkaBroker for {} is not yet Ready", sdc.getMetadata().getName());
+        LOGGER.debug("KafkaBroker for {} is not yet Ready", sdi.getMetadata().getName());
         return new ConditionBuilder()
                 .withType(CONDITION_KAFKA_BROKER_READY)
                 .withStatus(STATUS_FALSE)
@@ -145,17 +145,17 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
         return condition.isPresent() && condition.get().getStatus().equals(STATUS_TRUE);
     }
 
-    private Condition createOrUpdateKafkaBroker(ServiceDomainCluster sdc) {
-        final String sdcName = sdc.getMetadata().getName();
-        Kafka desiredKafka = createKafkaObj(sdc);
+    private Condition createOrUpdateKafkaBroker(ServiceDomainInfra sdi) {
+        final String sdiName = sdi.getMetadata().getName();
+        Kafka desiredKafka = createKafkaObj(sdi);
         Kafka currentKafka = client.resources(Kafka.class)
-                .inNamespace(sdc.getMetadata().getNamespace())
-                .withName(sdcName)
+                .inNamespace(sdi.getMetadata().getNamespace())
+                .withName(sdiName)
                 .get();
 
         if (currentKafka == null || !Objects.equals(currentKafka.getSpec(), desiredKafka.getSpec())) {
             LOGGER.debug("Creating or replacing Kafka {}", desiredKafka);
-            currentKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).createOrReplace(desiredKafka);
+            currentKafka = client.resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).createOrReplace(desiredKafka);
             LOGGER.debug("Created or replaced Kafka {}", currentKafka);
             return new ConditionBuilder()
                     .withType(CONDITION_KAFKA_BROKER_READY)
@@ -164,15 +164,15 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                     .withMessage(MESSAGE_KAFKA_BROKER_NOT_READY)
                     .build();
         }
-        LOGGER.debug("Kafka {} was not updated", sdcName);
+        LOGGER.debug("Kafka {} was not updated", sdiName);
         return null;
     }
 
-    protected Kafka createKafkaObj(ServiceDomainCluster sdc) {
+    protected Kafka createKafkaObj(ServiceDomainInfra sdi) {
         Kafka desiredKafka = new KafkaBuilder()
                 .withNewMetadata()
-                .withName(sdc.getMetadata().getName())
-                .withNamespace(sdc.getMetadata().getNamespace())
+                .withName(sdi.getMetadata().getName())
+                .withNamespace(sdi.getMetadata().getNamespace())
                 .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
@@ -180,7 +180,7 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                         .withTopicOperator(new EntityTopicOperatorSpecBuilder().build())
                         .build())
                 .withKafka(new KafkaClusterSpecBuilder()
-                        .withReplicas(sdc.getSpec().getKafka().getReplicas())
+                        .withReplicas(sdi.getSpec().getKafka().getReplicas())
                         .withListeners(new GenericKafkaListenerBuilder()
                                         .withName("plain")
                                         .withPort(9092)
@@ -196,24 +196,24 @@ public class ServiceDomainClusterController extends AbstractController<ServiceDo
                         .withVersion(KAFKA_VERSION)
                         .withConfig(Map.of(
                                 "inter.broker.protocol.version", BROKER_PROTOCOL_VERSION,
-                                "default.replication.factor", sdc.getSpec().getKafka().getReplicas(),
-                                "offsets.topic.replication.factor", sdc.getSpec().getKafka().getReplicas(),
-                                "transaction.state.log.replication.factor", sdc.getSpec().getKafka().getReplicas(),
-                                "transaction.state.log.min.isr", getMinIsr(sdc.getSpec().getKafka().getReplicas()),
-                                "min.insync.replicas", getMinIsr(sdc.getSpec().getKafka().getReplicas())))
-                        .withStorage(buildKafkaStorage(sdc.getSpec().getKafka()))
+                                "default.replication.factor", sdi.getSpec().getKafka().getReplicas(),
+                                "offsets.topic.replication.factor", sdi.getSpec().getKafka().getReplicas(),
+                                "transaction.state.log.replication.factor", sdi.getSpec().getKafka().getReplicas(),
+                                "transaction.state.log.min.isr", getMinIsr(sdi.getSpec().getKafka().getReplicas()),
+                                "min.insync.replicas", getMinIsr(sdi.getSpec().getKafka().getReplicas())))
+                        .withStorage(buildKafkaStorage(sdi.getSpec().getKafka()))
                         .build())
                 .withZookeeper(new ZookeeperClusterSpecBuilder()
-                        .withReplicas(sdc.getSpec().getKafka().getReplicas())
-                        .withStorage(buildKafkaStorage(sdc.getSpec().getKafka()))
+                        .withReplicas(sdi.getSpec().getKafka().getReplicas())
+                        .withStorage(buildKafkaStorage(sdi.getSpec().getKafka()))
                         .build())
                 .endSpec()
                 .build();
 
         desiredKafka.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sdc.getMetadata().getName())
-                .withUid(sdc.getMetadata().getUid())
-                .withKind(ServiceDomainCluster.class.getSimpleName())
+                .withName(sdi.getMetadata().getName())
+                .withUid(sdi.getMetadata().getUid())
+                .withKind(ServiceDomainInfra.class.getSimpleName())
                 .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
         return desiredKafka;

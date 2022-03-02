@@ -33,13 +33,13 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractController.class);
     protected static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
-    protected static final String OPERATOR_NAME = "service-domain-cluster-operator";
+    protected static final String OPERATOR_NAME = "service-domain-infra-operator";
 
     @Inject
     KubernetesClient client;
 
-    protected <T extends HasMetadata> EventSource getInformerEventSource(SharedIndexInformer<T> sharedIndexInformer) {
-        return new InformerEventSource<T, T>(sharedIndexInformer, d -> {
+    protected <F extends HasMetadata> EventSource getInformerEventSource(SharedIndexInformer<F> sharedIndexInformer) {
+        return new InformerEventSource<F, F>(sharedIndexInformer, d -> {
             List<OwnerReference> ownerReferences = d.getMetadata().getOwnerReferences();
             if (!ownerReferences.isEmpty()) {
                 return Set.of(new ResourceID(ownerReferences.get(0).getName(), d.getMetadata().getNamespace()));

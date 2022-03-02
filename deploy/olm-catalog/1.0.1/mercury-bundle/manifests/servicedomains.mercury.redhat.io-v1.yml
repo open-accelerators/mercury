@@ -85,7 +85,7 @@ spec:
                 type: array
               businessImage:
                 type: string
-              serviceDomainCluster:
+              serviceDomainInfra:
                 type: string
               type:
                 enum:

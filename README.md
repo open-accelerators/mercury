@@ -25,7 +25,7 @@ This component is the starting point for developers wishing to implement any giv
 
 ### [Mercury Operator](mercury-operator/README.md)
 
-The Mercury Operator manages the deployment of the Service Domain Clusters by creating infrastructure components essential for service domains to function and communicate.
+The Mercury Operator manages the deployment of the Service Domain Infras by creating infrastructure components essential for service domains to function and communicate.
 
 This component is the starting point for cluster administrators wishing to deploy an ecosystem of Service Domains on their application cluster.
 

@@ -7,9 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.redhat.mercury.operator.model.KafkaStorageBuilder;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
-import com.redhat.mercury.operator.model.ServiceDomainClusterBuilder;
-import com.redhat.mercury.operator.model.ServiceDomainClusterSpecBuilder;
+import com.redhat.mercury.operator.model.ServiceDomainInfra;
+import com.redhat.mercury.operator.model.ServiceDomainInfraBuilder;
+import com.redhat.mercury.operator.model.ServiceDomainInfraSpecBuilder;
 import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Condition;
@@ -30,18 +30,18 @@ import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
-import static com.redhat.mercury.operator.controller.ServiceDomainClusterController.KAFKA_LISTENER_TYPE_PLAIN;
+import static com.redhat.mercury.operator.controller.ServiceDomainInfraController.KAFKA_LISTENER_TYPE_PLAIN;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.CONDITION_KAFKA_BROKER_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_EXCEPTION;
-import static com.redhat.mercury.operator.model.ServiceDomainClusterStatus.REASON_KAFKA_WAITING;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.CONDITION_KAFKA_BROKER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_EXCEPTION;
+import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @WithKubernetesTestServer
-public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
+public class ServiceDomainInfraControllerTest extends AbstractControllerTest {
 
     @BeforeEach
     public void beforeEach() {
@@ -51,17 +51,17 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
     @AfterEach
     public void afterEach() {
         final NamespacedKubernetesClient client = mockServer.getClient();
-        client.namespaces().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete();
-        client.resources(ServiceDomainCluster.class).inAnyNamespace().list()
-                .getItems().forEach(sdc ->
+        client.namespaces().withName(SERVICE_DOMAIN_INFRA_NAMESPACE).delete();
+        client.resources(ServiceDomainInfra.class).inAnyNamespace().list()
+                .getItems().forEach(sdi ->
                 {
-                    client.resources(ServiceDomainCluster.class)
-                            .inNamespace(sdc.getMetadata().getNamespace())
-                            .withName(sdc.getMetadata().getName())
+                    client.resources(ServiceDomainInfra.class)
+                            .inNamespace(sdi.getMetadata().getNamespace())
+                            .withName(sdi.getMetadata().getName())
                             .delete();
-                    assertThat(client.resources(ServiceDomainCluster.class)
-                                    .inNamespace(sdc.getMetadata().getNamespace())
-                                    .withName(sdc.getMetadata().getName()).get()).isNull();
+                    assertThat(client.resources(ServiceDomainInfra.class)
+                            .inNamespace(sdi.getMetadata().getNamespace())
+                            .withName(sdi.getMetadata().getName()).get()).isNull();
                 });
 
         client.resources(Kafka.class).inAnyNamespace().list()
@@ -74,10 +74,10 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
     @Test
     void testCreateKafkaInvalidStorageType() {
-        ServiceDomainCluster sdc = buildDefaultSDC();
-        sdc.getSpec().getKafka()
+        ServiceDomainInfra sdi = buildDefaultSDI();
+        sdi.getSpec().getKafka()
                 .setStorage(new KafkaStorageBuilder().withType("invalid type").build());
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getScheduleDelay()).isEmpty();
@@ -91,20 +91,20 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertThat(kafka).isNull();
     }
 
     @Test
     void testCreateKafkaWithException() {
-        ServiceDomainCluster sdc = buildDefaultSDC();
+        ServiceDomainInfra sdi = buildDefaultSDI();
         String exceptionMessage = "Test exception";
         mockServer.expect().post()
                 .withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas")
                 .andReturn(500, new KubernetesClientException(exceptionMessage))
                 .once();
 
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -117,14 +117,14 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertThat(kafka).isNull();
     }
 
     @Test
     void testCreateDefaultKafka() {
-        ServiceDomainCluster sdc = buildDefaultSDC();
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        ServiceDomainInfra sdi = buildDefaultSDI();
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -137,23 +137,23 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
     }
 
     @Test
     void testReplaceDefaultKafka() {
-        ServiceDomainCluster sdc = buildDefaultSDC();
+        ServiceDomainInfra sdi = buildDefaultSDI();
         Kafka current = new KafkaBuilder()
                 .withNewMetadata()
-                .withName(sdc.getMetadata().getName())
-                .withNamespace(sdc.getMetadata().getNamespace()).endMetadata()
+                .withName(sdi.getMetadata().getName())
+                .withNamespace(sdi.getMetadata().getNamespace()).endMetadata()
                 .withNewSpec().withNewKafka().withReplicas(3).endKafka().endSpec()
                 .build();
-        mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdc")
+        mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdi")
                 .andReturn(200, current).once();
 
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -166,16 +166,16 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
     }
 
     @Test
     void testWaitingForKafkaDeployment() {
-        ServiceDomainCluster sdc = buildDefaultSDC();
+        ServiceDomainInfra sdi = buildDefaultSDI();
 
         // Create Kafka
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -188,16 +188,16 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
     }
 
     @Test
     void testKafkaDeploymentReady() {
-        ServiceDomainCluster sdc = buildDefaultSDC();
+        ServiceDomainInfra sdi = buildDefaultSDI();
 
         // Create Kafka
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -210,7 +210,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertEphemeralKafka(kafka);
 
         // Update Kafka
@@ -221,14 +221,14 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                                 .withPort(9092)
                                 .build())
                         .build())
-                        .withConditions(new ConditionBuilder()
-                                .withType(CONDITION_READY)
-                                .withStatus(STATUS_TRUE)
-                                .build())
+                .withConditions(new ConditionBuilder()
+                        .withType(CONDITION_READY)
+                        .withStatus(STATUS_TRUE)
+                        .build())
                 .build());
-        mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdc")
+        mockServer.expect().get().withPath("/apis/kafka.strimzi.io/v1beta2/namespaces/test-service-domain/kafkas/my-sdi")
                 .andReturn(200, kafka).always();
-        update = serviceDomainClusterController.reconcile(sdc, null);
+        update = serviceDomainInfraController.reconcile(sdi, null);
         assertThat(update.getResource().getStatus().isReady()).isTrue();
         assertThat(update.getResource().getStatus().getKafkaBroker()).isEqualTo("my-kafka.example.com:9092");
 
@@ -237,17 +237,18 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(condition.getLastTransitionTime()).isNotBlank();
         assertThat(condition.getReason()).isNull();
         assertThat(condition.getMessage()).isNull();
+
         assertThatIsReady(update);
     }
 
     @Test
     void testCreateProductionKafka() {
-        ServiceDomainCluster sdc = new ServiceDomainClusterBuilder()
+        ServiceDomainInfra sdi = new ServiceDomainInfraBuilder()
                 .withMetadata(new ObjectMetaBuilder()
-                        .withName("my-sdc")
-                        .withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE)
+                        .withName("my-sdi")
+                        .withNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE)
                         .build())
-                .withSpec(new ServiceDomainClusterSpecBuilder()
+                .withSpec(new ServiceDomainInfraSpecBuilder()
                         .withNewKafka()
                         .withReplicas(3)
                         .withNewStorage()
@@ -257,7 +258,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
                         .endKafka()
                         .build())
                 .build();
-        UpdateControl<ServiceDomainCluster> update = serviceDomainClusterController.reconcile(sdc, null);
+        UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
@@ -270,7 +271,7 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
 
         assertThatIsWaiting(update);
 
-        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(sdc.getMetadata().getName()).get();
+        Kafka kafka = mockServer.getClient().resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(sdi.getMetadata().getName()).get();
         assertThat(kafka).isNotNull();
         // Kafka Config
         assertThat(kafka.getSpec().getKafka().getVersion()).isEqualTo("3.0.0");
@@ -298,32 +299,32 @@ public class ServiceDomainClusterControllerTest extends AbstractControllerTest {
         assertThat(listener.get().isTls()).isTrue();
         assertThat(listener.get().getAuth()).isNull();
         // Kafka Storage
-        assertThat(kafka.getSpec().getKafka().getReplicas()).isEqualTo(sdc.getSpec().getKafka().getReplicas());
-        assertThat(kafka.getSpec().getKafka().getStorage().getType()).isEqualTo(sdc.getSpec().getKafka().getStorage().getType());
+        assertThat(kafka.getSpec().getKafka().getReplicas()).isEqualTo(sdi.getSpec().getKafka().getReplicas());
+        assertThat(kafka.getSpec().getKafka().getStorage().getType()).isEqualTo(sdi.getSpec().getKafka().getStorage().getType());
         assertThat(kafka.getSpec().getKafka().getStorage()).isInstanceOf(PersistentClaimStorage.class);
         PersistentClaimStorage storage = (PersistentClaimStorage) kafka.getSpec().getKafka().getStorage();
-        assertThat(storage.getSize()).isEqualTo(sdc.getSpec().getKafka().getStorage().getSize());
+        assertThat(storage.getSize()).isEqualTo(sdi.getSpec().getKafka().getStorage().getSize());
 
         // Zookeeper Config
-        assertThat(kafka.getSpec().getZookeeper().getReplicas()).isEqualTo(sdc.getSpec().getKafka().getReplicas());
-        assertThat(kafka.getSpec().getZookeeper().getStorage().getType()).isEqualTo(sdc.getSpec().getKafka().getStorage().getType());
+        assertThat(kafka.getSpec().getZookeeper().getReplicas()).isEqualTo(sdi.getSpec().getKafka().getReplicas());
+        assertThat(kafka.getSpec().getZookeeper().getStorage().getType()).isEqualTo(sdi.getSpec().getKafka().getStorage().getType());
         storage = (PersistentClaimStorage) kafka.getSpec().getZookeeper().getStorage();
-        assertThat(storage.getSize()).isEqualTo(sdc.getSpec().getKafka().getStorage().getSize());
-        assertThat(kafka.getSpec().getZookeeper().getReplicas()).isEqualTo(sdc.getSpec().getKafka().getReplicas());
-        assertThat(kafka.getSpec().getZookeeper().getStorage().getType()).isEqualTo(sdc.getSpec().getKafka().getStorage().getType());
+        assertThat(storage.getSize()).isEqualTo(sdi.getSpec().getKafka().getStorage().getSize());
+        assertThat(kafka.getSpec().getZookeeper().getReplicas()).isEqualTo(sdi.getSpec().getKafka().getReplicas());
+        assertThat(kafka.getSpec().getZookeeper().getStorage().getType()).isEqualTo(sdi.getSpec().getKafka().getStorage().getType());
     }
 
-    private ServiceDomainCluster buildDefaultSDC() {
-        return new ServiceDomainClusterBuilder()
+    private ServiceDomainInfra buildDefaultSDI() {
+        return new ServiceDomainInfraBuilder()
                 .withMetadata(new ObjectMetaBuilder()
-                        .withName("my-sdc")
-                        .withNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE)
+                        .withName("my-sdi")
+                        .withNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE)
                         .build())
-                .withSpec(new ServiceDomainClusterSpecBuilder().build())
+                .withSpec(new ServiceDomainInfraSpecBuilder().build())
                 .build();
     }
 
-    private void assertThatIsNotReady(UpdateControl<ServiceDomainCluster> update) {
+    private void assertThatIsNotReady(UpdateControl<ServiceDomainInfra> update) {
         assertThat(update.isUpdateStatus()).isTrue();
         assertThat(update.getResource().getStatus().isReady()).isFalse();
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);

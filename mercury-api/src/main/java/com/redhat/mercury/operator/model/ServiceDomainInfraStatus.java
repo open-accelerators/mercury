@@ -3,7 +3,6 @@ package com.redhat.mercury.operator.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import io.fabric8.kubernetes.client.CustomResource;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
@@ -23,7 +22,7 @@ import lombok.experimental.Accessors;
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", refs = {
         @BuildableReference(AbstractResourceStatus.class),
 })
-public class ServiceDomainClusterStatus extends AbstractResourceStatus {
+public class ServiceDomainInfraStatus extends AbstractResourceStatus {
 
     public static final String CONDITION_KAFKA_BROKER_READY = "KafkaBrokerReady";
 

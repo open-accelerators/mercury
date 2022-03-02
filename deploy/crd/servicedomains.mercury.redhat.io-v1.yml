@@ -109,13 +109,13 @@ spec:
                 type: array
               businessImage:
                 type: string
-              serviceDomainCluster:
-                type: string
               type:
                 enum:
                 - PartyRoutingProfile
                 - CustomerOffer
                 - CustomerCreditRating
+                type: string
+              serviceDomainInfra:
                 type: string
             type: object
           status:

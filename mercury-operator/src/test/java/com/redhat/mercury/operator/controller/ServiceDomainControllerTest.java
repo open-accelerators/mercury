@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import com.redhat.mercury.operator.model.ServiceDomainInfra;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.utils.ResourceUtils;
 
@@ -45,11 +45,11 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FA
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_MISSING;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_FOUND;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_FOUND;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDI;
 import static com.redhat.mercury.operator.utils.ResourceUtils.toLowerHyphen;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,21 +83,21 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
     @Test
     public void testAddServiceDomain() {
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
@@ -157,21 +157,21 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     public void testAddServiceDomainNoConfigMaps() {
         deleteIntegrationConfigMap();
 
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
@@ -209,21 +209,21 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         deleteIntegrationConfigMap();
         createIntegrationConfigMap("badSdConfigMap.yaml");
 
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
@@ -260,7 +260,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     public void testAddServiceDomainWithNoOpenApiConfigMap(){
         deleteOpenAPIConfigMap();
 
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
         final String sdTypeAsString = toLowerHyphen(sdType.toString());
@@ -269,14 +269,14 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
@@ -299,7 +299,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     @Test
     void testAddSDWithException() {
         ServiceDomain sd = createServiceDomain();
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
 
         String exceptionMessage = "Test exception";
         mockServer.expect().get()
@@ -308,8 +308,8 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .always();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
@@ -327,21 +327,21 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
     @Test
     public void testUpdateServiceDomainToNoExpose() {
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
@@ -412,56 +412,56 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void testAddServiceDomainWithNoCluster() {
+    public void testAddServiceDomainWithNoInfra() {
         ServiceDomain sd = createServiceDomain();
-        final String sdcName = sd.getSpec().getServiceDomainCluster();
+        final String sdiName = sd.getSpec().getServiceDomainInfra();
 
         final UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-        assertThat(condition.getReason()).isEqualTo(REASON_SDC);
-        assertThat(condition.getMessage()).isEqualTo(sdcName + " " + MESSAGE_SDC_NOT_FOUND);
+        assertThat(condition.getReason()).isEqualTo(REASON_SDI);
+        assertThat(condition.getMessage()).isEqualTo(sdiName + " " + MESSAGE_SDI_NOT_FOUND);
     }
 
     @Test
-    public void testAddServiceDomainWithClusterNotReady() {
-        ServiceDomainCluster sdc = createNotReadySDC();
-        final String sdcName = sdc.getMetadata().getName();
+    public void testAddServiceDomainWithInfraNotReady() {
+        ServiceDomainInfra sdi = createNotReadySDI();
+        final String sdiName = sdi.getMetadata().getName();
         ServiceDomain sd = createServiceDomain();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         final UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-        assertThat(condition.getReason()).isEqualTo(REASON_SDC);
-        assertThat(condition.getMessage()).isEqualTo(sdcName + " " + MESSAGE_SDC_NOT_READY);
+        assertThat(condition.getReason()).isEqualTo(REASON_SDI);
+        assertThat(condition.getMessage()).isEqualTo(sdiName + " " + MESSAGE_SDI_NOT_READY);
     }
 
     @Test
     public void testAddServiceDomainWithoutExposeHttp() {
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain(SERVICE_DOMAIN_NAME, false);
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
         assertThatIsWaiting(update);
         assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition).isNull();
@@ -506,11 +506,11 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
     @Test
     public void testAddMultipleServiceDomain() {
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         for (int i = 0; i < 3; i++) {
@@ -523,7 +523,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
             UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
             assertThatIsWaiting(update);
             assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-            Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_CLUSTER_READY);
+            Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
             update = serviceDomainController.reconcile(update.getResource(), null);
@@ -577,15 +577,15 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
     @Test
     public void testWatchDeletedObjectsTest() {
-        ServiceDomainCluster sdc = createReadySDC();
+        ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomainclusters/service-domain-cluster")
-                .andReturn(200, sdc)
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
@@ -655,23 +655,23 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     private void createDefultNamespace() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final Namespace namespace = client.namespaces().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).get();
+        final Namespace namespace = client.namespaces().withName(SERVICE_DOMAIN_INFRA_NAMESPACE).get();
         if (namespace == null) {
-            client.namespaces().create(new NamespaceBuilder().withNewMetadata().withName(SERVICE_DOMAIN_CLUSTER_NAMESPACE).endMetadata().build());
+            client.namespaces().create(new NamespaceBuilder().withNewMetadata().withName(SERVICE_DOMAIN_INFRA_NAMESPACE).endMetadata().build());
         }
     }
 
     private void createDefaultKafka() {
         final NamespacedKubernetesClient client = mockServer.getClient();
-        //Hack so that the cluster will already have a kafka broker
-        ServiceDomainCluster sdc = createReadySDC();
+        //Hack so that the infra will already have a kafka broker
+        ServiceDomainInfra sdi = createReadySDI();
 
-        Kafka expectedKafka = getExpectedKafKa(sdc);
+        Kafka expectedKafka = getExpectedKafKa(sdi);
 
-        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        Kafka fetchedKafka = client.resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_INFRA_NAME).get();
         if (fetchedKafka == null) {
-            client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).create(expectedKafka);
-            fetchedKafka = client.resources(Kafka.class).inNamespace(sdc.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+            client.resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).create(expectedKafka);
+            fetchedKafka = client.resources(Kafka.class).inNamespace(sdi.getMetadata().getNamespace()).withName(SERVICE_DOMAIN_INFRA_NAME).get();
             assertThat(fetchedKafka).isNotNull();
         }
     }
@@ -707,20 +707,20 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     private void deleteKafka() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_CLUSTER_NAME).get();
+        final Kafka kafka = client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(SERVICE_DOMAIN_INFRA_NAME).get();
         if (kafka != null) {
-            client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafka);
+            client.resources(Kafka.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(kafka);
         }
     }
 
     private void deleteServiceDomains() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final KubernetesResourceList<ServiceDomain> sdList = client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).list();
+        final KubernetesResourceList<ServiceDomain> sdList = client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).list();
         if (sdList != null && sdList.getItems() != null && !sdList.getItems().isEmpty()) {
             for (ServiceDomain sd : sdList.getItems()) {
-                client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sd);
-                assertThat(client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(sd.getMetadata().getName()).get()).isNull();
+                client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(sd);
+                assertThat(client.resources(ServiceDomain.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(sd.getMetadata().getName()).get()).isNull();
             }
         }
     }
@@ -736,9 +736,9 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .withNamespaced(true)
                 .build();
 
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(integrationName).get();
+        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(integrationName).get();
         if (integration != null) {
-            client.genericKubernetesResources(resourceDefinitionContext).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(integration);
+            client.genericKubernetesResources(resourceDefinitionContext).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(integration);
         }
     }
 
@@ -764,27 +764,27 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
     private void deleteKafkaTopic() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME + "-topic").get();
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(SERVICE_DOMAIN_NAME + "-topic").get();
         if (kafkaTopic != null) {
-            client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(kafkaTopic);
+            client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(kafkaTopic);
         }
     }
 
     private void deleteService() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        Service service = client.services().inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
+        Service service = client.services().inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
         if (service != null) {
-            client.resources(Service.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(service);
+            client.resources(Service.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(service);
         }
     }
 
     private void deleteDeployment() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        Deployment sdDeployment = client.apps().deployments().inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
+        Deployment sdDeployment = client.apps().deployments().inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(SERVICE_DOMAIN_NAME).get();
         if (sdDeployment != null) {
-            client.resources(Deployment.class).inNamespace(SERVICE_DOMAIN_CLUSTER_NAMESPACE).delete(sdDeployment);
+            client.resources(Deployment.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(sdDeployment);
         }
     }
 }
