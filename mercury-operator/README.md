@@ -107,7 +107,7 @@ metadata:
     service-domain-infra: service-domain-infra
 ```
 
-A cluster of service domains consists of a single service domain infra cr.
+An environment of service domains consists of a single service domain infra cr.
 To create a service domain infra run the following command
 ```shell
 kubectl create -f service-domain-infra.yaml
