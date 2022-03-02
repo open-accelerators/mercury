@@ -28,15 +28,15 @@ The customer credit rating service domain always returns the same value for any 
 
 1. Create a Minikube cluster with the Mercury Operator and all the dependencies. Look at
    the [Mercury Operator installation instructions](../../mercury-operator/README.md)
-2. Create a Service Domain Cluster
+2. Create a Service Domain Infra
 
-    * Create Service Domain Cluster Custom Resource Definition (CRD)
+    * Create Service Domain Infra Custom Resource Definition (CRD)
 
-      `kubectl create -f ../../crd/servicedomainclusters.mercury.redhat.io-v1.yml`
+      `kubectl create -f ../../crd/servicedomaininfras.mercury.redhat.io-v1.yml`
 
-    * Create Service Domain Cluster Resource
+    * Create Service Domain Infra Resource
 
-      `kubectl create -f deploy/service-domain-cluster.yaml`
+      `kubectl create -f deploy/service-domain-infra.yaml`
 
 3. Create the different Service Domains (Customer Offer, Party Routing Profile and Customer Credit Rating)
 

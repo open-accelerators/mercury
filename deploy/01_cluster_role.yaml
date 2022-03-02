@@ -11,8 +11,8 @@ rules:
       - kafka.strimzi.io
       - camel.apache.org
     resources:
-      - servicedomainclusters
-      - servicedomainclusters/status
+      - servicedomaininfras
+      - servicedomaininfras/status
       - servicedomains
       - servicedomains/status
       - kafkas

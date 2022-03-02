@@ -1,6 +1,0 @@
-apiVersion: mercury.redhat.io/v1alpha1
-kind: ServiceDomainCluster
-metadata:
-  name: service-domain-cluster
-  labels:
-    service-domain-cluster: service-domain-cluster

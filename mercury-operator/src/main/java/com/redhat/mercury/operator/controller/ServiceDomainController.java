@@ -16,7 +16,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
-import com.redhat.mercury.operator.model.ServiceDomainCluster;
+import com.redhat.mercury.operator.model.ServiceDomainInfra;
 import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainStatus;
 import com.redhat.mercury.operator.utils.ResourceUtils;
@@ -61,17 +61,17 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FA
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_CLUSTER_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_KEY_MISSING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_MISSING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_INTEGRATION_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_KAFKA_TOPIC_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_FOUND;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDC_NOT_READY;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_FOUND;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION_WAITING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_KAFKA_TOPIC_WAITING;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDC;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDI;
 import static com.redhat.mercury.operator.utils.ResourceUtils.toLowerHyphen;
 
 @ControllerConfiguration
@@ -146,36 +146,36 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withMessage(MESSAGE_WAITING)
                 .build());
         String sdName = sd.getMetadata().getName();
-        final String sdcName = sd.getSpec().getServiceDomainCluster();
-        ServiceDomainCluster sdc = client.resources(ServiceDomainCluster.class).inNamespace(sd.getMetadata().getNamespace()).withName(sdcName).get();
+        final String sdiName = sd.getSpec().getServiceDomainInfra();
+        ServiceDomainInfra sdi = client.resources(ServiceDomainInfra.class).inNamespace(sd.getMetadata().getNamespace()).withName(sdiName).get();
 
-        if (sdc == null) {
-            LOGGER.error("{} service domain cluster not found", sdcName);
+        if (sdi == null) {
+            LOGGER.error("{} service domain infra not found", sdiName);
             return updateStatusWithCondition(sd, new ConditionBuilder()
-                    .withType(CONDITION_SERVICE_DOMAIN_CLUSTER_READY)
+                    .withType(CONDITION_SERVICE_DOMAIN_INFRA_READY)
                     .withStatus(STATUS_FALSE)
-                    .withReason(REASON_SDC)
-                    .withMessage(sdcName + " " + MESSAGE_SDC_NOT_FOUND)
+                    .withReason(REASON_SDI)
+                    .withMessage(sdiName + " " + MESSAGE_SDI_NOT_FOUND)
                     .build());
         }
 
-        if (sdc.getStatus().getCondition(CONDITION_READY) == null || Boolean.FALSE.toString().equalsIgnoreCase(sdc.getStatus().getCondition(CONDITION_READY).getStatus())) {
-            LOGGER.error("{} service domain cluster not ready", sdcName);
+        if (sdi.getStatus().getCondition(CONDITION_READY) == null || Boolean.FALSE.toString().equalsIgnoreCase(sdi.getStatus().getCondition(CONDITION_READY).getStatus())) {
+            LOGGER.error("{} service domain infra not ready", sdiName);
             return updateStatusWithCondition(sd, new ConditionBuilder()
-                    .withType(CONDITION_SERVICE_DOMAIN_CLUSTER_READY)
+                    .withType(CONDITION_SERVICE_DOMAIN_INFRA_READY)
                     .withStatus(STATUS_FALSE)
-                    .withReason(REASON_SDC)
-                    .withMessage(sdcName + " " + MESSAGE_SDC_NOT_READY)
+                    .withReason(REASON_SDI)
+                    .withMessage(sdiName + " " + MESSAGE_SDI_NOT_READY)
                     .build())
                     .rescheduleAfter(10, TimeUnit.SECONDS);
         }
         setStatusCondition(sd, new ConditionBuilder()
-                .withType(CONDITION_SERVICE_DOMAIN_CLUSTER_READY)
+                .withType(CONDITION_SERVICE_DOMAIN_INFRA_READY)
                 .withStatus(STATUS_TRUE)
                 .build());
 
         try {
-            createOrUpdateDeployment(sd, sdc.getStatus().getKafkaBroker());
+            createOrUpdateDeployment(sd, sdi.getStatus().getKafkaBroker());
             createOrUpdateService(sd);
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
                 final String sdConfigMapName = "integration-" + toLowerHyphen(sd.getSpec().getType().toString()) + "-http";
@@ -224,7 +224,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 removeStatusCondition(sd, CONDITION_INTEGRATION_READY);
             }
 
-            Condition kafkaTopicCondition = createKafkaTopic(sd, sdc.getMetadata().getNamespace());
+            Condition kafkaTopicCondition = createKafkaTopic(sd, sdi.getMetadata().getNamespace());
             setStatusCondition(sd, kafkaTopicCondition);
             if (kafkaTopicCondition != null && STATUS_FALSE.equals(kafkaTopicCondition.getStatus())) {
                 return updateStatus(sd);
@@ -356,14 +356,14 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         return yaml.dumpAsMap(data);
     }
 
-    private Condition createKafkaTopic(ServiceDomain sd, String sdcNamespace) {
+    private Condition createKafkaTopic(ServiceDomain sd, String sdiNamespace) {
         final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
 
         KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
                 .withNewMetadata()
                 .withName(kafkaTopicName)
-                .withNamespace(sdcNamespace)
-                .withLabels(Map.of("strimzi.io/cluster", sd.getSpec().getServiceDomainCluster(),
+                .withNamespace(sdiNamespace)
+                .withLabels(Map.of("strimzi.io/cluster", sd.getSpec().getServiceDomainInfra(),
                         MANAGED_BY_LABEL, OPERATOR_NAME))
                 .endMetadata()
                 .withNewSpec()
@@ -379,11 +379,11 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withApiVersion(MercuryConstants.API_VERSION)
                 .build()));
 
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdcNamespace).withName(kafkaTopicName).get();
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdiNamespace).withName(kafkaTopicName).get();
 
         if (kafkaTopic == null || !Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
             LOGGER.debug("Create or replace KafkaTopic {}", kafkaTopicName);
-            client.resources(KafkaTopic.class).inNamespace(sdcNamespace).create(desiredKafkaTopic);
+            client.resources(KafkaTopic.class).inNamespace(sdiNamespace).create(desiredKafkaTopic);
             LOGGER.debug("Created or replaced KafkaTopic {}", kafkaTopicName);
             return new ConditionBuilder()
                     .withType(CONDITION_KAFKA_TOPIC_READY)

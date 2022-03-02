@@ -1,0 +1,6 @@
+apiVersion: mercury.redhat.io/v1alpha1
+kind: ServiceDomainInfra
+metadata:
+  name: service-domain-infra
+  labels:
+    service-domain-infra: service-domain-infra

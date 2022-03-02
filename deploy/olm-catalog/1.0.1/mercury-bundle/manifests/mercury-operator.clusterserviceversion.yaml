@@ -6,9 +6,9 @@ metadata:
       [
         {
           "apiVersion": "mercury.redhat.io/v1alpha1",
-          "kind": "ServiceDomainCluster",
+          "kind": "ServiceDomainInfra",
           "metadata": {
-            "name": "my-example-sdc",
+            "name": "my-example-sdi",
             "labels": {
               "app": "examples"
             }
@@ -34,7 +34,7 @@ metadata:
           },
           "spec": {
             "businessImage": "quay.io/ecosystem-appeng/party-routing-profile-example:1.0.1-SNAPSHOT",
-            "serviceDomainCluster": "my-example-sdc",
+            "serviceDomainInfra": "my-example-sdi",
             "type": "PartyRoutingProfile",
             "expose": ["http"]
           }
@@ -50,7 +50,7 @@ metadata:
           },
           "spec": {
             "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1-SNAPSHOT",
-            "serviceDomainCluster": "my-example-sdc",
+            "serviceDomainInfra": "my-example-sdi",
             "type": "CustomerCreditRating",
             "expose": ["http"]
           }
@@ -66,7 +66,7 @@ metadata:
           },
           "spec": {
             "businessImage": "quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT",
-            "serviceDomainCluster": "my-example-sdc",
+            "serviceDomainInfra": "my-example-sdi",
             "type": "CustomerOffer",
             "expose": ["http"]
           }
@@ -85,11 +85,11 @@ spec:
   customresourcedefinitions:
     owned:
     - description: |-
-        A Service Domain Cluster represents a group of Service Domains that interact between themselves and
+        A Service Domain Infra represents a group of Service Domains that interact between themselves and
         share the same infrastructure resources
-      displayName: Service Domain Cluster
-      kind: ServiceDomainCluster
-      name: servicedomainclusters.mercury.redhat.io
+      displayName: Service Domain Infra
+      kind: ServiceDomainInfra
+      name: servicedomaininfras.mercury.redhat.io
       resources:
       - kind: Kafka
         name: ""
@@ -97,7 +97,7 @@ spec:
       version: v1alpha1
     - description: |-
         A Service Domain is a standalone service representing one of the BIAN defined Service Domains.
-        e.g. Customer Offer. A Service Domain must belong to a Service Domain Cluster
+        e.g. Customer Offer. A Service Domain must belong to a Service Domain Infra
       displayName: Service Domain
       kind: ServiceDomain
       name: servicedomains.mercury.redhat.io
@@ -158,8 +158,8 @@ spec:
           - kafka.strimzi.io
           - camel.apache.org
           resources:
-          - servicedomainclusters
-          - servicedomainclusters/status
+          - servicedomaininfras
+          - servicedomaininfras/status
           - servicedomains
           - servicedomains/status
           - kafkas

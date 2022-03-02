@@ -6,7 +6,7 @@ metadata:
     app: example
 spec:
   businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT
-  serviceDomainCluster: my-first-sdc
+  serviceDomainInfra: my-first-sdi
   type: CustomerOffer
   expose:
     - http
