@@ -1,0 +1,27 @@
+name: Build and deploy OLM catalog
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push-olm-catalog:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v2.4.0
+      - name: Set Mercury Version
+        run: |
+          echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)" >> $GITHUB_ENV
+      - name: build and deploy
+        run: |
+          ./hacks/generate-catalog.sh -v ${{ env.MERCURY_VERSION }}
+      - name: Push catalog to quay.io
+        id: push-to-quay
+        uses: redhat-actions/push-to-registry@v2.5.1
+        with:
+          tags: quay.io/ecosystem-appeng/mercury-catalog:${{ env.MERCURY_VERSION }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
