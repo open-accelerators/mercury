@@ -15,6 +15,11 @@ jobs:
       - name: Install xmllint
         run: |
           sudo apt-get install libxml2-utils
+      - name: Install OPM
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz
+          tar -xvf opm-linux.tar.gz
+          mv opm /usr/local/bin
       - name: Set Mercury Version
         run: |
           echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)" >> $GITHUB_ENV
