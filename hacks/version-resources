@@ -1,4 +1,6 @@
 # file patterns including the version
+# searches are recursive but start at the path
+# then look for the file name or regex
 pom.xml
 README.md
 integrations/camel-k/*.yaml

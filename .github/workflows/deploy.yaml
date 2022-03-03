@@ -27,7 +27,7 @@ jobs:
       - name: Set Mercury Version
         run: |
           echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)" >> $GITHUB_ENV
-      - name: Push To quay.io
+      - name: Push operator to quay.io
         id: push-to-quay
         uses: redhat-actions/push-to-registry@v2.5.1
         with:
