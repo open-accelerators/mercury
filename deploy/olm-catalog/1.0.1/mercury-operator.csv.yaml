@@ -4,7 +4,7 @@ metadata:
   name: mercury-operator.1.0.1
   namespace: placeholder
   annotations:
-    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.1-SNAPSHOT
+    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.1
     repository: https://github.com/open-accelerators/mercury
     capabilities: Basic Install
     categories: Integration & Delivery
@@ -35,47 +35,15 @@ metadata:
           "apiVersion": "mercury.redhat.io/v1alpha1",
           "kind": "ServiceDomain",
           "metadata": {
-            "name": "example-party-routing-profile",
-            "labels": {
-              "app": "example"
-            }
-          },
-          "spec": {
-            "businessImage": "quay.io/ecosystem-appeng/party-routing-profile-example:1.0.1-SNAPSHOT",
-            "serviceDomainInfra": "my-example-sdi",
-            "type": "PartyRoutingProfile",
-            "expose": ["http"]
-          }
-        },
-        {
-          "apiVersion": "mercury.redhat.io/v1alpha1",
-          "kind": "ServiceDomain",
-          "metadata": {
             "name": "example-customer-credit-rating",
             "labels": {
               "app": "example"
             }
           },
           "spec": {
-            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1-SNAPSHOT",
+            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1",
             "serviceDomainInfra": "my-example-sdi",
             "type": "CustomerCreditRating",
-            "expose": ["http"]
-          }
-        },
-        {
-          "apiVersion": "mercury.redhat.io/v1alpha1",
-          "kind": "ServiceDomain",
-          "metadata": {
-            "name": "example-customer-offer",
-            "labels": {
-              "app": "example"
-            }
-          },
-          "spec": {
-            "businessImage": "quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT",
-            "serviceDomainInfra": "my-example-sdi",
-            "type": "CustomerOffer",
             "expose": ["http"]
           }
         }
