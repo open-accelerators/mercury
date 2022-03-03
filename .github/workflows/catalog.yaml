@@ -12,6 +12,9 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v2.4.0
+      - name: Install xmllint
+        run: |
+          sudo apt-get install libxml2-utils
       - name: Set Mercury Version
         run: |
           echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)" >> $GITHUB_ENV
