@@ -8,6 +8,8 @@ import javax.enterprise.context.ApplicationScoped;
 
 import com.redhat.mercury.myco.model.CustomerOfferState;
 
+import io.smallrye.mutiny.Uni;
+
 @ApplicationScoped
 public class CustomerOfferService {
 
@@ -21,20 +23,29 @@ public class CustomerOfferService {
         return states.values();
     }
 
-    public CustomerOfferState initiateProcedure(String customerReference) {
-        Integer id = getId();
-        CustomerOfferState current = new CustomerOfferState().setId(id).setCustomerReference(customerReference).setStatus(INITIATED_STATUS);
-        states.put(id, current);
-        return current;
+    public Uni<CustomerOfferState> initiateProcedure(String customerReference) {
+        return Uni.createFrom()
+                .item(() -> getId())
+                .onItem()
+                .transform(id -> {
+                    CustomerOfferState state = CustomerOfferState.builder()
+                            .id(id)
+                            .customerReference(customerReference)
+                            .status(INITIATED_STATUS).build();
+                    states.put(id, state);
+                    return state;
+                });
     }
 
-    public CustomerOfferState updateProcedure(Integer id) {
-        CustomerOfferState procedure = states.get(id);
-        if (procedure == null) {
-            return null;
-        }
-        states.get(id).setStatus(COMPLETED_STATUS);
-        return procedure;
+    public Uni<CustomerOfferState> updateProcedure(Integer id) {
+        return Uni.createFrom().item(() -> {
+            CustomerOfferState procedure = states.get(id);
+            if (procedure == null) {
+                return null;
+            }
+            states.get(id).setStatus(COMPLETED_STATUS);
+            return procedure;
+        });
     }
 
     private synchronized Integer getId() {

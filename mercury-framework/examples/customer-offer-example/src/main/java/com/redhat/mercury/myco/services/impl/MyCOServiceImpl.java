@@ -5,8 +5,6 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.StringValue;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 import com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.ExecuteCustomerOfferProcedureResponseOuterClass.ExecuteCustomerOfferProcedureResponse;
@@ -19,8 +17,9 @@ import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
-import com.redhat.mercury.myco.model.CustomerOfferState;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
@@ -36,58 +35,53 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     CustomerOfferService svc;
 
     @Override
-    public Uni<ExecuteCustomerOfferProcedureResponse> execute(ExecuteRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
-    }
-
-    @Override
     public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
-        String customerReference = null;
-        try {
-            customerReference = request
-                    .getInitiateCustomerOfferProcedureRequest()
-                    .getCustomerOfferProcedure()
-                    .getCustomerReference()
-                    .unpack(StringValue.class).getValue();
-        } catch (InvalidProtocolBufferException e) {
-            LOGGER.error("Invalid customerReference", e);
-            return Uni.createFrom().failure(e);
-        }
+        String customerReference = request
+                .getInitiateCustomerOfferProcedureRequest()
+                .getCustomerOfferProcedure()
+                .getCustomerReference();
+
         LOGGER.info("Initiate received for {}", customerReference);
-        CustomerOfferState procedure = svc.initiateProcedure(customerReference);
-        return notificationService.onCustomerOfferInitiated(procedure.getId().toString())
+        return svc.initiateProcedure(customerReference).chain(state -> notificationService.onCustomerOfferInitiated(state.getId().toString())
                 .onItem()
                 .transform(e -> InitiateCustomerOfferProcedureResponse.newBuilder()
                         .setCustomerOfferProcedure(InitiateCustomerOfferProcedureResponseCustomerOfferProcedure.newBuilder()
-                                .setCustomerOfferProcessingTask(procedure.getId().toString())
-                                .setCustomerOfferProcessingTaskResult(procedure.getStatus())
+                                .setCustomerOfferProcessingTask(state.getId().toString())
+                                .setCustomerOfferProcessingTaskResult(state.getStatus())
                                 .build())
-                        .build());
-    }
+                        .build()));
 
-    @Override
-    public Uni<RequestCustomerOfferProcedureResponse> request(RequestRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
-    }
-
-    @Override
-    public Uni<CustomerOfferProcedure> retrieve(RetrieveRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
     }
 
     @Override
     public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
         Integer id = Integer.valueOf(request.getCustomerofferId());
         LOGGER.info("Update received for {}", id);
-        CustomerOfferState procedure = svc.updateProcedure(id);
-        if (procedure == null) {
-            return Uni.createFrom().nullItem();
-        }
-        return notificationService.onCustomerOfferCompleted(id.toString())
+        return svc.updateProcedure(id)
+                .call(state -> notificationService.onCustomerOfferCompleted(id.toString()))
                 .onItem()
-                .transform(e -> CustomerOfferProcedure.newBuilder()
+                .ifNotNull()
+                .transform(state -> CustomerOfferProcedure.newBuilder()
                         .setCustomerOfferProcessingTask(id.toString())
-                        .setCustomerOfferProcessingTaskResult(procedure.getStatus())
-                        .build());
+                        .setCustomerOfferProcessingTaskResult(state.getStatus())
+                        .build())
+                .onItem()
+                .ifNull()
+                .failWith(new StatusRuntimeException(Status.NOT_FOUND));
+    }
+
+    @Override
+    public Uni<RequestCustomerOfferProcedureResponse> request(RequestRequest request) {
+        return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
+    }
+
+    @Override
+    public Uni<CustomerOfferProcedure> retrieve(RetrieveRequest request) {
+        return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
+    }
+
+    @Override
+    public Uni<ExecuteCustomerOfferProcedureResponse> execute(ExecuteRequest request) {
+        return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 }

@@ -12,4 +12,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: bian-customer-offer
+    app: bian-example-customer-offer

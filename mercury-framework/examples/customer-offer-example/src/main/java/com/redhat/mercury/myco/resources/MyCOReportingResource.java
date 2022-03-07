@@ -1,7 +1,5 @@
 package com.redhat.mercury.myco.resources;
 
-import java.util.Map;
-
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -20,5 +18,7 @@ public class MyCOReportingResource {
     @GET
     @Path("/procedures")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAll() { return Response.ok(svc.getStates()).build(); }
+    public Response getAll() {
+        return Response.ok(svc.getStates()).build();
+    }
 }

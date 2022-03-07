@@ -1,35 +1,23 @@
 package com.redhat.mercury.myco.model;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@EqualsAndHashCode
+@ToString
+@Builder
+@RegisterForReflection
 public class CustomerOfferState {
 
+    Integer id;
     String customerReference;
     String status;
-    Integer id;
 
-    public String getCustomerReference() {
-        return customerReference;
-    }
-
-    public CustomerOfferState setCustomerReference(String customerReference) {
-        this.customerReference = customerReference;
-        return this;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public CustomerOfferState setStatus(String status) {
-        this.status = status;
-        return this;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public CustomerOfferState setId(Integer id) {
-        this.id = id;
-        return this;
-    }
 }
