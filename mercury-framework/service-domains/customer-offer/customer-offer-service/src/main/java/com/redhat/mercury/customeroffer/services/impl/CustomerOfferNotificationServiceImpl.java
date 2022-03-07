@@ -31,7 +31,7 @@ public class CustomerOfferNotificationServiceImpl implements CustomerOfferNotifi
 
     @Override
     public Uni<Empty> onCustomerOfferInitiated(String referenceId) {
-        return Uni.createFrom().nullItem().onItem().transform(o -> {
+        return Uni.createFrom().item(referenceId).onItem().transform(o -> {
             emitter.send(onCustomerOfferEvent(
                     referenceId,
                     CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE));
@@ -41,7 +41,7 @@ public class CustomerOfferNotificationServiceImpl implements CustomerOfferNotifi
 
     @Override
     public Uni<Empty> onCustomerOfferCompleted(String referenceId) {
-        return Uni.createFrom().nullItem().onItem().transform(o -> {
+        return Uni.createFrom().item(referenceId).onItem().transform(o -> {
             emitter.send(onCustomerOfferEvent(
                     referenceId,
                     CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE));
