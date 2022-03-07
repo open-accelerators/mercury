@@ -139,8 +139,13 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
     // The only ignored field when comparing two conditions is the
     // last transition time
     protected boolean areSameConditions(Condition c1, Condition c2) {
-        return ((c1 == null && c2 == null) || (c1 != null && c2 != null)) &&
-                Objects.equals(c1.getType(), c2.getType()) &&
+        if (c1 == null) {
+            return c2 == null;
+        }
+        if (c2 == null) {
+            return false;
+        }
+        return Objects.equals(c1.getType(), c2.getType()) &&
                 Objects.equals(c1.getStatus(), c2.getStatus()) &&
                 Objects.equals(c1.getReason(), c2.getReason()) &&
                 Objects.equals(c1.getMessage(), c2.getMessage());

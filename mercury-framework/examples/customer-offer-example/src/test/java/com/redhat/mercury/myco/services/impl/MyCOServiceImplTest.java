@@ -14,10 +14,15 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.util.JsonFormat;
 import com.redhat.mercury.customeroffer.services.CustomerOfferNotificationService;
 import com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
+import com.redhat.mercury.customeroffer.v10.ExecuteCustomerOfferProcedureResponseOuterClass.ExecuteCustomerOfferProcedureResponse;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureRequestCustomerOfferProcedureOuterClass.InitiateCustomerOfferProcedureRequestCustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureRequestOuterClass.InitiateCustomerOfferProcedureRequest;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureResponseOuterClass.InitiateCustomerOfferProcedureResponse;
+import com.redhat.mercury.customeroffer.v10.RequestCustomerOfferProcedureResponseOuterClass.RequestCustomerOfferProcedureResponse;
+import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.ExecuteRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.InitiateRequest;
+import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
+import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
 import com.redhat.mercury.customeroffer.v10.client.CustomerOfferClient;
 import com.redhat.mercury.myco.model.CustomerOfferState;
@@ -146,4 +151,48 @@ class MyCOServiceImplTest {
         }
     }
 
+    @Test
+    void testExecute() {
+        CompletableFuture<ExecuteCustomerOfferProcedureResponse> message = new CompletableFuture<>();
+        client.getCrCustomerOfferProcedureService()
+                .execute(ExecuteRequest.getDefaultInstance())
+                .subscribe()
+                .with(message::complete, message::completeExceptionally);
+        try {
+            message.get(5, TimeUnit.SECONDS);
+            fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(message).isCompletedExceptionally();
+        }
+    }
+
+    @Test
+    void testRequest() {
+        CompletableFuture<RequestCustomerOfferProcedureResponse> message = new CompletableFuture<>();
+        client.getCrCustomerOfferProcedureService()
+                .request(RequestRequest.getDefaultInstance())
+                .subscribe()
+                .with(message::complete, message::completeExceptionally);
+        try {
+            message.get(5, TimeUnit.SECONDS);
+            fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(message).isCompletedExceptionally();
+        }
+    }
+
+    @Test
+    void testRetrieve() {
+        CompletableFuture<CustomerOfferProcedure> message = new CompletableFuture<>();
+        client.getCrCustomerOfferProcedureService()
+                .retrieve(RetrieveRequest.getDefaultInstance())
+                .subscribe()
+                .with(message::complete, message::completeExceptionally);
+        try {
+            message.get(5, TimeUnit.SECONDS);
+            fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(message).isCompletedExceptionally();
+        }
+    }
 }

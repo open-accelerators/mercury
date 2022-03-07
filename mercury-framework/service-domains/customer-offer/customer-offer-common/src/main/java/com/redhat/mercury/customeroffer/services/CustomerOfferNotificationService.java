@@ -4,13 +4,13 @@ import com.google.protobuf.Empty;
 
 import io.smallrye.mutiny.Uni;
 
-public abstract class CustomerOfferNotificationService {
+public interface CustomerOfferNotificationService {
 
-    public Uni<Empty> onCustomerOfferInitiated(String referenceId) {
+    default Uni<Empty> onCustomerOfferInitiated(String referenceId) {
         return noOpReply();
     }
 
-    public Uni<Empty> onCustomerOfferCompleted(String referenceId) {
+    default Uni<Empty> onCustomerOfferCompleted(String referenceId) {
         return noOpReply();
     }
 

@@ -4,7 +4,7 @@ import com.google.protobuf.Message;
 
 import io.smallrye.mutiny.Uni;
 
-public abstract class PartyRoutingProfileNotificationService {
+public interface PartyRoutingProfileNotificationService {
 
     //TODO: Add PartyRoutingProfile event handler methods
     private Uni<Message> noOpReply() {

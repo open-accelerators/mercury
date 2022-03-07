@@ -30,13 +30,13 @@ import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 
-import static com.redhat.mercury.operator.controller.ServiceDomainInfraController.KAFKA_LISTENER_TYPE_PLAIN;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.CONDITION_KAFKA_BROKER_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_EXCEPTION;
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_WAITING;
+import static io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationPlain.TYPE_PLAIN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -215,7 +215,7 @@ public class ServiceDomainInfraControllerTest extends AbstractControllerTest {
 
         // Update Kafka
         kafka.setStatus(new KafkaStatusBuilder().withListeners(new ListenerStatusBuilder()
-                        .withName(KAFKA_LISTENER_TYPE_PLAIN)
+                        .withName(TYPE_PLAIN)
                         .withAddresses(new ListenerAddressBuilder()
                                 .withHost("my-kafka.example.com")
                                 .withPort(9092)
@@ -322,16 +322,6 @@ public class ServiceDomainInfraControllerTest extends AbstractControllerTest {
                         .build())
                 .withSpec(new ServiceDomainInfraSpecBuilder().build())
                 .build();
-    }
-
-    private void assertThatIsNotReady(UpdateControl<ServiceDomainInfra> update) {
-        assertThat(update.isUpdateStatus()).isTrue();
-        assertThat(update.getResource().getStatus().isReady()).isFalse();
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_READY);
-        assertThat(condition.getStatus()).isEqualTo(ResourceUtils.toStatus(Boolean.FALSE));
-        assertThat(condition.getReason()).isNull();
-        assertThat(condition.getMessage()).isNull();
-        assertThat(condition.getLastTransitionTime()).isNotNull();
     }
 
     private void assertEphemeralKafka(Kafka kafka) {

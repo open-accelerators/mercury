@@ -99,6 +99,13 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final String INTEGRATION_TYPE_PROPERTY = "type";
     private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
 
+    private static final CustomResourceDefinitionContext CAMEL_RESOURCE_DEFINITION = new CustomResourceDefinitionContext.Builder()
+            .withGroup("camel.apache.org")
+            .withVersion("v1")
+            .withPlural("integrations")
+            .withScope(Scope.NAMESPACED.toString())
+            .build();
+
     @ConfigProperty(name = "application.version")
     String version;
 
@@ -109,14 +116,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
                 .runnableInformer(0);
 
-        CustomResourceDefinitionContext resourceDefinitionContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withScope(Scope.NAMESPACED.toString())
-                .build();
-
-        SharedIndexInformer<GenericKubernetesResource> integrationInformer = client.genericKubernetesResources(resourceDefinitionContext)
+        SharedIndexInformer<GenericKubernetesResource> integrationInformer = client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION)
                 .inAnyNamespace()
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
                 .runnableInformer(0);
@@ -247,17 +247,9 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
     private void deleteCamelHttpIntegration(ServiceDomain sd) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
+        final GenericKubernetesResource integration = client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
         if (integration != null) {
-            client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).delete();
+            client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).delete();
         }
     }
 
@@ -266,19 +258,13 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         String sdCamelRouteYaml = configMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
 
         String yamlString = mergeCamelYamls(sd, integrationName, sdCamelRouteYaml);
-        CustomResourceDefinitionContext resourceDefinitionContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withScope(Scope.NAMESPACED.toString())
-                .build();
 
-        Resource<GenericKubernetesResource> expected = client.genericKubernetesResources(resourceDefinitionContext)
+        Resource<GenericKubernetesResource> expected = client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION)
                 .inNamespace(sd.getMetadata().getNamespace())
                 .load(new ByteArrayInputStream(yamlString.getBytes(StandardCharsets.UTF_8)));
 
         final String sdNamespace = sd.getMetadata().getNamespace();
-        GenericKubernetesResource current = client.genericKubernetesResources(resourceDefinitionContext)
+        GenericKubernetesResource current = client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION)
                 .inNamespace(sdNamespace)
                 .withName(integrationName)
                 .get();
@@ -288,7 +274,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 expected.get().getAdditionalProperties().get(INTEGRATION_SPEC_PROPERTY))
         ) {
             LOGGER.debug("Creating or replacing Integration {}", integrationName);
-            client.genericKubernetesResources(resourceDefinitionContext)
+            client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION)
                     .inNamespace(sd.getMetadata().getNamespace())
                     .createOrReplace(expected.get());
             LOGGER.debug("Created or replaced Integration {}", integrationName);

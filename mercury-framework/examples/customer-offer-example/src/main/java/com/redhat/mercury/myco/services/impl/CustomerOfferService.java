@@ -23,9 +23,13 @@ public class CustomerOfferService {
         return states.values();
     }
 
+    public void clear() {
+        states.clear();
+    }
+
     public Uni<CustomerOfferState> initiateProcedure(String customerReference) {
         return Uni.createFrom()
-                .item(() -> getId())
+                .item(this::getId)
                 .onItem()
                 .transform(id -> {
                     CustomerOfferState state = CustomerOfferState.builder()

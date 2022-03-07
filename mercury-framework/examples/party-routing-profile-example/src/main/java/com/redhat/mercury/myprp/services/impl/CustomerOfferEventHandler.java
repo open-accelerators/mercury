@@ -16,7 +16,7 @@ import static com.redhat.mercury.myprp.services.impl.PartyRoutingService.INITIAT
 
 
 @ApplicationScoped
-public class CustomerOfferEventHandler extends CustomerOfferNotificationService {
+public class CustomerOfferEventHandler implements CustomerOfferNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferEventHandler.class);
 

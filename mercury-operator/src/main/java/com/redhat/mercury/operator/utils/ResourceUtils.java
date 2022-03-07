@@ -6,6 +6,9 @@ import java.time.format.DateTimeFormatter;
 
 public class ResourceUtils {
 
+    private ResourceUtils() {
+    }
+
     public static final String toStatus(Boolean value) {
         if (Boolean.TRUE.equals(value)) {
             return "True";
@@ -21,17 +24,17 @@ public class ResourceUtils {
         if (text == null || text.isBlank()) {
             return text;
         }
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             if (c >= 'A' && c <= 'Z') {
                 c = Character.toLowerCase(c);
                 if (i != 0) {
-                    result += "-";
+                    result.append("-");
                 }
             }
-            result += c;
+            result.append(c);
         }
-        return result;
+        return result.toString();
     }
 }

@@ -37,5 +37,4 @@ public class ServiceDomainSpec implements Serializable {
     private String serviceDomainInfra;
     private Type type;
     private List<ExposeType> expose;
-    private List<Binding> binding;
 }

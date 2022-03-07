@@ -20,7 +20,7 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 
 @ApplicationScoped
-public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificationService {
+public class CustomerOfferNotificationServiceImpl implements CustomerOfferNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferNotificationServiceImpl.class);
 

@@ -4,14 +4,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.inject.Inject;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.mercury.customeroffer.v10.client.CustomerOfferClient;
 import com.redhat.mercury.myco.model.CustomerOfferState;
 import com.redhat.mercury.myco.services.impl.CustomerOfferService;
 
@@ -28,14 +23,8 @@ import static org.mockito.Mockito.when;
 @QuarkusTest
 class MyCOReportingResourceTest {
 
-    @Inject
-    CustomerOfferClient client;
-
     @InjectMock
     CustomerOfferService svc;
-
-    @Inject
-    ObjectMapper mapper;
 
     @Test
     void testRetrieveEmpty() {
@@ -53,7 +42,7 @@ class MyCOReportingResourceTest {
     }
 
     @Test
-    void testRetrieve() throws JsonProcessingException {
+    void testRetrieve() {
         Collection<CustomerOfferState> states = Arrays.asList(
                 CustomerOfferState.builder().id(1)
                         .customerReference("customer-ref-01")
@@ -85,7 +74,8 @@ class MyCOReportingResourceTest {
                 });
 
         verify(svc, Mockito.times(1)).getStates();
-        assertThat(results).hasSize(states.size());
-        assertThat(results).containsExactlyInAnyOrderElementsOf(states);
+        assertThat(results)
+                .hasSize(states.size())
+                .containsExactlyInAnyOrderElementsOf(states);
     }
 }
