@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.redhat.mercury</groupId>
@@ -15,6 +16,7 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <jandex-maven-plugin.version>1.2.2</jandex-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.version>2.6.3.Final</quarkus.platform.version>
@@ -26,12 +28,14 @@
         <operator-sdk.version>3.0.3</operator-sdk.version>
         <strimzi-api.version>0.28.0</strimzi-api.version>
         <archetype.version>3.2.0</archetype.version>
-        <!-- Image build properties -->
-        <quarkus.native.container-build>true</quarkus.native.container-build>
-        <quarkus.container-image.build>true</quarkus.container-image.build>
-        <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
-        <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
-        <!-- Sonar Cloud properties -->
+        <!-- CheckStyle -->
+        <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
+        <checkstyle.version>10.0</checkstyle.version>
+        <!-- Coverage -->
+        <jacoco-maven-plugin.version>0.8.7</jacoco-maven-plugin.version>
+        <sonar-maven-plugin.version>3.9.1.2184</sonar-maven-plugin.version>
+        <sonar.coverage.jacoco.xmlReportPaths>${basedir}/target/jacoco-jars</sonar.coverage.jacoco.xmlReportPaths>
+        <!-- Sonar Cloud -->
         <sonar.organization>rh-open-accelerators</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -40,6 +44,7 @@
         <module>mercury-api</module>
         <module>mercury-framework</module>
         <module>mercury-operator</module>
+        <module>coverage</module>
     </modules>
 
     <distributionManagement>
@@ -95,6 +100,7 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -134,6 +140,7 @@
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
+                    <version>${jandex-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
@@ -161,6 +168,33 @@
                     <artifactId>maven-archetype-plugin</artifactId>
                     <version>${archetype.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>${sonar-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-plugin.version}</version>
+                    <executions>
+                        <!-- to avoid bugs in some situations -->
+                        <execution>
+                            <id>default-prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <!-- create report during maven verify phase -->
+                        <execution>
+                            <id>report</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -178,6 +212,16 @@
         </plugins>
     </build>
     <profiles>
+        <profile>
+            <id>container-build</id>
+            <properties>
+                <!-- Image build properties -->
+                <quarkus.native.container-build>true</quarkus.native.container-build>
+                <quarkus.container-image.build>true</quarkus.container-image.build>
+                <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
+                <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
+            </properties>
+        </profile>
         <profile>
             <id>podman</id>
             <activation>
@@ -201,6 +245,50 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>checkstyle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${maven-checkstyle-plugin.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.puppycrawl.tools</groupId>
+                                <artifactId>checkstyle</artifactId>
+                                <version>${checkstyle.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <configLocation>google_checks.xml</configLocation>
+                            <sourceDirectories>
+                                <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                                <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>

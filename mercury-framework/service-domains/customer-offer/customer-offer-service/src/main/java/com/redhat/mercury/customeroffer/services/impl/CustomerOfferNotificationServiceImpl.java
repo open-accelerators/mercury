@@ -20,7 +20,7 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 
 @ApplicationScoped
-public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificationService {
+public class CustomerOfferNotificationServiceImpl implements CustomerOfferNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferNotificationServiceImpl.class);
 
@@ -31,7 +31,7 @@ public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificat
 
     @Override
     public Uni<Empty> onCustomerOfferInitiated(String referenceId) {
-        return Uni.createFrom().nullItem().onItem().transform(o -> {
+        return Uni.createFrom().item(referenceId).onItem().transform(o -> {
             emitter.send(onCustomerOfferEvent(
                     referenceId,
                     CustomerOffer.CUSTOMER_OFFER_PROCEDURE_INITIATED_TYPE));
@@ -41,7 +41,7 @@ public class CustomerOfferNotificationServiceImpl extends CustomerOfferNotificat
 
     @Override
     public Uni<Empty> onCustomerOfferCompleted(String referenceId) {
-        return Uni.createFrom().nullItem().onItem().transform(o -> {
+        return Uni.createFrom().item(referenceId).onItem().transform(o -> {
             emitter.send(onCustomerOfferEvent(
                     referenceId,
                     CustomerOffer.CUSTOMER_OFFER_PROCEDURE_COMPLETED_TYPE));

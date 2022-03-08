@@ -647,9 +647,9 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
 
         OwnerReference ownerReference = ownerReferences.get(0);
         assertThat(ownerReference).isNotNull();
-        assertThat(sd.getMetadata().getName()).isEqualTo(ownerReference.getName());
-        assertThat(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND).isEqualTo(ownerReference.getKind());
-        assertThat(MercuryConstants.API_VERSION).isEqualTo(ownerReference.getApiVersion());
+        assertThat(ownerReference.getName()).isEqualTo(sd.getMetadata().getName());
+        assertThat(ownerReference.getKind()).isEqualTo(ServiceDomainController.SERVICE_DOMAIN_OWNER_REFERENCES_KIND);
+        assertThat(ownerReference.getApiVersion()).isEqualTo(MercuryConstants.API_VERSION);
     }
 
     private void createDefultNamespace() {

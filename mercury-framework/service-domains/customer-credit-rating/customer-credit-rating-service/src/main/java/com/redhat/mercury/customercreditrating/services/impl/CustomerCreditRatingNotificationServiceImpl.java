@@ -13,7 +13,7 @@ import com.redhat.mercury.customercreditrating.CustomerCreditRating;
 import com.redhat.mercury.customercreditrating.services.CustomerCreditRatingNotificationService;
 
 @ApplicationScoped
-public class CustomerCreditRatingNotificationServiceImpl extends CustomerCreditRatingNotificationService {
+public class CustomerCreditRatingNotificationServiceImpl implements CustomerCreditRatingNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerCreditRatingNotificationServiceImpl.class);
 

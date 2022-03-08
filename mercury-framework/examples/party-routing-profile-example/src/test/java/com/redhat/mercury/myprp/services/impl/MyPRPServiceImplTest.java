@@ -1,4 +1,4 @@
-package com.redhat.mercury.myccr.services.impl;
+package com.redhat.mercury.myprp.services.impl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -9,7 +9,6 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
-import com.redhat.mercury.myprp.services.impl.CustomerOfferEventHandler;
 import com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
 import com.redhat.mercury.partyroutingprofile.v10.StatusOuterClass.Status;
 import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
@@ -30,7 +29,7 @@ class MyPRPServiceImplTest {
 
     @Test
     void testRetrievePartyStateStatus() throws ExecutionException, InterruptedException, TimeoutException {
-        String prpId = "kermit";
+        String prpId = "1";
         eventHandler.onCustomerOfferCompleted(prpId).await().indefinitely();
         CompletableFuture<RetrieveStatusResponse> message = new CompletableFuture<>();
         client.getBqStatusService().retrieveStatus(

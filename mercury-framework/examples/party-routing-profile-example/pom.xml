@@ -47,6 +47,12 @@
     </dependencies>
     <profiles>
         <profile>
+            <id>container-build</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
             <id>native</id>
             <activation>
                 <property>

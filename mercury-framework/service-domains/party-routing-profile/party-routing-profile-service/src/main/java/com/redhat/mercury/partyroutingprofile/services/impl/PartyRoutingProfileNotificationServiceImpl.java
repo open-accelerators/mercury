@@ -13,7 +13,7 @@ import com.redhat.mercury.partyroutingprofile.PartyRoutingProfile;
 import com.redhat.mercury.partyroutingprofile.services.PartyRoutingProfileNotificationService;
 
 @ApplicationScoped
-public class PartyRoutingProfileNotificationServiceImpl extends PartyRoutingProfileNotificationService {
+public class PartyRoutingProfileNotificationServiceImpl implements PartyRoutingProfileNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyRoutingProfileNotificationServiceImpl.class);
 

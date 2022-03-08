@@ -78,7 +78,7 @@ contains tools to automatically subscribe to a messaging channel.
 Extend the abstract class `CustomerOfferNotificationService` for handling each specific event
 
 ```java
-public MyCustomerOfferNotificationServiceImpl extends CustomerOfferNotificationService {
+public class MyCustomerOfferNotificationServiceImpl extends CustomerOfferNotificationService {
     
     @Override
     public void onCustomerOfferInitiated(CustomerOfferNotification notification) {
@@ -104,7 +104,7 @@ only have to implement the methods your business logic requires. If a given meth
 a no-op default implementation will be provided for you.
 
 ```java
-public MyCustomerOffer implements CustomerOfferService {
+public class MyCustomerOffer implements CustomerOfferService {
     
     @Inject
     CustomerOfferNotificationService notificationService;

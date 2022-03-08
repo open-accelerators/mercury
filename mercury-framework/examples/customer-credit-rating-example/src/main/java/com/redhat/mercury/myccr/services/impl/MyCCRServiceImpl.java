@@ -14,6 +14,8 @@ import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingsta
 import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RequestRequest;
 import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
@@ -25,17 +27,17 @@ public class MyCCRServiceImpl implements CRCustomerCreditRatingStateService {
 
     @Override
     public Uni<ExecuteCustomerCreditRatingStateResponse> execute(ExecuteRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+        return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Override
     public Uni<InitiateCustomerCreditRatingStateResponse> initiate(InitiateRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+        return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Override
     public Uni<RequestCustomerCreditRatingStateResponse> request(RequestRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+        return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Override

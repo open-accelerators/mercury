@@ -5,9 +5,9 @@ import com.redhat.mercury.model.StateChangeNotification;
 
 import io.smallrye.mutiny.Uni;
 
-public abstract class CustomerCreditRatingNotificationService {
+public interface CustomerCreditRatingNotificationService {
 
-    public Uni<Message> onCreditRatingStateEvent(StateChangeNotification notification) {
+    default Uni<Message> onCreditRatingStateEvent(StateChangeNotification notification) {
         return noOpReply();
     }
 

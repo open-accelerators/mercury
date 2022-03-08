@@ -3388,10 +3388,10 @@
         "type": "object",
         "properties": {
           "CustomerReference": {
-            "type": "object"
+            "type": "string"
           },
           "PartyReference": {
-            "type": "object"
+            "type": "string"
           },
           "ProductandServiceType": {
             "type": "string"

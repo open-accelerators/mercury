@@ -15,6 +15,7 @@ import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusSe
 import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
 import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.UpdateStatusRequest;
 
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
@@ -25,11 +26,6 @@ public class MyPRPServiceImpl implements BQStatusService {
 
     @Inject
     PartyRoutingService svc;
-
-    @Override
-    public Uni<CaptureStatusResponse> captureStatus(CaptureStatusRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
-    }
 
     @Override
     public Uni<RetrieveStatusResponse> retrieveStatus(RetrieveStatusRequest request) {
@@ -43,7 +39,7 @@ public class MyPRPServiceImpl implements BQStatusService {
                 }
                 return RetrieveStatusResponse.newBuilder()
                         .setStatus(Status.newBuilder()
-                                .setCustomerRelationshipStatus(prpId)
+                                .setCustomerRelationshipStatus(state.getStatus())
                                 .build())
                         .build();
             }
@@ -52,7 +48,12 @@ public class MyPRPServiceImpl implements BQStatusService {
     }
 
     @Override
+    public Uni<CaptureStatusResponse> captureStatus(CaptureStatusRequest request) {
+        return Uni.createFrom().failure(new StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED));
+    }
+
+    @Override
     public Uni<UpdateStatusResponse> updateStatus(UpdateStatusRequest request) {
-        return Uni.createFrom().failure(new UnsupportedOperationException("not implemented"));
+        return Uni.createFrom().failure(new StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED));
     }
 }

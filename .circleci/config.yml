@@ -8,10 +8,19 @@ jobs:
       - checkout
       - run:
           name: Analyze on SonarCloud
-          command: mvn install sonar:sonar -Dsonar.projectKey=open-accelerators_mercury
+          command: mvn install sonar:sonar -Pcoverage -Dsonar.projectKey=open-accelerators_mercury
+  checkstyle:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - run:
+          name: Check style
+          command: mvn install -Pcheckstyle
 
 workflows:
   main:
     jobs:
       - build:
           context: SonarCloud
+      - checkstyle

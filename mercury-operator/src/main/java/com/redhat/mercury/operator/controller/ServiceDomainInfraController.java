@@ -30,6 +30,7 @@ import io.strimzi.api.kafka.model.EntityTopicOperatorSpecBuilder;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpecBuilder;
+import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.ZookeeperClusterSpecBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
@@ -48,6 +49,8 @@ import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.CONDITI
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.MESSAGE_KAFKA_BROKER_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_EXCEPTION;
 import static com.redhat.mercury.operator.model.ServiceDomainInfraStatus.REASON_KAFKA_WAITING;
+import static io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationPlain.TYPE_PLAIN;
+import static io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTls.TYPE_TLS;
 
 @ControllerConfiguration
 public class ServiceDomainInfraController extends AbstractController<ServiceDomainInfraSpec, ServiceDomainInfraStatus, ServiceDomainInfra> implements Reconciler<ServiceDomainInfra>, EventSourceInitializer<ServiceDomainInfra> {
@@ -55,7 +58,6 @@ public class ServiceDomainInfraController extends AbstractController<ServiceDoma
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDomainInfraController.class);
 
     private static final String DEFAULT_PERSISTENT_STORAGE = "100Gi";
-    public static final String KAFKA_LISTENER_TYPE_PLAIN = "plain";
     private static final String KAFKA_VERSION = "3.0.0";
     private static final String BROKER_PROTOCOL_VERSION = "3.0";
 
@@ -112,7 +114,7 @@ public class ServiceDomainInfraController extends AbstractController<ServiceDoma
             LOGGER.debug("KafkaBroker for {} is Ready", sdi.getMetadata().getName());
             List<ListenerStatus> listeners = kafka.getStatus().getListeners();
             Optional<ListenerStatus> listenerStatus = listeners.stream()
-                    .filter(x -> KAFKA_LISTENER_TYPE_PLAIN.equals(x.getType()))
+                    .filter(x -> TYPE_PLAIN.equals(x.getType()))
                     .findFirst();
             if (listenerStatus.isPresent()) {
                 LOGGER.debug("Assigning Kafka bootstrapServer with value {} to {}",
@@ -182,13 +184,13 @@ public class ServiceDomainInfraController extends AbstractController<ServiceDoma
                 .withKafka(new KafkaClusterSpecBuilder()
                         .withReplicas(sdi.getSpec().getKafka().getReplicas())
                         .withListeners(new GenericKafkaListenerBuilder()
-                                        .withName("plain")
+                                        .withName(TYPE_PLAIN)
                                         .withPort(9092)
                                         .withType(KafkaListenerType.INTERNAL)
                                         .withTls(false)
                                         .build(),
                                 new GenericKafkaListenerBuilder()
-                                        .withName("tls")
+                                        .withName(TYPE_TLS)
                                         .withPort(9093)
                                         .withType(KafkaListenerType.INTERNAL)
                                         .withTls(true)
