@@ -21,7 +21,7 @@ jobs:
         run: |
           sudo apt-get install libxml2-utils
       - name: Publish to GitHub Packages Apache Maven
-        run: mvn deploy -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
+        run: mvn deploy -Pcontainer-build -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set Mercury Version
