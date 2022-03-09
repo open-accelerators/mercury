@@ -4,7 +4,7 @@ metadata:
   name: mercury-operator.1.0.1
   namespace: placeholder
   annotations:
-    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.1-SNAPSHOT
+    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.1
     repository: https://github.com/open-accelerators/mercury
     capabilities: Basic Install
     categories: Integration & Delivery
@@ -41,7 +41,7 @@ metadata:
             }
           },
           "spec": {
-            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1-SNAPSHOT",
+            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1",
             "serviceDomainInfra": "my-example-sdi",
             "type": "CustomerCreditRating",
             "expose": ["http"]
