@@ -14,7 +14,7 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>${rootArtifactId}-common</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

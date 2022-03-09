@@ -53,10 +53,9 @@ if [ ! -z "$PROPS_FILE" ]
 then
   if [ ! -f "$PROPS_FILE" ]
   then
-    echo "missing ${PROPS_FILE}"
+    echo "Missing ${PROPS_FILE}. I will not do any replacement."
     exit 0
   fi
-  declare -A props
   while read line; do
     if [[ $line = project.dev.com.redhat.mercury\:mercury-parent=* ]]
     then

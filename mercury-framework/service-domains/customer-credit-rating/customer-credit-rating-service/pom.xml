@@ -12,12 +12,12 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-credit-rating-common</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>mercury-common-events</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

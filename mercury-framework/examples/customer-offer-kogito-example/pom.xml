@@ -15,12 +15,12 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-offer-service</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-credit-rating-client</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.kie.kogito</groupId>
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-offer-client</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

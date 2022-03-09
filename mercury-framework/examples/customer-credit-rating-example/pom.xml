@@ -12,7 +12,7 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-credit-rating-service</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-credit-rating-client</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

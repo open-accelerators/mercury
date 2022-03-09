@@ -12,12 +12,12 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>party-routing-profile-service</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>customer-offer-events</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <!-- for reporting -->
         <dependency>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>com.redhat.mercury</groupId>
             <artifactId>party-routing-profile-client</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
