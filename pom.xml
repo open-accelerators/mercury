@@ -203,10 +203,20 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <executable>./hacks/update-version.sh</executable>
+                    <arguments>1.0.1-SNAPSHOT</arguments>
+                    <arguments>1.0.1</arguments>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <completionGoals>exec:exec</completionGoals>
                 </configuration>
             </plugin>
         </plugins>
