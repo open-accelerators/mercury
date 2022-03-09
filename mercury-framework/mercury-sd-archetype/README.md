@@ -22,11 +22,11 @@ and cleaned up after running the archetype.
 ```shell
 mvn archetype:generate -DarchetypeGroupId=com.redhat.mercury \
   -DarchetypeArtifactId=mercury-sd-archetype \
-  -DarchetypeVersion=1.0.1-SNAPSHOT \
+  -DarchetypeVersion=1.0.1 \
   -DartifactId=account-recovery \
   -DsdName=AccountRecovery \
   -DgroupId=com.redhat.mercury \
-  -Dversion=1.0.1-SNAPSHOT
+  -Dversion=1.0.1
 ```
 
 This should be executed within the [service-domains](../service-domains) folder so that it is 
