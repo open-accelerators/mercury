@@ -15,9 +15,7 @@ e.g.
 apiVersion: mercury.redhat.io/v1alpha1
 kind: ServiceDomainInfra
 metadata:
-  name: service-domain-infra
-  labels:
-    service-domain-infra: service-domain-infra
+  name: example-service-domain-infra
 spec:
   kafka:
     replicas: 3
@@ -26,10 +24,20 @@ spec:
       size: 10Gi
 ```
 
+Supported Kafka storage types are:
+* `persistent-claim`
+* `ephemeral`
+
+You can create an example `ServiceDomainInfra` from the examples folder:
+
+```shell
+kubectl create -f examples/crs/my-first-sdi.yaml
+```
+
 ### Service Domain
 
 The `ServiceDomain` custom resource represents an implementation of a specific Service Domain.
-It basically consists of a gRPC service and a deployment managed by the operator. 
+It basically consists of a gRPC service, a deployment and a Kafka Topic managed by the operator. 
 If external access is required then use the `expose` parameter, then, the operator will create
 the Camel-K resources needed to expose the service through the available endpoints.
 
@@ -39,12 +47,10 @@ At the moment only the `http` endpoint is supported.
 apiVersion: mercury.redhat.io/v1alpha1
 kind: ServiceDomain
 metadata:
-  name: customer-offer
-  labels:
-    service-domain: customer-offer
+  name: example-customer-offer
 spec:
   businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.1
-  serviceDomainInfra: service-domain-infra
+  serviceDomainInfra: example-service-domain-infra
   type: CustomerOffer
   expose:
     - http
@@ -53,6 +59,12 @@ spec:
 * serviceDomainInfra - the name of the service domain infra this service domain is a part of.
 * type - the type of the service domain.
 * expose - a list of endpoints this service domain is exposed 
+
+You can create an example `ServiceDomain` from the examples folder:
+
+```shell
+kubectl create -f examples/crs/my-customer-offer.yaml
+```
 
 ## Functionality
 

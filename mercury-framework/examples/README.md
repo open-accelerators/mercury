@@ -68,10 +68,8 @@ kubectl create -f deploy/party-routing-profile-reporting.yaml
 ```shell
 $ curl -vH "Content-Type: application/json" `minikube service -n mercury customer-offer-camelk-rest --url=true`/CustomerOffer/Initiate -d '          
 {
-  "initiateCustomerOfferProcedureRequest": {
-    "CustomerOfferProcedure": {
-      "CustomerReference": "my-customer-reference"
-    }
+  "CustomerOfferProcedure": {
+    "CustomerReference": "my-customer-reference"
   }
 }'
 
@@ -111,7 +109,7 @@ $ curl -H "Content-Type: application/json" `minikube service party-routing-profi
 4. Complete the Customer Offer Procedure
 
 ```shell
-$ curl -XPUT -vH "Content-Type: application/json" `minikube service customer-offer-camelk-rest --url=true`/CustomerOffer/1/Update -d '          
+$ curl -XPUT -vH "Content-Type: application/json" `minikube service example-customer-offer-camelk-rest --url=true`/CustomerOffer/1/Update -d '          
 {
   "CustomerOfferProcedure": {
     "CustomerReference": "my-customer-reference"
@@ -130,7 +128,7 @@ $ curl -XPUT -vH "Content-Type: application/json" `minikube service customer-off
 5. Confirm the Party Routing Profile has been updated
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
+$ curl -H "Content-Type: application/json" `minikube service example-party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
 {
   "Status": {
     "CustomerRelationshipStatus": "1"
@@ -143,7 +141,7 @@ $ curl -H "Content-Type: application/json" `minikube service party-routing-profi
 The Customer Credit Rating example always provide the same result for any input.
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/${customercreditratingId}/Retrieve
+$ curl -H "Content-Type: application/json" `minikube service example-customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/${customercreditratingId}/Retrieve
 {
   "CustomerCreditRatingState": {
     "CreditRatingAssessmentResult": "802"
