@@ -49,7 +49,7 @@ kind: ServiceDomain
 metadata:
   name: example-customer-offer
 spec:
-  businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.1
+  businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT
   serviceDomainInfra: example-service-domain-infra
   type: CustomerOffer
   expose:
