@@ -6,7 +6,7 @@ data:
   directs.yaml: |-
     # camel-k: language=yaml
     # camel-k: dependency=camel-quarkus-protobuf
-    # camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-common:1.0.1-SNAPSHOT
+    # camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-common:1.0.2-SNAPSHOT
 
     - from:
         uri: direct:Retrieve

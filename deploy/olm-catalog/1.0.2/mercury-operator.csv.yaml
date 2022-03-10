@@ -1,10 +1,10 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: mercury-operator.1.0.1
+  name: mercury-operator.1.0.2
   namespace: placeholder
   annotations:
-    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.1
+    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.2
     repository: https://github.com/open-accelerators/mercury
     capabilities: Basic Install
     categories: Integration & Delivery
@@ -41,7 +41,7 @@ metadata:
             }
           },
           "spec": {
-            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.1",
+            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.2",
             "serviceDomainInfra": "my-example-sdi",
             "type": "CustomerCreditRating",
             "expose": ["http"]
@@ -69,7 +69,7 @@ spec:
   links:
     - name: GitHub Repository
       url: https://github.com/open-accelerators/mercury
-  version: 1.0.1
+  version: 1.0.2
   apiservicedefinitions: { }
   customresourcedefinitions:
     owned:

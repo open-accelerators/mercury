@@ -22,7 +22,7 @@ jobs:
           mv opm /usr/local/bin
       - name: Set Mercury Version
         run: |
-          echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)" >> $GITHUB_ENV
+          echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="properties"]/*[local-name()="container-image.tag"]/text()' pom.xml)" >> $GITHUB_ENV
       - name: build and deploy
         run: |
           ./hacks/generate-catalog.sh -v ${{ env.MERCURY_VERSION }}

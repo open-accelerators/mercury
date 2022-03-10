@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.redhat.mercury</groupId>
         <artifactId>mercury-framework-parent</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.2-SNAPSHOT</version>
     </parent>
     <artifactId>mercury-common</artifactId>
     <name>Mercury Common</name>
