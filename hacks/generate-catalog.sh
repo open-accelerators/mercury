@@ -5,9 +5,9 @@ set -o pipefail
 set -o nounset
 
 REGISTRY='quay.io/ecosystem-appeng'
-API_VERSION=1.0.1
-IMG_VERSION=${API_VERSION}-SNAPSHOT
-CHANNEL=1.0.x
+DEV_VERSION=1.0.2
+STABLE_VERSION=1.0.1
+CATALOG_VERSION=$DEV_VERSION
 CE=''
 push='false'
 
@@ -16,7 +16,7 @@ print_usage() {
 
   -c <docker|podman>      Set your preferred container engine. By default tries Podman and then Docker
   -r <container registry> Set the registry. Defaults to quay.io/ecosystem-appeng
-  -v <version>            Set the image version to be used in the image tag
+  -v <version>            Set the image version to be used in the catalog image tag. Default to $CATALOG_VERSION
   -p                      When set, the resulting images will be pushed
   -d                      Set the debug flag
   -h                      Prints this message"
@@ -55,11 +55,11 @@ check_commands() {
   fi
 }
 
-while getopts 'phdc:r:v:' flag; do
+while getopts 'phdv:c:r:' flag; do
   case "${flag}" in
     c) CE="${OPTARG}" ;;
     r) REGISTRY="${OPTARG}" ;;
-    v) IMG_VERSION="${OPTARG}" ;;
+    v) CATALOG_VERSION="${OPTARG}" ;;
     d) set -o xtrace ;;
     p) push='true' ;;
     *) print_usage
@@ -69,30 +69,42 @@ done
 
 check_commands
 
-# Build and validate bundle
-${CE} build -t ${REGISTRY}/mercury-bundle:${IMG_VERSION} -f ./deploy/olm-catalog/bundle.Dockerfile ./deploy/olm-catalog/${API_VERSION}/
-if [ "$push" == true ]
-then
-  ${CE} push ${REGISTRY}/mercury-bundle:${IMG_VERSION}
-fi
-opm alpha bundle validate --tag ${REGISTRY}/mercury-bundle:${IMG_VERSION} --image-builder=${CE}
+# Build and validate bundles
+versions=("1.0.1" "1.0.2")
+for v in "${versions[@]}"
+do
+  ${CE} build -t ${REGISTRY}/mercury-bundle:$v -f ./deploy/olm-catalog/bundle.Dockerfile ./deploy/olm-catalog/$v/
+  if [ "$push" == true ]
+  then
+    ${CE} push ${REGISTRY}/mercury-bundle:$v
+  fi
+  opm alpha bundle validate --tag ${REGISTRY}/mercury-bundle:$v --image-builder=${CE}
+done
 
 # Build and validate catalog
-opm init mercury-operator --default-channel=${CHANNEL} --description=./README.md --icon=./docs/images/mercury.png --output yaml > ./deploy/olm-catalog/${API_VERSION}/mercury-catalog/operator.yaml
-opm render ${REGISTRY}/mercury-bundle:${IMG_VERSION} --output yaml >> ./deploy/olm-catalog/${API_VERSION}/mercury-catalog/operator.yaml
-cat << EOF >> ./deploy/olm-catalog/${API_VERSION}/mercury-catalog/operator.yaml
+opm init mercury-operator --default-channel=stable --description=./README.md --icon=./docs/images/mercury.png --output yaml > ./deploy/olm-catalog/catalog/operator.yaml
+for v in "${versions[@]}"
+do
+  opm render ${REGISTRY}/mercury-bundle:$v --output yaml >> ./deploy/olm-catalog/catalog/operator.yaml
+done
+cat << EOF >> ./deploy/olm-catalog/catalog/operator.yaml
 ---
 schema: olm.channel
 package: mercury-operator
-name: ${CHANNEL}
+name: stable
 entries:
-  - name: mercury-operator.${API_VERSION}
+  - name: mercury-operator.$STABLE_VERSION
+---
+schema: olm.channel
+package: mercury-operator
+name: dev
+entries:
+  - name: mercury-operator.$DEV_VERSION
 EOF
+opm validate ./deploy/olm-catalog/catalog
 
-opm validate ./deploy/olm-catalog/${API_VERSION}/mercury-catalog
-
-${CE} build -f ./deploy/olm-catalog/mercury-catalog.Dockerfile -t ${REGISTRY}/mercury-catalog:${IMG_VERSION} ./deploy/olm-catalog/${API_VERSION}
+${CE} build -f ./deploy/olm-catalog/catalog.Dockerfile -t ${REGISTRY}/mercury-catalog:${CATALOG_VERSION} ./deploy/olm-catalog
 if [ "$push" == true ]
 then
-  ${CE} push ${REGISTRY}/mercury-catalog:${IMG_VERSION}
+  ${CE} push ${REGISTRY}/mercury-catalog:${CATALOG_VERSION}
 fi
