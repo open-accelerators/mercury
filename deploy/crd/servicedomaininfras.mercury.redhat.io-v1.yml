@@ -63,3 +63,13 @@ spec:
     storage: true
     subresources:
       status: {}
+    additionalPrinterColumns:
+      - description: Resource is Ready
+        jsonPath: .status.conditions[?(@.type=='Ready')].status
+        name: Ready
+        type: string
+      - description: Kafka cluster status is ready
+        jsonPath: .status.conditions[?(@.type=='KafkaBrokerReady')].status
+        name: Kafka
+        type: string
+
