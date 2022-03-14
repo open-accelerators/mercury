@@ -69,3 +69,24 @@ spec:
     storage: true
     subresources:
       status: {}
+    additionalPrinterColumns:
+      - description: Resource is Ready
+        jsonPath: .status.conditions[?(@.type=='Ready')].status
+        name: Ready
+        type: string
+      - description: Service Domain Infra Name
+        jsonPath: .spec.serviceDomainInfra
+        name: Infra
+        type: string
+      - description: Service Domain Infra status is ready
+        jsonPath: .status.conditions[?(@.type=='ServiceDomainInfraReady')].status
+        name: InfraReady
+        type: string
+      - description: Integration status is ready
+        jsonPath: .status.conditions[?(@.type=='IntegrationReady')].status
+        name: Integration
+        type: string
+      - description: Kafka topic status is ready
+        jsonPath: .status.conditions[?(@.type=='KafkaTopicReady')].status
+        name: Topic
+        type: string
