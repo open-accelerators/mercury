@@ -2,6 +2,7 @@ package com.redhat.mercury.operator.model;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -50,7 +51,7 @@ public abstract class AbstractResourceStatus {
     @JsonIgnore
     public boolean isReady() {
         Condition ready = getCondition(CONDITION_READY);
-        return ready != null  && STATUS_TRUE.equals(ready.getStatus());
+        return ready != null && STATUS_TRUE.equals(ready.getStatus());
     }
 
     @JsonIgnore
@@ -66,4 +67,5 @@ public abstract class AbstractResourceStatus {
         conditions.add(condition);
         return this;
     }
+
 }
