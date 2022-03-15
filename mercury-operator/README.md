@@ -114,6 +114,10 @@ SETTINGS=$(sed -e "s/github_user/$GITHUB_USER/" -e "s/github_password/$GITHUB_TO
 
 - An Integration Platform pointing to this configMap.
 
+```shell
+oc apply -f ../deploy/config/camel-k/integration-platform.yaml
+```
+
 ### On Minikube
 
 You will require the `registry` addon and then create the IntegrationPlatform
