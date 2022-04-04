@@ -94,7 +94,7 @@ public class GrpcService extends AbstractMojo {
                                                     sdName, sdName, sdNameCamel.toLowerCase(), version));
             clientDir.mkdirs();
 
-            File clientFile = new File(clientDir, sdNameCamel+"ClientTest.java");
+            File clientFile = new File(clientDir, sdNameCamel+"Client.java");
             if(!clientFile.exists()) {
                 clientFile.createNewFile();
             }
@@ -118,7 +118,7 @@ public class GrpcService extends AbstractMojo {
                                                         sdName, sdName));
             propertiesDir.mkdirs();
 
-            File propertiesFile = new File(propertiesDir, "applicationTest.properties");
+            File propertiesFile = new File(propertiesDir, "application.properties");
             if(!propertiesFile.exists()) {
                 propertiesFile.createNewFile();
             }
