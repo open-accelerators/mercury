@@ -43,7 +43,7 @@ public class GrpcService extends AbstractMojo {
             String sdNameCamel = formatter.capitalizeWord(sdName.replace("-", " "));
 
             // Retrieve list of apis from the proto/api directory
-            String[] apiFiles = new File(String.format("../service-domains/%s/%s-common/src/main/proto/%s/api",
+            String[] apiFiles = new File(String.format("service-domains/%s/%s-common/src/main/proto/%s/api",
                                                        sdName, sdName, version)).list();
             List<FuntionalPattern> FuntionalPatterns = new ArrayList<FuntionalPattern>();
 
@@ -90,7 +90,7 @@ public class GrpcService extends AbstractMojo {
             data += "}";
 
             // Create service domain client file in target directory
-            File clientDir = new File(String.format("../service-domains/%s/%s-client/src/main/java/com/redhat/mercury/%s/%s/client",
+            File clientDir = new File(String.format("service-domains/%s/%s-client/target/classes/com/redhat/mercury/%s/%s/client",
                                                     sdName, sdName, sdNameCamel.toLowerCase(), version));
             clientDir.mkdirs();
 
@@ -99,7 +99,7 @@ public class GrpcService extends AbstractMojo {
                 clientFile.createNewFile();
             }
 
-            FileWriter clientFw = new FileWriter(clientFile,true);
+            FileWriter clientFw = new FileWriter(clientFile,false);
             BufferedWriter clientBw = new BufferedWriter(clientFw);
             clientBw.write(data);
             clientBw.close();
@@ -114,16 +114,16 @@ public class GrpcService extends AbstractMojo {
             }
 
             // Create service domain application.properties file in target directory
-            File propertiesDir = new File(String.format("../service-domains/%s/%s-client/src/main/resources",
+            File propertiesDir = new File(String.format("service-domains/%s/%s-client/target/classes",
                                                         sdName, sdName));
             propertiesDir.mkdirs();
 
-            File propertiesFile = new File(propertiesDir, "application.propertiesTest");
+            File propertiesFile = new File(propertiesDir, "applicationTest.properties");
             if(!propertiesFile.exists()) {
                 propertiesFile.createNewFile();
             }
 
-            FileWriter propertiesFw = new FileWriter(propertiesFile,true);
+            FileWriter propertiesFw = new FileWriter(propertiesFile,false);
             BufferedWriter propertiesBw = new BufferedWriter(propertiesFw);
             propertiesBw.write(properties);
             propertiesBw.close();
