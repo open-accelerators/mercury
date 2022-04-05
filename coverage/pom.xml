@@ -51,6 +51,12 @@
             <artifactId>party-routing-profile-example</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <!-- maven plugins -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mercury-grpc-service</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>
