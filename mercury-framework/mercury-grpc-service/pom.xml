@@ -36,7 +36,13 @@
             <version>3.5</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.redhat.mercury</groupId>
+            <artifactId>mercury-common</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
+
 
     <build>
         <pluginManagement>
