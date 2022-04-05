@@ -39,11 +39,6 @@ public class GrpcService extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        BufferedWriter clientBw = null;
-        BufferedWriter propertiesBw = null;
-
-        try {
-
             String sdNameCamel = formatter.capitalizeWord(sdName.replace("-", " "));
 
             // Retrieve list of apis from the proto/api directory
@@ -97,9 +92,11 @@ public class GrpcService extends AbstractMojo {
             File clientDir = new File(String.format("service-domains/%s/%s-client/target/classes/com/redhat/mercury/%s/%s/client",
                                                     sdName, sdName, sdNameCamel.toLowerCase(), version));
             File clientFile = new File(clientDir, sdNameCamel+"Client.java");
-            FileWriter clientFw = new FileWriter(clientFile,false);
-            clientBw = new BufferedWriter(clientFw);
-            clientBw.write(data);
+            try (BufferedWriter clientBw = new BufferedWriter(new FileWriter(clientFile,false))) {
+                clientBw.write(data);
+            } catch(IOException e){
+                e.printStackTrace();
+            }
 
             // Create service domain application.properties file content
             String properties = "";
@@ -113,24 +110,10 @@ public class GrpcService extends AbstractMojo {
             File propertiesDir = new File(String.format("service-domains/%s/%s-client/target/classes",
                                                         sdName, sdName));
             File propertiesFile = new File(propertiesDir, "application.properties");
-            FileWriter propertiesFw = new FileWriter(propertiesFile,false);
-            propertiesBw = new BufferedWriter(propertiesFw);
-            propertiesBw.write(properties);
-
-        } catch(IOException e){
-            e.printStackTrace();
-        } finally {
-            try {
-                if (clientBw != null) {
-                    clientBw.close();
-                }
-                if (propertiesBw != null) {
-                    propertiesBw.close();
-                }
-            } catch (IOException e) {
+            try (BufferedWriter propertiesBw = new BufferedWriter(new FileWriter(propertiesFile,false))) {
+                propertiesBw.write(properties);
+            } catch(IOException e){
                 e.printStackTrace();
             }
-
-        }
     }
 }
