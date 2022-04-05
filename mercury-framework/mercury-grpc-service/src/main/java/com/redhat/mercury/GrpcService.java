@@ -38,6 +38,10 @@ public class GrpcService extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+
+        BufferedWriter clientBw = null;
+        BufferedWriter propertiesBw = null;
+
         try {
 
             String sdNameCamel = formatter.capitalizeWord(sdName.replace("-", " "));
@@ -92,17 +96,10 @@ public class GrpcService extends AbstractMojo {
             // Create service domain client file in target directory
             File clientDir = new File(String.format("service-domains/%s/%s-client/target/classes/com/redhat/mercury/%s/%s/client",
                                                     sdName, sdName, sdNameCamel.toLowerCase(), version));
-            clientDir.mkdirs();
-
             File clientFile = new File(clientDir, sdNameCamel+"Client.java");
-            if(!clientFile.exists()) {
-                clientFile.createNewFile();
-            }
-
             FileWriter clientFw = new FileWriter(clientFile,false);
-            BufferedWriter clientBw = new BufferedWriter(clientFw);
+            clientBw = new BufferedWriter(clientFw);
             clientBw.write(data);
-            clientBw.close();
 
             // Create service domain application.properties file content
             String properties = "";
@@ -110,26 +107,30 @@ public class GrpcService extends AbstractMojo {
                 properties += String.format("quarkus.grpc.clients.%s.host=${mercury.%s.service.host:%s}\n" +
                                 "quarkus.grpc.clients.%s.port=${mercury.%s.service.port:%s}\n",
                         fp.getWithSD(), sdName, sdName, fp.getWithSD(), sdName, port);
-
             }
 
             // Create service domain application.properties file in target directory
             File propertiesDir = new File(String.format("service-domains/%s/%s-client/target/classes",
                                                         sdName, sdName));
-            propertiesDir.mkdirs();
-
             File propertiesFile = new File(propertiesDir, "application.properties");
-            if(!propertiesFile.exists()) {
-                propertiesFile.createNewFile();
-            }
-
             FileWriter propertiesFw = new FileWriter(propertiesFile,false);
-            BufferedWriter propertiesBw = new BufferedWriter(propertiesFw);
+            propertiesBw = new BufferedWriter(propertiesFw);
             propertiesBw.write(properties);
-            propertiesBw.close();
 
         } catch(IOException e){
             e.printStackTrace();
+        } finally {
+            try {
+                if (clientBw != null) {
+                    clientBw.close();
+                }
+                if (propertiesBw != null) {
+                    propertiesBw.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 }
