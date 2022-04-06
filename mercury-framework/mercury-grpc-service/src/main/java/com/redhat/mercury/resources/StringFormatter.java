@@ -1,7 +1,7 @@
 package com.redhat.mercury.resources;
 
 public class StringFormatter {
-    public static String capitalizeWord(String str){
+    public static String capitalizeWords(String str){
         String words[]=str.split("\\s");
         String capitalizeWord="";
         for(String w:words){

@@ -43,7 +43,7 @@ public class GrpcService extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        String sdNameCamel = formatter.capitalizeWord(sdName.replace("-", " "));
+        String sdNameCamel = formatter.capitalizeWords(sdName.replace("-", " "));
 
         // Retrieve list of apis from the proto/api directory
         String[] apiFiles = new File(String.format("service-domains/%s/%s-common/src/main/proto/%s/api",

@@ -15,10 +15,10 @@ public class FuntionalPattern {
 
     public FuntionalPattern(String fullFilename, String sd) {
         String[] fileName = fullFilename.split("_", 2);
-        this.firstNotCap = fileName[0] + formatter.capitalizeWord(fileName[1].replace("_", " "));
-        this.firstCap = fileName[0].toUpperCase() + formatter.capitalizeWord(fileName[1].replace("_", " "));
+        this.firstNotCap = fileName[0] + formatter.capitalizeWords(fileName[1].replace("_", " "));
+        this.firstCap = fileName[0].toUpperCase() + formatter.capitalizeWords(fileName[1].replace("_", " "));
         this.withSD = sd + "-" + fullFilename.replace("_", "-").replace("-service", "");
-        this.withGet = "get" + formatter.capitalizeWord(firstNotCap);
+        this.withGet = "get" + formatter.capitalizeWords(firstNotCap);
     }
 
     public String getFirstNotCap() {
