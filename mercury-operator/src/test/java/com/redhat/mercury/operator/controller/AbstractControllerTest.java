@@ -1,11 +1,11 @@
 package com.redhat.mercury.operator.controller;
 
-import java.util.List;
-import java.util.UUID;
-
 import javax.inject.Inject;
 
 import com.redhat.mercury.operator.model.AbstractResourceStatus;
+import com.redhat.mercury.operator.model.ApiVersion;
+import com.redhat.mercury.operator.model.ExposeBuilder;
+import com.redhat.mercury.operator.model.HttpExposeTypeBuilder;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainInfra;
 import com.redhat.mercury.operator.model.ServiceDomainInfraSpecBuilder;
@@ -25,6 +25,9 @@ import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
+
+import java.util.List;
+import java.util.UUID;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
@@ -124,7 +127,10 @@ public abstract class AbstractControllerTest {
                     .withBusinessImage("testImage")
                     .withServiceDomainInfra(SERVICE_DOMAIN_INFRA_NAME)
                     .withType(ServiceDomainSpec.Type.CustomerOffer)
-                    .withExpose(ServiceDomainSpec.ExposeType.http)
+                    .withExpose(new ExposeBuilder().withHttp(new HttpExposeTypeBuilder()
+                                                                .withApiVersion(ApiVersion.v1)
+                                                                .build())
+                                .build())
                     .build());
         } else {
             sd.setSpec(new ServiceDomainSpecBuilder()
