@@ -9,4 +9,5 @@ spec:
   serviceDomainInfra: my-first-sdi
   type: CustomerOffer
   expose:
-    - http
+    http:
+      api-version: v1

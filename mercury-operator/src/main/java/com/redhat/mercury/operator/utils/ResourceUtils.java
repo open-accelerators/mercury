@@ -1,10 +1,14 @@
 package com.redhat.mercury.operator.utils;
 
+import com.redhat.mercury.operator.model.ApiVersion;
+
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class ResourceUtils {
+    private static final Map<ApiVersion, ApiVersionPair> apiVersionMap = Map.of(ApiVersion.v1, new ApiVersionPair("v10", "v1"));
 
     private ResourceUtils() {
     }
@@ -36,5 +40,33 @@ public class ResourceUtils {
             result.append(c);
         }
         return result.toString();
+    }
+
+    public static String getOpenApiVersion(ApiVersion apiVersion){
+        final ApiVersionPair apiVersionPair = apiVersionMap.get(apiVersion);
+        return apiVersionPair != null ? apiVersionPair.getOpenApiVersion() : null;
+    }
+
+    public static String getDirectVersion(ApiVersion apiVersion){
+        final ApiVersionPair apiVersionPair = apiVersionMap.get(apiVersion);
+        return apiVersionPair != null ? apiVersionPair.getDirectVersion() : null;
+    }
+
+    private static class ApiVersionPair{
+        private final String openApiVersion;
+        private final String directVersion;
+
+        public ApiVersionPair(String openApiVersion, String directVersion) {
+            this.openApiVersion = openApiVersion;
+            this.directVersion = directVersion;
+        }
+
+        public String getOpenApiVersion() {
+            return openApiVersion;
+        }
+
+        public String getDirectVersion() {
+            return directVersion;
+        }
     }
 }

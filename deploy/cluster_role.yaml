@@ -21,6 +21,7 @@ rules:
       - integrations
       - services
       - deployments
+      - configmaps
     verbs:
       - get
       - list
