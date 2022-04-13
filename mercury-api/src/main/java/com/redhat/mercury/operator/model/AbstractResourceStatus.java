@@ -26,8 +26,6 @@ public abstract class AbstractResourceStatus {
 
     public static final String CONDITION_READY = "Ready";
 
-    public static final String REASON_INVALID_CONFIGURATION = "InvalidConfiguration";
-
     public static final String REASON_SUCCESS = "Success";
     public static final String REASON_FAILED = "Failed";
     public static final String REASON_WAITING = "Waiting";
