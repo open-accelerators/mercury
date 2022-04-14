@@ -48,6 +48,7 @@ import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -196,67 +197,15 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 final String openApiVersion = ResourceUtils.getOpenApiVersion(apiVersion);
 
                 if(directVersion != null || openApiVersion != null) {
-                    final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + openApiVersion;
-
-                    final ConfigMap sdOpenApiConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).get();
-                    if (sdOpenApiConfigMap == null) {
-                        final String openApiFileDir = "/" + apiVersion.name() + "/" + sdTypeAsString + "/";
-                        final String openApiFileName = sdType + "-" + openApiVersion + ".json";
-
-                        final InputStream openApiFileAsStream = getClass().getResourceAsStream(openApiFileDir + openApiFileName);
-                        if (openApiFileAsStream == null) {
-                            LOGGER.error("{} service domain cant read openapi mapping config file", sdName);
-                            return updateStatusWithCondition(sd, new ConditionBuilder()
-                                    .withType(CONDITION_INTEGRATION_READY)
-                                    .withStatus(STATUS_FALSE)
-                                    .withReason(REASON_CANT_READ_CONFIG_MAPS_FILE)
-                                    .withMessage(MESSAGE_CANT_READ_CONFIG_MAPS_FILE)
-                                    .build());
-                        }
-
-                        final ConfigMap openApiCM = new ConfigMapBuilder()
-                                .withNewMetadata()
-                                .withName(openApiConfigMapName)
-                                .withNamespace(sd.getMetadata().getNamespace())
-                                .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
-                                .endMetadata()
-                                .withData(Map.of(openApiFileName, IOUtils.toString(openApiFileAsStream, StandardCharsets.UTF_8)))
-                                .build();
-
-                        client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).create(openApiCM);
-                    }
-
                     final String directConfigMapName = sdTypeAsString + "-rest-" + directVersion;
-                    ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
-                    if (sdDirectConfigMap == null) {
-                        final String directFileDir = "/" + apiVersion.name() + "/" + sdTypeAsString + "/";
-                        final String directFileName = sdTypeAsString + "-" + directVersion + "-direct" + ".yaml";
-
-                        final InputStream directFileAsStream = getClass().getResourceAsStream(directFileDir + directFileName);
-                        if (directFileAsStream == null) {
-                            LOGGER.error("{} service domain cant read direct rest mapping config file", sdName);
-                            return updateStatusWithCondition(sd, new ConditionBuilder()
-                                    .withType(CONDITION_INTEGRATION_READY)
-                                    .withStatus(STATUS_FALSE)
-                                    .withReason(REASON_CANT_READ_CONFIG_MAPS_FILE)
-                                    .withMessage(MESSAGE_CANT_READ_CONFIG_MAPS_FILE)
-                                    .build());
-                        }
-
-                        final ConfigMap directCM = new ConfigMapBuilder()
-                                .withNewMetadata()
-                                .withName(directConfigMapName)
-                                .withNamespace(sd.getMetadata().getNamespace())
-                                .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
-                                .endMetadata()
-                                .withData(Map.of(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY, IOUtils.toString(directFileAsStream, StandardCharsets.UTF_8)))
-                                .build();
-
-                        sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).create(directCM);
+                    Condition integrationCondition = createConfigMaps(sd, sdTypeAsString, apiVersion, sdType, directVersion, openApiVersion, directConfigMapName);
+                    if (integrationCondition != null) {
+                        return updateStatusWithCondition(sd, integrationCondition);
                     }
 
+                    final ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
                     String sdCamelRouteYaml = sdDirectConfigMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
-                    Condition integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdCamelRouteYaml, openApiVersion);
+                    integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdCamelRouteYaml, openApiVersion);
                     setStatusCondition(sd, integrationCondition);
                     if (STATUS_FALSE.equals(integrationCondition.getStatus())) {
                         return updateStatus(sd);
@@ -286,6 +235,69 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                     .withMessage(e.getMessage())
                     .build());
         }
+    }
+
+    private Condition createConfigMaps(ServiceDomain sd, String sdTypeAsString, ApiVersion apiVersion, ServiceDomainSpec.Type sdType, String directVersion, String openApiVersion, String directConfigMapName) throws IOException {
+        final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + openApiVersion;
+        String sdName = sd.getMetadata().getName();
+
+        final ConfigMap sdOpenApiConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).get();
+        if (sdOpenApiConfigMap == null) {
+            final String openApiFileDir = "/" + apiVersion.name() + "/" + sdTypeAsString + "/";
+            final String openApiFileName = sdType + "-" + openApiVersion + ".json";
+
+            final InputStream openApiFileAsStream = getClass().getResourceAsStream(openApiFileDir + openApiFileName);
+            if (openApiFileAsStream == null) {
+                LOGGER.error("{} service domain cant read openapi mapping config file", sdName);
+                return new ConditionBuilder()
+                        .withType(CONDITION_INTEGRATION_READY)
+                        .withStatus(STATUS_FALSE)
+                        .withReason(REASON_CANT_READ_CONFIG_MAPS_FILE)
+                        .withMessage(MESSAGE_CANT_READ_CONFIG_MAPS_FILE)
+                        .build();
+            }
+
+            final ConfigMap openApiCM = new ConfigMapBuilder()
+                    .withNewMetadata()
+                    .withName(openApiConfigMapName)
+                    .withNamespace(sd.getMetadata().getNamespace())
+                    .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
+                    .endMetadata()
+                    .withData(Map.of(openApiFileName, IOUtils.toString(openApiFileAsStream, StandardCharsets.UTF_8)))
+                    .build();
+
+            client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).create(openApiCM);
+        }
+
+        ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
+        if (sdDirectConfigMap == null) {
+            final String directFileDir = "/" + apiVersion.name() + "/" + sdTypeAsString + "/";
+            final String directFileName = sdTypeAsString + "-" + directVersion + "-direct" + ".yaml";
+
+            final InputStream directFileAsStream = getClass().getResourceAsStream(directFileDir + directFileName);
+            if (directFileAsStream == null) {
+                LOGGER.error("{} service domain cant read direct rest mapping config file", sdName);
+                return new ConditionBuilder()
+                        .withType(CONDITION_INTEGRATION_READY)
+                        .withStatus(STATUS_FALSE)
+                        .withReason(REASON_CANT_READ_CONFIG_MAPS_FILE)
+                        .withMessage(MESSAGE_CANT_READ_CONFIG_MAPS_FILE)
+                        .build();
+            }
+
+            final ConfigMap directCM = new ConfigMapBuilder()
+                    .withNewMetadata()
+                    .withName(directConfigMapName)
+                    .withNamespace(sd.getMetadata().getNamespace())
+                    .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
+                    .endMetadata()
+                    .withData(Map.of(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY, IOUtils.toString(directFileAsStream, StandardCharsets.UTF_8)))
+                    .build();
+
+            client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).create(directCM);
+        }
+
+        return null;
     }
 
     private void deleteCamelHttpIntegration(ServiceDomain sd) {
