@@ -30,7 +30,6 @@ import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @WithKubernetesTestServer
-public class ServiceDomainControllerTest extends AbstractControllerTest {
+public class ServiceDomainControllerTest extends AbstractTest {
 
     @BeforeEach
     public void beforeEach() {
@@ -249,6 +248,92 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertThatIsReady(update);
 
         update.getResource().getSpec().setExpose(null);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition).isNull();
+
+        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+    }
+
+    @Test
+    public void testUpdateServiceDomainToNoHttp() {
+        ServiceDomainInfra sdi = createReadySDI();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNotNull();
+        assertOwnerReference(sd, integration.getMetadata().getOwnerReferences());
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNotNull();
+        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+
+        update.getResource().getSpec().getExpose().setHttp(null);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
