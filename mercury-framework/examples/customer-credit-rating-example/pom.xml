@@ -11,12 +11,8 @@
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>customer-credit-rating-service</artifactId>
+            <artifactId>customer-credit-rating-common</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -11,18 +11,18 @@
     <dependencies>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>party-routing-profile-service</artifactId>
+            <artifactId>party-routing-profile-common</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.mercury</groupId>
-            <artifactId>customer-offer-events</artifactId>
+            <artifactId>customer-offer-common</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <!-- for reporting -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
+            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -43,6 +43,12 @@
             <artifactId>party-routing-profile-client</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.redhat.mercury</groupId>
+            <artifactId>mercury-common-events</artifactId>
+            <version>1.0.2-SNAPSHOT</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <profiles>
