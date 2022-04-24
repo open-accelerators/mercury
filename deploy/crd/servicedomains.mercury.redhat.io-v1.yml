@@ -24,8 +24,6 @@ spec:
                   http:
                     properties:
                       api-version:
-                        enum:
-                        - v1
                         type: string
                     type: object
                 type: object

@@ -1,6 +1,6 @@
 # camel-k: language=yaml
 # camel-k: dependency=camel-quarkus-protobuf
-# camel-k: dependency=mvn:com.redhat.mercury:customer-credit-rating-common:1.0.2-SNAPSHOT
+# camel-k: dependency=mvn:com.redhat.mercury:customer-credit-rating-common:${version}
 
 - from:
     uri: direct:Initiate

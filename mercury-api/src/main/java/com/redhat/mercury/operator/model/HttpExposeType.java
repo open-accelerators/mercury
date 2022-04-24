@@ -21,8 +21,8 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class HttpExposeType {
-    private static final ApiVersion LATEST_API_VERSION = ApiVersion.v1;
+    public static final String DEFAULT_API_VERSION = "v1";
 
     @JsonProperty("api-version")
-    private ApiVersion apiVersion = LATEST_API_VERSION;
+    private String apiVersion = DEFAULT_API_VERSION;
 }

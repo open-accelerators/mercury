@@ -1,12 +1,22 @@
 package com.redhat.mercury.operator.controller;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.io.IOUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import com.redhat.mercury.operator.model.ApiVersion;
 import com.redhat.mercury.operator.model.HttpExposeType;
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
@@ -47,23 +57,13 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
-
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
+import static com.redhat.mercury.operator.model.HttpExposeType.DEFAULT_API_VERSION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
@@ -97,11 +97,15 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final int SERVICE_PORT = 9000;
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     private static final String APP_LABEL_BIAN_PREFIX = "bian-";
-    private static final String OPENAPI_CM_SUFFIX = "-openapi";
+    public static final String OPENAPI_CM_SUFFIX = "-openapi";
     private static final String INTEGRATION_SPEC_PROPERTY = "spec";
     private static final String INTEGRATION_STATUS_PROPERTY = "status";
     private static final String INTEGRATION_TYPE_PROPERTY = "type";
     private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
+    private static final String OPENAPI_FILENAME = "openapi.json";
+    private static final String DIRECT_FILENAME = "directs.yaml";
+    public static final String OPEN_API_CONFIG_MAP_VERSION = "v10";
+    private static final String FILE_DIR_TEMPLATE = "/%s/%s/";
 
     private static final CustomResourceDefinitionContext CAMEL_RESOURCE_DEFINITION = new CustomResourceDefinitionContext.Builder()
             .withGroup("camel.apache.org")
@@ -192,20 +196,18 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 final HttpExposeType httpExposeType = sd.getSpec().getExpose().getHttp();
                 final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
                 final String sdTypeAsString = toLowerHyphen(sdType.toString());
-                final ApiVersion apiVersion = httpExposeType.getApiVersion();
-                final String directVersion = ResourceUtils.getDirectVersion(apiVersion);
-                final String openApiVersion = ResourceUtils.getOpenApiVersion(apiVersion);
+                final String apiVersion = httpExposeType.getApiVersion();
 
-                if(directVersion != null || openApiVersion != null) {
-                    final String directConfigMapName = sdTypeAsString + "-rest-" + directVersion;
-                    Condition integrationCondition = createConfigMaps(sd, sdTypeAsString, apiVersion, sdType, directVersion, openApiVersion, directConfigMapName);
+                if(DEFAULT_API_VERSION.equals(apiVersion)) {
+                    final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
+                    Condition integrationCondition = createConfigMaps(sd, sdTypeAsString, apiVersion, directConfigMapName);
                     if (integrationCondition != null) {
                         return updateStatusWithCondition(sd, integrationCondition);
                     }
 
                     final ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
                     String sdCamelRouteYaml = sdDirectConfigMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
-                    integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdCamelRouteYaml, openApiVersion);
+                    integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdCamelRouteYaml);
                     setStatusCondition(sd, integrationCondition);
                     if (STATUS_FALSE.equals(integrationCondition.getStatus())) {
                         return updateStatus(sd);
@@ -237,16 +239,14 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         }
     }
 
-    private Condition createConfigMaps(ServiceDomain sd, String sdTypeAsString, ApiVersion apiVersion, ServiceDomainSpec.Type sdType, String directVersion, String openApiVersion, String directConfigMapName) throws IOException {
-        final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + openApiVersion;
+    private Condition createConfigMaps(ServiceDomain sd, String sdTypeAsString, String apiVersion, String directConfigMapName) throws IOException {
+        final String filesDir = String.format(FILE_DIR_TEMPLATE, apiVersion, sdTypeAsString);
+        final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
         String sdName = sd.getMetadata().getName();
 
         final ConfigMap sdOpenApiConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).get();
         if (sdOpenApiConfigMap == null) {
-            final String openApiFileDir = "/" + apiVersion.name() + "/" + sdTypeAsString + "/";
-            final String openApiFileName = sdType + "-" + openApiVersion + ".json";
-
-            final InputStream openApiFileAsStream = getClass().getResourceAsStream(openApiFileDir + openApiFileName);
+            final InputStream openApiFileAsStream = getClass().getResourceAsStream(filesDir + OPENAPI_FILENAME);
             if (openApiFileAsStream == null) {
                 LOGGER.error("{} service domain cant read openapi mapping config file", sdName);
                 return new ConditionBuilder()
@@ -261,9 +261,15 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                     .withNewMetadata()
                     .withName(openApiConfigMapName)
                     .withNamespace(sd.getMetadata().getNamespace())
+                    .withOwnerReferences(List.of(new OwnerReferenceBuilder()
+                                                        .withName(sd.getMetadata().getName())
+                                                        .withUid(sd.getMetadata().getUid())
+                                                        .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                                                        .withApiVersion(MercuryConstants.API_VERSION)
+                                                        .build()))
                     .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                     .endMetadata()
-                    .withData(Map.of(openApiFileName, IOUtils.toString(openApiFileAsStream, StandardCharsets.UTF_8)))
+                    .withData(Map.of(OPENAPI_FILENAME, IOUtils.toString(openApiFileAsStream, StandardCharsets.UTF_8)))
                     .build();
 
             client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).create(openApiCM);
@@ -271,10 +277,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
         ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
         if (sdDirectConfigMap == null) {
-            final String directFileDir = "/" + apiVersion.name() + "/" + sdTypeAsString + "/";
-            final String directFileName = sdTypeAsString + "-" + directVersion + "-direct" + ".yaml";
-
-            final InputStream directFileAsStream = getClass().getResourceAsStream(directFileDir + directFileName);
+            final InputStream directFileAsStream = getClass().getResourceAsStream(filesDir + DIRECT_FILENAME);
             if (directFileAsStream == null) {
                 LOGGER.error("{} service domain cant read direct rest mapping config file", sdName);
                 return new ConditionBuilder()
@@ -289,6 +292,12 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                     .withNewMetadata()
                     .withName(directConfigMapName)
                     .withNamespace(sd.getMetadata().getNamespace())
+                    .withOwnerReferences(List.of(new OwnerReferenceBuilder()
+                            .withName(sd.getMetadata().getName())
+                            .withUid(sd.getMetadata().getUid())
+                            .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                            .withApiVersion(MercuryConstants.API_VERSION)
+                            .build()))
                     .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                     .endMetadata()
                     .withData(Map.of(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY, IOUtils.toString(directFileAsStream, StandardCharsets.UTF_8)))
@@ -308,10 +317,10 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         }
     }
 
-    private Condition createOrUpdateCamelKHttpIntegration(ServiceDomain sd, String sdCamelRouteYaml, String versionOpenApi) {
+    private Condition createOrUpdateCamelKHttpIntegration(ServiceDomain sd, String sdCamelRouteYaml) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
 
-        String yamlString = mergeCamelYamls(sd, integrationName, sdCamelRouteYaml, versionOpenApi);
+        String yamlString = mergeCamelYamls(sd, integrationName, sdCamelRouteYaml);
 
         Resource<GenericKubernetesResource> expected = client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION)
                 .inNamespace(sd.getMetadata().getNamespace())
@@ -358,7 +367,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         return false;
     }
 
-    private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdCamelRouteYaml, String versionOpenApi) {
+    private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdCamelRouteYaml) {
         final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
         final String sdTypeAsString = toLowerHyphen(sdType.toString());
 
@@ -385,7 +394,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                                         )
                                 ),
                                 "openapi", Map.of("configuration",
-                                        Map.of("configmaps", List.of(sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + versionOpenApi))
+                                        Map.of("configmaps", List.of(sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION))
                                 )
                         ),
                         "dependencies",

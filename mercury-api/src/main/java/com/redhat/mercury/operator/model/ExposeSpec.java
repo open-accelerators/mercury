@@ -20,6 +20,6 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class Expose {
+public class ExposeSpec {
     private HttpExposeType http;
 }

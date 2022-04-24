@@ -30,5 +30,5 @@ public class ServiceDomainSpec implements Serializable {
     private String businessImage;
     private String serviceDomainInfra;
     private Type type;
-    private Expose expose;
+    private ExposeSpec expose;
 }

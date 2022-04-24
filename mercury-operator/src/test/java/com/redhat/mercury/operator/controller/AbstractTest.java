@@ -3,8 +3,7 @@ package com.redhat.mercury.operator.controller;
 import javax.inject.Inject;
 
 import com.redhat.mercury.operator.model.AbstractResourceStatus;
-import com.redhat.mercury.operator.model.ApiVersion;
-import com.redhat.mercury.operator.model.ExposeBuilder;
+import com.redhat.mercury.operator.model.ExposeSpecBuilder;
 import com.redhat.mercury.operator.model.HttpExposeTypeBuilder;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainInfra;
@@ -127,8 +126,8 @@ public abstract class AbstractTest {
                     .withBusinessImage("testImage")
                     .withServiceDomainInfra(SERVICE_DOMAIN_INFRA_NAME)
                     .withType(ServiceDomainSpec.Type.CustomerOffer)
-                    .withExpose(new ExposeBuilder().withHttp(new HttpExposeTypeBuilder()
-                                                                .withApiVersion(ApiVersion.v1)
+                    .withExpose(new ExposeSpecBuilder().withHttp(new HttpExposeTypeBuilder()
+                                                                .withApiVersion("v1")
                                                                 .build())
                                 .build())
                     .build());
