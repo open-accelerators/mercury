@@ -38,6 +38,9 @@
         <!-- Sonar Cloud -->
         <sonar.organization>rh-open-accelerators</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <!-- Mercury Codegen -->
+        <mercury.grpc.port>9000</mercury.grpc.port>
+        <mercury.proto.version>v10</mercury.proto.version>
     </properties>
 
     <modules>
@@ -194,6 +197,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.3.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>

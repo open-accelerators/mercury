@@ -1,4 +1,4 @@
-package com.redhat.mercury.resources;
+package com.redhat.mercury.codegen.client.resources;
 
 public class StringFormatter {
     public static String capitalizeWords(String str){
