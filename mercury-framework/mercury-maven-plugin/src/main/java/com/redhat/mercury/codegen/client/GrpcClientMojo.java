@@ -25,9 +25,9 @@ import freemarker.template.TemplateException;
 
 
 /**
- * This service generates a gRPC client connection for all APIs available in the service domain
+ * This Mojo generates a gRPC client connection for all APIs available in the service domain
  */
-@Mojo(name = "GrpcService", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+@Mojo(name = "GrpcClient", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class GrpcClientMojo extends AbstractMojo {
 
     private final Log LOGGER = getLog();
@@ -49,7 +49,6 @@ public class GrpcClientMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-
         String sdNameCamel = StringFormatter.capitalizeWords(sdName.replace("-", " "));
 
         // Retrieve list of apis from the proto/api directory

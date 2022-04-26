@@ -4,11 +4,11 @@ import com.redhat.mercury.codegen.client.resources.StringFormatter;
 
 public class GrpcService {
 
-    String importName;
-    String fieldName;
-    String className;
-    String clientName;
-    String getterName;
+    private final String importName;
+    private final String fieldName;
+    private final String className;
+    private final String clientName;
+    private final String getterName;
 
     public GrpcService(String fullFilename, String sd, String version) {
         String[] fileName = fullFilename.split("_", 2);
