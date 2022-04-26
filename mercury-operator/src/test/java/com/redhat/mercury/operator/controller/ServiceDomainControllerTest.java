@@ -268,7 +268,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
         directConfigMap = client.configMaps().inNamespace(sdNamespace).withName(directConfigMapName).get();
         assertThat(directConfigMap).isNull();
 
-        update = serviceDomainController.reconcile(update.getResource(), null);
+        serviceDomainController.reconcile(update.getResource(), null);
 
         //Test Openapi Config map created
         openApiConfigMap = client.configMaps().inNamespace(sdNamespace).withName(openApiConfigMapName).get();
