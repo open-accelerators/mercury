@@ -1,6 +1,5 @@
 package com.redhat.mercury.operator.controller;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainInfra;
-import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.utils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Condition;
@@ -37,16 +35,16 @@ import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
+import static com.redhat.mercury.operator.controller.ServiceDomainController.OPENAPI_CM_SUFFIX;
+import static com.redhat.mercury.operator.controller.ServiceDomainController.OPEN_API_CONFIG_MAP_VERSION;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
-import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FAILED;
-import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
+import static com.redhat.mercury.operator.model.HttpExposeType.DEFAULT_API_VERSION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_MISSING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_FOUND;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDI;
@@ -55,15 +53,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @WithKubernetesTestServer
-public class ServiceDomainControllerTest extends AbstractControllerTest {
+public class ServiceDomainControllerTest extends AbstractTest {
 
     @BeforeEach
-    public void beforeEach() throws IOException {
+    public void beforeEach() {
         mockServer.getKubernetesMockServer().clearExpectations();
 
         createDefultNamespace();
-        createDefaultIntegrationConfigMap();
-        createOpenApiConfigMap();
         createDefaultKafka();
     }
 
@@ -74,7 +70,7 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         deleteDeployment();
         deleteService();
         deleteKafkaTopic();
-        deleteIntegrationConfigMap();
+        deleteDirectConfigMap();
         deleteOpenAPIConfigMap();
         deleteIntegration();
         deleteServiceDomains();
@@ -87,6 +83,9 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
+        final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().toString());
+        final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
+        final String directConfigMapName =  sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
@@ -151,16 +150,33 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
         assertThat(service).isNotNull();
         assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+
+        //Test Openapi Config map created
+        final ConfigMap openApiConfigMap = client.configMaps().inNamespace(sdNamespace).withName(openApiConfigMapName).get();
+        assertThat(openApiConfigMap).isNotNull();
+        assertOwnerReference(sd, openApiConfigMap.getMetadata().getOwnerReferences());
+        final InputStream openApiFileAsStream = getClass().getResourceAsStream("/openAPIConfigMap.yaml");
+        final Resource<ConfigMap> openApiConfigMapResource = client.configMaps().load(openApiFileAsStream);
+        assertThat(openApiConfigMapResource.get().getData()).isEqualTo(openApiConfigMap.getData());
+
+        //Test Direct Config map created
+        final ConfigMap directConfigMap = client.configMaps().inNamespace(sdNamespace).withName(directConfigMapName).get();
+        assertThat(directConfigMap).isNotNull();
+        assertOwnerReference(sd, directConfigMap.getMetadata().getOwnerReferences());
+        final InputStream directFileAsStream = getClass().getResourceAsStream("/directConfigMap.yaml");
+        final Resource<ConfigMap> directConfigMapResource = client.configMaps().load(directFileAsStream);
+        assertThat(directConfigMapResource.get().getData()).isEqualTo(directConfigMap.getData());
     }
 
     @Test
-    public void testAddServiceDomainNoConfigMaps() {
-        deleteIntegrationConfigMap();
-
+    public void testDeleteConfigMaps() {
         ServiceDomainInfra sdi = createReadySDI();
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
+        final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().toString());
+        final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
+        final String directConfigMapName =  sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
@@ -174,6 +190,12 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
         ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
                 .withGroup("camel.apache.org")
@@ -183,68 +205,33 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
                 .build();
 
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertThat(integration).isNull();
+        assertThat(integration).isNotNull();
+        assertOwnerReference(sd, integration.getMetadata().getOwnerReferences());
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
         condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition).isNull();
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
 
-        //Test deployment data
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
-        assertThat(deployment).isNotNull();
-        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNotNull();
+        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
 
-        //Test Service data
-        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
-        assertThat(service).isNotNull();
-        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
-    }
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
 
-    @Test
-    public void testAddServiceDomainBadIntegrationConfigMap() throws IOException {
-        deleteIntegrationConfigMap();
-        createIntegrationConfigMap("badSdConfigMap.yaml");
-
-        ServiceDomainInfra sdi = createReadySDI();
-        ServiceDomain sd = createServiceDomain();
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-        final NamespacedKubernetesClient client = mockServer.getClient();
-
-        mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
-                .andReturn(200, sdi)
-                .always();
-
-        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
-        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
-                .withGroup("camel.apache.org")
-                .withVersion("v1")
-                .withPlural("integrations")
-                .withNamespaced(true)
-                .build();
-
-        final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
-        assertThat(integration).isNull();
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition).isNull();
-
         //Test deployment data
         final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
         assertThat(deployment).isNotNull();
@@ -254,46 +241,50 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
         assertThat(service).isNotNull();
         assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
-    }
 
-    @Test
-    public void testAddServiceDomainWithNoOpenApiConfigMap(){
+        //Test Openapi Config map created
+        ConfigMap openApiConfigMap = client.configMaps().inNamespace(sdNamespace).withName(openApiConfigMapName).get();
+        assertThat(openApiConfigMap).isNotNull();
+        assertOwnerReference(sd, openApiConfigMap.getMetadata().getOwnerReferences());
+        InputStream openApiFileAsStream = getClass().getResourceAsStream("/openAPIConfigMap.yaml");
+        Resource<ConfigMap> openApiConfigMapResource = client.configMaps().load(openApiFileAsStream);
+        assertThat(openApiConfigMapResource.get().getData()).isEqualTo(openApiConfigMap.getData());
+
+        //Test Direct Config map created
+        ConfigMap directConfigMap = client.configMaps().inNamespace(sdNamespace).withName(directConfigMapName).get();
+        assertThat(directConfigMap).isNotNull();
+        assertOwnerReference(sd, directConfigMap.getMetadata().getOwnerReferences());
+        InputStream directFileAsStream = getClass().getResourceAsStream("/directConfigMap.yaml");
+        Resource<ConfigMap> directConfigMapResource = client.configMaps().load(directFileAsStream);
+        assertThat(directConfigMapResource.get().getData()).isEqualTo(directConfigMap.getData());
+
+        deleteDirectConfigMap();
         deleteOpenAPIConfigMap();
 
-        ServiceDomainInfra sdi = createReadySDI();
-        ServiceDomain sd = createServiceDomain();
-        final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-        final String sdTypeAsString = toLowerHyphen(sdType.toString());
-        final String sdNamespace = sd.getMetadata().getNamespace();
-        final String sdName = sd.getMetadata().getName();
-        final NamespacedKubernetesClient client = mockServer.getClient();
+        openApiConfigMap = client.configMaps().inNamespace(sdNamespace).withName(openApiConfigMapName).get();
+        assertThat(openApiConfigMap).isNull();
 
-        mockServer.expect().get()
-                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
-                .andReturn(200, sdi)
-                .always();
+        //Test Direct Config map created
+        directConfigMap = client.configMaps().inNamespace(sdNamespace).withName(directConfigMapName).get();
+        assertThat(directConfigMap).isNull();
 
-        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+        serviceDomainController.reconcile(update.getResource(), null);
 
-        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getMessage()).isEqualTo(sdTypeAsString + "-openapi" + " " + MESSAGE_CONFIG_MAP_MISSING);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition).isNull();
+        //Test Openapi Config map created
+        openApiConfigMap = client.configMaps().inNamespace(sdNamespace).withName(openApiConfigMapName).get();
+        assertThat(openApiConfigMap).isNotNull();
+        assertOwnerReference(sd, openApiConfigMap.getMetadata().getOwnerReferences());
+        openApiFileAsStream = getClass().getResourceAsStream("/openAPIConfigMap.yaml");
+        openApiConfigMapResource = client.configMaps().load(openApiFileAsStream);
+        assertThat(openApiConfigMapResource.get().getData()).isEqualTo(openApiConfigMap.getData());
 
-        //Test deployment data
-        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
-        assertThat(deployment).isNotNull();
-        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
-
-        //Test Service data
-        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
-        assertThat(service).isNotNull();
-        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+        //Test Direct Config map created
+        directConfigMap = client.configMaps().inNamespace(sdNamespace).withName(directConfigMapName).get();
+        assertThat(directConfigMap).isNotNull();
+        assertOwnerReference(sd, directConfigMap.getMetadata().getOwnerReferences());
+        directFileAsStream = getClass().getResourceAsStream("/directConfigMap.yaml");
+        directConfigMapResource = client.configMaps().load(directFileAsStream);
+        assertThat(directConfigMapResource.get().getData()).isEqualTo(directConfigMap.getData());
     }
 
     @Test
@@ -400,6 +391,92 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         assertThatIsReady(update);
 
         update.getResource().getSpec().setExpose(null);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition).isNull();
+
+        integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNull();
+    }
+
+    @Test
+    public void testUpdateServiceDomainToNoHttp() {
+        ServiceDomainInfra sdi = createReadySDI();
+        ServiceDomain sd = createServiceDomain();
+        final String sdNamespace = sd.getMetadata().getNamespace();
+        final String sdName = sd.getMetadata().getName();
+        final NamespacedKubernetesClient client = mockServer.getClient();
+
+        mockServer.expect().get()
+                .withPath("/apis/mercury.redhat.io/v1alpha1/namespaces/test-service-domain/servicedomaininfras/service-domain-infra")
+                .andReturn(200, sdi)
+                .always();
+
+        UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
+        ResourceDefinitionContext resourceDefinitionContext = new ResourceDefinitionContext.Builder()
+                .withGroup("camel.apache.org")
+                .withVersion("v1")
+                .withPlural("integrations")
+                .withNamespaced(true)
+                .build();
+
+        GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
+        assertThat(integration).isNotNull();
+        assertOwnerReference(sd, integration.getMetadata().getOwnerReferences());
+
+        integration.getAdditionalProperties().put("status", Map.of("conditions", List.of(Map.of("type", "Ready", "status", "True"))));
+        client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsWaiting(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
+
+        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
+        assertThat(kafkaTopic).isNotNull();
+        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
+
+        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
+        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
+        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+
+        //Test deployment data
+        final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(deployment).isNotNull();
+        assertOwnerReference(sd, deployment.getMetadata().getOwnerReferences());
+
+        //Test Service data
+        final Service service = client.services().inNamespace(sdNamespace).withName(sdName).get();
+        assertThat(service).isNotNull();
+        assertOwnerReference(sd, service.getMetadata().getOwnerReferences());
+
+        update = serviceDomainController.reconcile(update.getResource(), null);
+        assertThatIsReady(update);
+
+        update.getResource().getSpec().getExpose().setHttp(null);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
@@ -676,34 +753,6 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         }
     }
 
-    private void createOpenApiConfigMap() {
-        final NamespacedKubernetesClient client = mockServer.getClient();
-        ConfigMap openAPIConfigMap = client.configMaps()
-                .inNamespace(client.getNamespace())
-                .load(this.getClass().getClassLoader().getResourceAsStream("openAPIConfigMap.yaml"))
-                .create();
-        assertThat(openAPIConfigMap).isNotNull();
-    }
-
-    private void createDefaultIntegrationConfigMap() throws IOException {
-        createIntegrationConfigMap("sdConfigMap.yaml");
-    }
-
-    private void createIntegrationConfigMap(String fileName) throws IOException {
-        final NamespacedKubernetesClient client = mockServer.getClient();
-        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
-        ConfigMap configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
-        if (configMap == null) {
-            try (final InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(fileName)) {
-                if (inputStream != null) {
-                    client.configMaps().inNamespace(client.getNamespace()).load(inputStream).create();
-                    configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
-                    assertThat(configMap).isNotNull();
-                }
-            }
-        }
-    }
-
     private void deleteKafka() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
@@ -742,20 +791,20 @@ public class ServiceDomainControllerTest extends AbstractControllerTest {
         }
     }
 
-    private void deleteIntegrationConfigMap() {
+    private void deleteDirectConfigMap() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final String sdConfigMapName = "integration-" + SERVICE_DOMAIN_NAME + "-http";
-        final ConfigMap configMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
+        final String sdConfigMapName = SERVICE_DOMAIN_NAME + "-rest-v1";
+        final ConfigMap configMap = client.configMaps().inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(sdConfigMapName).get();
         if (configMap != null) {
-            client.configMaps().inNamespace(client.getNamespace()).delete(configMap);
+            client.configMaps().inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(configMap);
         }
     }
 
     private void deleteOpenAPIConfigMap() {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
-        final Resource<ConfigMap> configMapResource = client.configMaps().inNamespace(client.getNamespace()).withName("customer-offer-openapi");
+        final Resource<ConfigMap> configMapResource = client.configMaps().inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName("customer-offer-openapi-v10");
         if(configMapResource != null) {
            configMapResource.delete();
         }

@@ -5,7 +5,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ResourceUtils {
-
     private ResourceUtils() {
     }
 

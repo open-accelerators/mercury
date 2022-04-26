@@ -20,11 +20,13 @@ spec:
           spec:
             properties:
               expose:
-                items:
-                  enum:
-                  - http
-                  type: string
-                type: array
+                properties:
+                  http:
+                    properties:
+                      api-version:
+                        type: string
+                    type: object
+                type: object
               businessImage:
                 type: string
               type:

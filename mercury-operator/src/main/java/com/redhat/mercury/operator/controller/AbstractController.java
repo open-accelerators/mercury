@@ -124,7 +124,7 @@ public abstract class AbstractController<K, E extends AbstractResourceStatus, T 
         }
         if (resource.getStatus().getConditions()
                 .stream()
-                .anyMatch(c -> areSameConditions(c, currentResource.getStatus().getCondition(c.getType())))) {
+                .anyMatch(c -> !areSameConditions(c, currentResource.getStatus().getCondition(c.getType())))) {
             return UpdateControl.updateStatus(resource);
         }
         if (currentResource.getStatus()

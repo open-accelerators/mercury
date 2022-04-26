@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @WithKubernetesTestServer
-public class ServiceDomainInfraControllerTest extends AbstractControllerTest {
+public class ServiceDomainInfraControllerTest extends AbstractTest {
 
     @BeforeEach
     public void beforeEach() {

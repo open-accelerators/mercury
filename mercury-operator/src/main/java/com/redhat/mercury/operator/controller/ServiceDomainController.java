@@ -1,6 +1,8 @@
 package com.redhat.mercury.operator.controller;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,11 +11,13 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import com.redhat.mercury.operator.model.HttpExposeType;
 import com.redhat.mercury.operator.model.MercuryConstants;
 import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainInfra;
@@ -24,6 +28,7 @@ import com.redhat.mercury.operator.utils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -40,7 +45,6 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
-import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.model.Scope;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -59,16 +63,16 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_FA
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.REASON_WAITING;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FALSE;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
+import static com.redhat.mercury.operator.model.HttpExposeType.DEFAULT_API_VERSION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_KEY_MISSING;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CONFIG_MAP_MISSING;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CANT_READ_CONFIG_MAPS_FILE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_INTEGRATION_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_KAFKA_TOPIC_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_FOUND;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION;
+import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_CANT_READ_CONFIG_MAPS_FILE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION_WAITING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_KAFKA_TOPIC_WAITING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDI;
@@ -93,11 +97,15 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     private static final int SERVICE_PORT = 9000;
     private static final String COMMENT_LINE_REGEX = "(?m)^#.*";
     private static final String APP_LABEL_BIAN_PREFIX = "bian-";
-    private static final String OPENAPI_CM_SUFFIX = "-openapi";
+    public static final String OPENAPI_CM_SUFFIX = "-openapi";
     private static final String INTEGRATION_SPEC_PROPERTY = "spec";
     private static final String INTEGRATION_STATUS_PROPERTY = "status";
     private static final String INTEGRATION_TYPE_PROPERTY = "type";
     private static final String INTEGRATION_CONDITIONS_PROPERTY = "conditions";
+    private static final String OPENAPI_FILENAME = "openapi.json";
+    private static final String DIRECT_FILENAME = "directs.yaml";
+    public static final String OPEN_API_CONFIG_MAP_VERSION = "v10";
+    private static final String FILE_DIR_TEMPLATE = "/%s/%s/";
 
     private static final CustomResourceDefinitionContext CAMEL_RESOURCE_DEFINITION = new CustomResourceDefinitionContext.Builder()
             .withGroup("camel.apache.org")
@@ -131,10 +139,16 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
                 .runnableInformer(0);
 
+        SharedIndexInformer<ConfigMap> routeConfigMapInformer = client.configMaps()
+                .inAnyNamespace()
+                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
+                .runnableInformer(0);
+
         return List.of(getInformerEventSource(deploymentInformer),
                 getInformerEventSource(integrationInformer),
                 getInformerEventSource(kafkaTopicInformer),
-                getInformerEventSource(servicesInformer));
+                getInformerEventSource(servicesInformer),
+                getInformerEventSource(routeConfigMapInformer));
     }
 
     @Override
@@ -177,47 +191,27 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         try {
             createOrUpdateDeployment(sd, sdi.getStatus().getKafkaBroker());
             createOrUpdateService(sd);
-            if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().contains(ServiceDomainSpec.ExposeType.http)) {
-                final String sdConfigMapName = "integration-" + toLowerHyphen(sd.getSpec().getType().toString()) + "-http";
-                ConfigMap sdConfigMap = client.configMaps().inNamespace(client.getNamespace()).withName(sdConfigMapName).get();
+
+            if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().getHttp() != null) {
+                final HttpExposeType httpExposeType = sd.getSpec().getExpose().getHttp();
                 final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
                 final String sdTypeAsString = toLowerHyphen(sdType.toString());
+                final String apiVersion = httpExposeType.getApiVersion();
 
-                if (sdConfigMap == null) {
-                    LOGGER.error("{} config map is missing", sdConfigMapName);
-                    return updateStatusWithCondition(sd, new ConditionBuilder()
-                            .withType(CONDITION_INTEGRATION_READY)
-                            .withStatus(STATUS_FALSE)
-                            .withReason(REASON_INTEGRATION)
-                            .withMessage(sdConfigMapName + " " + MESSAGE_CONFIG_MAP_MISSING)
-                            .build());
-                }
+                if(DEFAULT_API_VERSION.equals(apiVersion)) {
+                    final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
+                    Condition integrationCondition = createConfigMaps(sd, sdTypeAsString, apiVersion, directConfigMapName);
+                    if (integrationCondition != null) {
+                        return updateStatusWithCondition(sd, integrationCondition);
+                    }
 
-                String sdCamelRouteYaml = sdConfigMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
-                if (sdCamelRouteYaml == null) {
-                    LOGGER.error("{} config map key with the direct routes is missing", sdTypeAsString + "-direct.yaml");
-                    return updateStatusWithCondition(sd, new ConditionBuilder()
-                            .withType(CONDITION_INTEGRATION_READY)
-                            .withStatus(STATUS_FALSE)
-                            .withReason(REASON_INTEGRATION)
-                            .withMessage(sdTypeAsString + "-direct.yaml " + MESSAGE_CONFIG_MAP_KEY_MISSING)
-                            .build());
-                }
-
-                if (client.configMaps().inNamespace(client.getNamespace()).withName(sdTypeAsString + OPENAPI_CM_SUFFIX).get() == null) {
-                    LOGGER.error("{} config map with the OpenAPI spec is missing", sdTypeAsString + OPENAPI_CM_SUFFIX);
-                    return updateStatusWithCondition(sd, new ConditionBuilder()
-                            .withType(CONDITION_INTEGRATION_READY)
-                            .withStatus(STATUS_FALSE)
-                            .withReason(REASON_INTEGRATION)
-                            .withMessage(sdTypeAsString + OPENAPI_CM_SUFFIX + " " + MESSAGE_CONFIG_MAP_MISSING)
-                            .build());
-                }
-
-                Condition integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdConfigMap);
-                setStatusCondition(sd, integrationCondition);
-                if (STATUS_FALSE.equals(integrationCondition.getStatus())) {
-                    return updateStatus(sd);
+                    final ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
+                    String sdCamelRouteYaml = sdDirectConfigMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
+                    integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdCamelRouteYaml);
+                    setStatusCondition(sd, integrationCondition);
+                    if (STATUS_FALSE.equals(integrationCondition.getStatus())) {
+                        return updateStatus(sd);
+                    }
                 }
             } else {
                 deleteCamelHttpIntegration(sd);
@@ -245,6 +239,76 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         }
     }
 
+    private Condition createConfigMaps(ServiceDomain sd, String sdTypeAsString, String apiVersion, String directConfigMapName) throws IOException {
+        final String filesDir = String.format(FILE_DIR_TEMPLATE, apiVersion, sdTypeAsString);
+        final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
+        String sdName = sd.getMetadata().getName();
+
+        final ConfigMap sdOpenApiConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).get();
+        if (sdOpenApiConfigMap == null) {
+            final InputStream openApiFileAsStream = getClass().getResourceAsStream(filesDir + OPENAPI_FILENAME);
+            if (openApiFileAsStream == null) {
+                LOGGER.error("{} service domain cant read openapi mapping config file", sdName);
+                return new ConditionBuilder()
+                        .withType(CONDITION_INTEGRATION_READY)
+                        .withStatus(STATUS_FALSE)
+                        .withReason(REASON_CANT_READ_CONFIG_MAPS_FILE)
+                        .withMessage(MESSAGE_CANT_READ_CONFIG_MAPS_FILE)
+                        .build();
+            }
+
+            final ConfigMap openApiCM = new ConfigMapBuilder()
+                    .withNewMetadata()
+                    .withName(openApiConfigMapName)
+                    .withNamespace(sd.getMetadata().getNamespace())
+                    .withOwnerReferences(List.of(new OwnerReferenceBuilder()
+                                                        .withName(sd.getMetadata().getName())
+                                                        .withUid(sd.getMetadata().getUid())
+                                                        .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                                                        .withApiVersion(MercuryConstants.API_VERSION)
+                                                        .build()))
+                    .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
+                    .endMetadata()
+                    .withData(Map.of(OPENAPI_FILENAME, IOUtils.toString(openApiFileAsStream, StandardCharsets.UTF_8)))
+                    .build();
+
+            client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(openApiConfigMapName).create(openApiCM);
+        }
+
+        ConfigMap sdDirectConfigMap = client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).get();
+        if (sdDirectConfigMap == null) {
+            final InputStream directFileAsStream = getClass().getResourceAsStream(filesDir + DIRECT_FILENAME);
+            if (directFileAsStream == null) {
+                LOGGER.error("{} service domain cant read direct rest mapping config file", sdName);
+                return new ConditionBuilder()
+                        .withType(CONDITION_INTEGRATION_READY)
+                        .withStatus(STATUS_FALSE)
+                        .withReason(REASON_CANT_READ_CONFIG_MAPS_FILE)
+                        .withMessage(MESSAGE_CANT_READ_CONFIG_MAPS_FILE)
+                        .build();
+            }
+
+            final ConfigMap directCM = new ConfigMapBuilder()
+                    .withNewMetadata()
+                    .withName(directConfigMapName)
+                    .withNamespace(sd.getMetadata().getNamespace())
+                    .withOwnerReferences(List.of(new OwnerReferenceBuilder()
+                            .withName(sd.getMetadata().getName())
+                            .withUid(sd.getMetadata().getUid())
+                            .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                            .withApiVersion(MercuryConstants.API_VERSION)
+                            .build()))
+                    .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
+                    .endMetadata()
+                    .withData(Map.of(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY, IOUtils.toString(directFileAsStream, StandardCharsets.UTF_8)))
+                    .build();
+
+            client.configMaps().inNamespace(sd.getMetadata().getNamespace()).withName(directConfigMapName).create(directCM);
+        }
+
+        return null;
+    }
+
     private void deleteCamelHttpIntegration(ServiceDomain sd) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
         final GenericKubernetesResource integration = client.genericKubernetesResources(CAMEL_RESOURCE_DEFINITION).inNamespace(sd.getMetadata().getNamespace()).withName(integrationName).get();
@@ -253,9 +317,8 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
         }
     }
 
-    private Condition createOrUpdateCamelKHttpIntegration(ServiceDomain sd, ConfigMap configMap) {
+    private Condition createOrUpdateCamelKHttpIntegration(ServiceDomain sd, String sdCamelRouteYaml) {
         final String integrationName = sd.getMetadata().getName() + INTEGRATION_SUFFIX;
-        String sdCamelRouteYaml = configMap.getData().get(CONFIG_MAP_CAMEL_ROUTES_DIRECT_KEY);
 
         String yamlString = mergeCamelYamls(sd, integrationName, sdCamelRouteYaml);
 
@@ -331,7 +394,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                                         )
                                 ),
                                 "openapi", Map.of("configuration",
-                                        Map.of("configmaps", List.of(sdTypeAsString + OPENAPI_CM_SUFFIX))
+                                        Map.of("configmaps", List.of(sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION))
                                 )
                         ),
                         "dependencies",

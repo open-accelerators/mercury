@@ -1,11 +1,11 @@
 package com.redhat.mercury.operator.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.sundr.builder.annotations.Buildable;
 
-import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,22 +13,16 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonDeserialize
+@JsonDeserialize()
 @ToString
 @EqualsAndHashCode
 @Getter
 @Setter
 @Accessors(chain = true)
 @Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-public class ServiceDomainSpec implements Serializable {
-    public enum Type {
-        CustomerOffer(),
-        CustomerCreditRating(),
-        PartyRoutingProfile()
-    }
+public class HttpExposeType {
+    public static final String DEFAULT_API_VERSION = "v1";
 
-    private String businessImage;
-    private String serviceDomainInfra;
-    private Type type;
-    private ExposeSpec expose;
+    @JsonProperty("api-version")
+    private String apiVersion = DEFAULT_API_VERSION;
 }
