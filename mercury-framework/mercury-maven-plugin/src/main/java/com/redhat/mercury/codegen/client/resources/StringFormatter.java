@@ -2,9 +2,7 @@ package com.redhat.mercury.codegen.client.resources;
 
 public class StringFormatter {
 
-    private StringFormatter() {
-        throw new UnsupportedOperationException("This StringFormatter class cannot be instantiated");
-    }
+    private StringFormatter() {}
 
     public static String capitalizeWords(String str) {
         String[] words = str.trim().split("\\s");
