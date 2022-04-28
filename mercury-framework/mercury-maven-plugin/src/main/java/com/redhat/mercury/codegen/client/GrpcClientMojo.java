@@ -75,35 +75,39 @@ public class GrpcClientMojo extends AbstractMojo {
         params.put("grpcPort", port);
         params.put("serviceDomainGrpcName", sdName);
 
-        try {
-            Template template = config.getTemplate("client_template.ftl");
-            File clientDir = new File(String.format("%s/com/redhat/mercury/%s/%s/client",
-                    outputDir.getPath(), sdNameCamel.toLowerCase(), version));
-            if (!clientDir.exists()) {
-                clientDir.mkdirs();
-            }
-            Writer writer = new FileWriter(clientDir.getPath() + "/" + sdNameCamel + "Client.java");
+        File clientDir = new File(String.format("%s/com/redhat/mercury/%s/%s/client",
+                outputDir.getPath(), sdNameCamel.toLowerCase(), version));
+        if (!clientDir.exists()) {
+            clientDir.mkdirs();
+        }
+        try (Writer writer = new FileWriter(clientDir.getPath() + "/" + sdNameCamel + "Client.java")) {
+            Template template = getTemplate(config, "client_template.ftl");
             template.process(params, writer);
-        } catch (IOException e) {
-            log.error("Unable to load GrpcClient template", e);
-            throw new MojoExecutionException("Unable to load the GrpcClient template", e);
-        } catch (TemplateException e) {
+        } catch (IOException | TemplateException e) {
             log.error("Unable to process the GrpcClient template", e);
             throw new MojoExecutionException("Unable to process the GrpcClient template", e);
         }
 
-        try {
-            Template template = config.getTemplate("client_application_properties.ftl");
-            File propertiesFile = new File(outputDir, "application.properties");
-            Writer writer = new FileWriter(propertiesFile);
+        File propertiesFile = new File(outputDir, "application.properties");
+        try (Writer writer = new FileWriter(propertiesFile)) {
+            Template template = getTemplate(config, "client_application_properties.ftl");
             template.process(params, writer);
-        } catch (IOException e) {
-            log.error("Unable to load the application.properties template", e);
-            throw new MojoExecutionException("Unable to load the application.properties template", e);
-        } catch (TemplateException e) {
+        } catch (IOException | TemplateException e) {
             log.error("Unable to process the application.properties template", e);
             throw new MojoExecutionException("Unable to process the application.properties template", e);
         }
     }
 
+    private Template getTemplate(Configuration config, String fileName) throws MojoExecutionException {
+        try {
+            return config.getTemplate(fileName);
+        } catch (IOException e) {
+            String message = "Unable to get template " + fileName;
+            log.error(message, e);
+            throw new MojoExecutionException(message, e);
+        }
+    }
+
 }
+
+
