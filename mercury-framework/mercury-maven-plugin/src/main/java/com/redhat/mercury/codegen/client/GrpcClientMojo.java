@@ -30,7 +30,7 @@ import freemarker.template.TemplateException;
 @Mojo(name = "GrpcClient", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class GrpcClientMojo extends AbstractMojo {
 
-    private final Log LOGGER = getLog();
+    private final Log log = getLog();
 
     @Parameter(property = "serviceDomainName", defaultValue = "${project.parent.artifactId}", required = true)
     String sdName;
@@ -55,7 +55,7 @@ public class GrpcClientMojo extends AbstractMojo {
         String[] apiFiles = apiDir.list();
         if (apiFiles == null) {
             apiFiles = new String[0];
-            LOGGER.info("No proto api files found under " + apiDir.getAbsolutePath());
+            log.info("No proto api files found under " + apiDir.getAbsolutePath());
         }
         List<GrpcService> services = new ArrayList<>();
         String packageName = String.format("com.redhat.mercury.%s.%s.client", sdNameCamel.toLowerCase(), version);
@@ -77,34 +77,32 @@ public class GrpcClientMojo extends AbstractMojo {
 
         try {
             Template template = config.getTemplate("client_template.ftl");
-            File clientDir = new File(String.format(outputDir.getPath() + "/com/redhat/mercury/%s/%s/client",
-                    sdNameCamel.toLowerCase(), version));
+            File clientDir = new File(String.format("%s/com/redhat/mercury/%s/%s/client",
+                    outputDir.getPath(), sdNameCamel.toLowerCase(), version));
             if (!clientDir.exists()) {
                 clientDir.mkdirs();
             }
-            try (Writer writer = new FileWriter(clientDir.getPath() + "/" + sdNameCamel + "Client.java")) {
-                template.process(params, writer);
-            } catch (TemplateException e) {
-                LOGGER.error("Unable to process the GrpcClient template", e);
-                throw new MojoExecutionException("Unable to process the GrpcClient template", e);
-            }
+            Writer writer = new FileWriter(clientDir.getPath() + "/" + sdNameCamel + "Client.java");
+            template.process(params, writer);
         } catch (IOException e) {
-            LOGGER.error("Unable to load GrpcClient template", e);
+            log.error("Unable to load GrpcClient template", e);
             throw new MojoExecutionException("Unable to load the GrpcClient template", e);
+        } catch (TemplateException e) {
+            log.error("Unable to process the GrpcClient template", e);
+            throw new MojoExecutionException("Unable to process the GrpcClient template", e);
         }
 
         try {
             Template template = config.getTemplate("client_application_properties.ftl");
             File propertiesFile = new File(outputDir, "application.properties");
-            try (Writer writer = new FileWriter(propertiesFile)) {
-                template.process(params, writer);
-            } catch (TemplateException e) {
-                LOGGER.error("Unable to process the application.properties template", e);
-                throw new MojoExecutionException("Unable to process the application.properties template", e);
-            }
+            Writer writer = new FileWriter(propertiesFile);
+            template.process(params, writer);
         } catch (IOException e) {
-            LOGGER.error("Unable to load the application.properties template", e);
+            log.error("Unable to load the application.properties template", e);
             throw new MojoExecutionException("Unable to load the application.properties template", e);
+        } catch (TemplateException e) {
+            log.error("Unable to process the application.properties template", e);
+            throw new MojoExecutionException("Unable to process the application.properties template", e);
         }
     }
 
