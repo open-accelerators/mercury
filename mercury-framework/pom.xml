@@ -9,6 +9,7 @@
     <name>Mercury Framework Parent</name>
     <packaging>pom</packaging>
     <modules>
+        <module>mercury-maven-plugin</module>
         <module>mercury-common</module>
         <module>mercury-common-events</module>
         <module>service-domains</module>
