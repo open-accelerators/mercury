@@ -6,19 +6,15 @@ import javax.enterprise.context.ApplicationScoped;
 import ${service.importName};
 </#list>
 import io.quarkus.grpc.GrpcClient;
+import lombok.Getter;
 
 @ApplicationScoped
+@Getter
 public class ${className} {
 
     <#list services as service>
     @GrpcClient("${service.clientName}")
     ${service.className} ${service.fieldName};
         
-    </#list>
-    <#list services as service>
-    public ${service.className} ${service.getterName}() {
-        return ${service.fieldName};
-    }
-
     </#list>
 }
