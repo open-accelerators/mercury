@@ -1,13 +1,11 @@
 package com.redhat.mercury.model.state;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.redhat.mercury.model.ServiceDomain;
-import com.redhat.mercury.model.state.ControlRecordState.ControlRecordStateType;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.sundr.builder.annotations.Buildable;

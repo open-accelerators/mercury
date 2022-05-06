@@ -79,7 +79,7 @@ class MyCOServiceImplTest {
                 .status(INITIATED_STATUS)
                 .build();
         when(mockSvc.initiateProcedure(CUSTOMER_REF)).thenReturn(Uni.createFrom().item(expected));
-        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CustomerOffer)
+        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
                 .withReference(expected.getId().toString())
                 .invocation()
                 .workPerformance()
@@ -116,7 +116,7 @@ class MyCOServiceImplTest {
                 .status(INITIATED_STATUS)
                 .build();
         when(mockSvc.initiateProcedure(CUSTOMER_REF)).thenReturn(Uni.createFrom().item(expected));
-        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CustomerOffer)
+        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
                 .withReference(expected.getId().toString())
                 .invocation()
                 .workPerformance()
@@ -149,7 +149,7 @@ class MyCOServiceImplTest {
                 .status(COMPLETED_STATUS)
                 .build();
         when(mockSvc.updateProcedure(expected.getId())).thenReturn(Uni.createFrom().item(expected));
-        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CustomerOffer)
+        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
                 .withReference(expected.getId().toString())
                 .invocation()
                 .workPerformance()

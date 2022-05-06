@@ -33,12 +33,12 @@ public class CustomerOfferResource {
     @Path("/procedures")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<Void> initiate() {
-        Long id = this.id++;
-        String customerReference = id.toString();
+        Long nextId = this.id++;
+        String customerReference = nextId.toString();
 
         LOGGER.info("Initiate received for {}", customerReference);
         return svc.initiateProcedure(customerReference)
-                .call(state -> notificationService.send(CRStateNotification.builder(ServiceDomain.CustomerOffer)
+                .call(state -> notificationService.send(CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
                         .withReference(state.getId().toString())
                         .invocation()
                         .workPerformance()

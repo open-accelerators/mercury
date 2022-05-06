@@ -11,7 +11,7 @@ import static com.redhat.mercury.codegen.utils.NamingUtils.toPackageName;
 import static com.redhat.mercury.codegen.utils.NamingUtils.toUpperCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NamingUtilsTest {
+class NamingUtilsTest {
 
     @Test
     void testToPackageName() {
@@ -53,13 +53,13 @@ public class NamingUtilsTest {
         assertEquals("BQAuditService", toGrpcServiceName("bq_audit_service"));
         assertEquals("CRCustomerOfferProcedureService", toGrpcServiceName("cr_customer_offer_procedure_service"));
     }
-    
+
     @Test
     void testToChannelName() {
         assertEquals("CHANNEL_EXAMPLE", toChannelName("example_service"));
         assertEquals("CHANNEL_OTHER_EXAMPLE", toChannelName("other_example_service"));
     }
-    
+
     @Test
     void testToChannelId() {
         assertEquals("domain1-example", toChannelId("domain-1", "example_service"));
@@ -72,7 +72,7 @@ public class NamingUtilsTest {
         assertEquals("BQ_AUDIT_SERVICE", toUpperCase("bq_audit_service"));
         assertEquals("CR_CUSTOMER_OFFER_PROCEDURE_SERVICE", toUpperCase("cr_customer_offer_procedure_service"));
     }
-    
+
     @Test
     void testToFieldName() {
         assertEquals(null, NamingUtils.toFieldName(null));

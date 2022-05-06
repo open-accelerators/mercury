@@ -11,14 +11,14 @@ import com.redhat.mercury.customeroffer.CustomerOffer;
 import com.redhat.mercury.model.state.CRStateNotification;
 import com.redhat.mercury.model.state.ControlRecordState;
 import com.redhat.mercury.myprp.services.impl.PartyRoutingService;
-import com.redhat.mercury.notification.CRNotificationSink;
+import com.redhat.mercury.notification.NotificationSink;
 
 import static com.redhat.mercury.myprp.services.impl.PartyRoutingService.COMPLETED_STATUS;
 import static com.redhat.mercury.myprp.services.impl.PartyRoutingService.INITIATED_STATUS;
 
 
 @ApplicationScoped
-public class CustomerOfferProcedureSink implements CRNotificationSink {
+public class CustomerOfferProcedureSink implements NotificationSink<CRStateNotification> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferProcedureSink.class);
 

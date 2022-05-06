@@ -60,7 +60,7 @@ public class CommonModelMojo extends AbstractMercuryMojo {
         params.put("domainNameUpperCase", toUpperCase(sdName));
 
         File clientDir = new File(String.format("%s/com/redhat/mercury/%s",
-                outputDir.getPath(), sdNameCamel.toLowerCase(), version));
+                outputDir.getPath(), sdNameCamel.toLowerCase()));
         if (!clientDir.exists()) {
             clientDir.mkdirs();
         }

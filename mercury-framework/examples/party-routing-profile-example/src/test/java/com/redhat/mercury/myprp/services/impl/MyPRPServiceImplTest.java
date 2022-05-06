@@ -35,7 +35,7 @@ class MyPRPServiceImplTest {
         String prpId = "1";
 
         sink.onReceive(CRStateNotification
-                .builder(ServiceDomain.PartyRoutingProfile)
+                .builder(ServiceDomain.PARTY_ROUTING_PROFILE)
                 .withReference(prpId)
                 .invocation()
                 .workPerformance()

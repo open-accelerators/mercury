@@ -30,7 +30,11 @@ public class NamingUtils {
     }
 
     public static String toGrpcServiceName(String serviceName) {
-        char[] chars = toCamelCase(serviceName).toCharArray();
+        String sn = toCamelCase(serviceName);
+        if (sn == null) {
+            return null;
+        }
+        char[] chars = sn.toCharArray();
         chars[0] = Character.toUpperCase(chars[0]);
         chars[1] = Character.toUpperCase(chars[1]);
         return new String(chars);

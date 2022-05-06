@@ -45,7 +45,7 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
         LOGGER.info("Initiate received for {}", customerReference);
         return svc.initiateProcedure(customerReference)
-                .call(state -> notificationService.send(CRStateNotification.builder(ServiceDomain.CustomerOffer)
+                .call(state -> notificationService.send(CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
                         .withReference(state.getId().toString())
                         .invocation()
                         .workPerformance()
@@ -72,7 +72,7 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
                         .setCustomerOfferProcessingTask(id.toString())
                         .setCustomerOfferProcessingTaskResult(state.getStatus())
                         .build())
-                .call(customerOfferProcedure -> notificationService.send(CRStateNotification.builder(ServiceDomain.CustomerOffer)
+                .call(customerOfferProcedure -> notificationService.send(CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
                         .withReference(id.toString())
                         .invocation()
                         .workPerformance()
