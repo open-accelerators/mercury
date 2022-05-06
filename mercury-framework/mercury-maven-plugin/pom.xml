@@ -20,7 +20,6 @@
         <maven-plugin-plugin.version>3.6.0</maven-plugin-plugin.version>
         <freemarker.version>2.3.31</freemarker.version>
         <logmanager.version>2.1.18.Final</logmanager.version>
-        <maven-verifier.version>1.8.0</maven-verifier.version>
     </properties>
 
     <dependencies>
@@ -56,12 +55,6 @@
             <groupId>org.jboss.logmanager</groupId>
             <artifactId>jboss-logmanager</artifactId>
             <version>${logmanager.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.shared</groupId>
-            <artifactId>maven-verifier</artifactId>
-            <version>${maven-verifier.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

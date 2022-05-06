@@ -3,14 +3,14 @@ package com.redhat.mercury.codegen.mojo;
 import org.apache.maven.it.Verifier;
 import org.junit.jupiter.api.Test;
 
-public class CommonModelMojoTest {
+class CommonModelMojoTest {
 
     private static final String JAVA_FILE = "ExampleDomain.java";
     private static final String GENERATED_JAVA_FILE = "target/generated-sources/mercury/com/redhat/mercury/exampledomain/" + JAVA_FILE;
     private static final String CLASS_FILE = "target/classes/com/redhat/mercury/exampledomain/ExampleDomain.class";
 
     @Test
-    public void testCommonModelGoal() throws Exception {
+    void testCommonModelGoal() throws Exception {
         MojoVerifier mojoVerifier = new MojoVerifier("/example-common");
 
         Verifier verifier = mojoVerifier.getVerifier();

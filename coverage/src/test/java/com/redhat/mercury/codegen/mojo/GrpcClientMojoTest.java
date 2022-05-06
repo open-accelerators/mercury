@@ -3,7 +3,7 @@ package com.redhat.mercury.codegen.mojo;
 import org.apache.maven.it.Verifier;
 import org.junit.jupiter.api.Test;
 
-public class GrpcClientMojoTest {
+class GrpcClientMojoTest {
 
     private static final String JAVA_FILE = "ExampleDomainClient.java";
     private static final String GENERATED_JAVA_FILE = "target/generated-sources/mercury/com/redhat/mercury/exampledomain/v10/client/" + JAVA_FILE;
@@ -11,7 +11,7 @@ public class GrpcClientMojoTest {
     private static final String APPLICATION_PROPERTIES_PATH_FILE = "target/generated-sources/mercury/" + APPLICATION_PROPERTIES_FILE;
 
     @Test
-    public void testGrpcClientGoal() throws Exception {
+    void testGrpcClientGoal() throws Exception {
         MojoVerifier mojoVerifier = new MojoVerifier("/example-client");
 
         Verifier verifier = mojoVerifier.getVerifier();

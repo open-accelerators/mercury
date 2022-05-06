@@ -12,7 +12,7 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        
+        <maven-verifier.version>1.8.0</maven-verifier.version>
     </properties>
 
     <dependencies>
@@ -41,6 +41,18 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>mercury-maven-plugin</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-verifier</artifactId>
+            <version>${maven-verifier.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
