@@ -17,15 +17,18 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import static com.redhat.mercury.Constants.BUILDER_PACKAGE;
+
 @ToString
 @EqualsAndHashCode
 @Getter
 @Setter
 @JsonInclude(Include.NON_NULL)
 @RegisterForReflection
-@Buildable(validationEnabled = true, editableEnabled = false, refs = {@BuildableReference(StateNotification.class)})
+@Buildable(validationEnabled = true, editableEnabled = false, refs = {@BuildableReference(StateNotification.class)},
+        generateBuilderPackage = true, builderPackage = BUILDER_PACKAGE)
 public class CRStateNotification extends StateNotification<ControlRecordStateType> {
-    
+
     @NotNull
     private String referenceId;
     @Valid

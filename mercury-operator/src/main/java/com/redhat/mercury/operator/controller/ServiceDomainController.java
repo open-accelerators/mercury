@@ -54,8 +54,6 @@ import io.javaoperatorsdk.operator.api.reconciler.EventSourceInitializer;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
-import io.strimzi.api.kafka.model.KafkaTopic;
-import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
@@ -65,16 +63,13 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FA
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.HttpExposeType.DEFAULT_API_VERSION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_CANT_READ_CONFIG_MAPS_FILE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_INTEGRATION_NOT_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_KAFKA_TOPIC_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_FOUND;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_CANT_READ_CONFIG_MAPS_FILE;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_INTEGRATION_WAITING;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_KAFKA_TOPIC_WAITING;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.REASON_SDI;
 import static com.redhat.mercury.operator.utils.ResourceUtils.toLowerHyphen;
 
@@ -129,11 +124,6 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
                 .runnableInformer(0);
 
-        SharedIndexInformer<KafkaTopic> kafkaTopicInformer = client.resources(KafkaTopic.class)
-                .inAnyNamespace()
-                .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
-                .runnableInformer(0);
-
         SharedIndexInformer<Service> servicesInformer = client.services()
                 .inAnyNamespace()
                 .withLabel(MANAGED_BY_LABEL, OPERATOR_NAME)
@@ -146,7 +136,6 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
         return List.of(getInformerEventSource(deploymentInformer),
                 getInformerEventSource(integrationInformer),
-                getInformerEventSource(kafkaTopicInformer),
                 getInformerEventSource(servicesInformer),
                 getInformerEventSource(routeConfigMapInformer));
     }
@@ -198,7 +187,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                 final String sdTypeAsString = toLowerHyphen(sdType.toString());
                 final String apiVersion = httpExposeType.getApiVersion();
 
-                if(DEFAULT_API_VERSION.equals(apiVersion)) {
+                if (DEFAULT_API_VERSION.equals(apiVersion)) {
                     final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
                     Condition integrationCondition = createConfigMaps(sd, sdTypeAsString, apiVersion, directConfigMapName);
                     if (integrationCondition != null) {
@@ -210,18 +199,12 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                     integrationCondition = createOrUpdateCamelKHttpIntegration(sd, sdCamelRouteYaml);
                     setStatusCondition(sd, integrationCondition);
                     if (STATUS_FALSE.equals(integrationCondition.getStatus())) {
-                        return updateStatus(sd);
+                        return updateStatus(sd).rescheduleAfter(5, TimeUnit.SECONDS);
                     }
                 }
             } else {
                 deleteCamelHttpIntegration(sd);
                 removeStatusCondition(sd, CONDITION_INTEGRATION_READY);
-            }
-
-            Condition kafkaTopicCondition = createKafkaTopic(sd, sdi.getMetadata().getNamespace());
-            setStatusCondition(sd, kafkaTopicCondition);
-            if (kafkaTopicCondition != null && STATUS_FALSE.equals(kafkaTopicCondition.getStatus())) {
-                return updateStatus(sd);
             }
 
             if (areAllConditionsReady(sd)) {
@@ -262,11 +245,11 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                     .withName(openApiConfigMapName)
                     .withNamespace(sd.getMetadata().getNamespace())
                     .withOwnerReferences(List.of(new OwnerReferenceBuilder()
-                                                        .withName(sd.getMetadata().getName())
-                                                        .withUid(sd.getMetadata().getUid())
-                                                        .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                                                        .withApiVersion(MercuryConstants.API_VERSION)
-                                                        .build()))
+                            .withName(sd.getMetadata().getName())
+                            .withUid(sd.getMetadata().getUid())
+                            .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
+                            .withApiVersion(MercuryConstants.API_VERSION)
+                            .build()))
                     .withLabels(Map.of(MANAGED_BY_LABEL, OPERATOR_NAME))
                     .endMetadata()
                     .withData(Map.of(OPENAPI_FILENAME, IOUtils.toString(openApiFileAsStream, StandardCharsets.UTF_8)))
@@ -403,58 +386,6 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                         "flows", yaml.load(sdCamelRouteYaml)));
         data.put("spec", specMap);
         return yaml.dumpAsMap(data);
-    }
-
-    private Condition createKafkaTopic(ServiceDomain sd, String sdiNamespace) {
-        final String kafkaTopicName = sd.getMetadata().getName() + "-topic";
-
-        KafkaTopic desiredKafkaTopic = new KafkaTopicBuilder()
-                .withNewMetadata()
-                .withName(kafkaTopicName)
-                .withNamespace(sdiNamespace)
-                .withLabels(Map.of("strimzi.io/cluster", sd.getSpec().getServiceDomainInfra(),
-                        MANAGED_BY_LABEL, OPERATOR_NAME))
-                .endMetadata()
-                .withNewSpec()
-                .withPartitions(1)
-                .withReplicas(1)
-                .endSpec()
-                .build();
-
-        desiredKafkaTopic.getMetadata().setOwnerReferences(List.of(new OwnerReferenceBuilder()
-                .withName(sd.getMetadata().getName())
-                .withUid(sd.getMetadata().getUid())
-                .withKind(SERVICE_DOMAIN_OWNER_REFERENCES_KIND)
-                .withApiVersion(MercuryConstants.API_VERSION)
-                .build()));
-
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdiNamespace).withName(kafkaTopicName).get();
-
-        if (kafkaTopic == null || !Objects.equals(kafkaTopic.getSpec(), desiredKafkaTopic.getSpec())) {
-            LOGGER.debug("Create or replace KafkaTopic {}", kafkaTopicName);
-            client.resources(KafkaTopic.class).inNamespace(sdiNamespace).create(desiredKafkaTopic);
-            LOGGER.debug("Created or replaced KafkaTopic {}", kafkaTopicName);
-            return new ConditionBuilder()
-                    .withType(CONDITION_KAFKA_TOPIC_READY)
-                    .withStatus(STATUS_FALSE)
-                    .withReason(REASON_KAFKA_TOPIC_WAITING)
-                    .withMessage(MESSAGE_KAFKA_TOPIC_NOT_READY)
-                    .build();
-        }
-
-        if (isKafkaTopicReady(kafkaTopic)) {
-            sd.getStatus().setKafkaTopic(kafkaTopicName);
-            return new ConditionBuilder()
-                    .withType(CONDITION_KAFKA_TOPIC_READY)
-                    .withStatus(STATUS_TRUE)
-                    .build();
-        }
-
-        return null;
-    }
-
-    private boolean isKafkaTopicReady(KafkaTopic kafkaTopic) {
-        return kafkaTopic != null && kafkaTopic.getStatus() != null && kafkaTopic.getStatus().getConditions().stream().anyMatch(c -> CONDITION_READY.equals(c.getType()) && Boolean.TRUE.toString().equalsIgnoreCase(c.getStatus()));
     }
 
     private void createOrUpdateDeployment(ServiceDomain sd, String kafkaBrokerUrl) {

@@ -20,6 +20,7 @@
         <dependency>
             <groupId>io.sundr</groupId>
             <artifactId>builder-annotations</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <build>

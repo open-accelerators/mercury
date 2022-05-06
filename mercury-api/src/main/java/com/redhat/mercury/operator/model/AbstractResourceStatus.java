@@ -15,12 +15,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import static com.redhat.mercury.operator.model.MercuryConstants.K8S_BUILDER_PACKAGE;
+
 @JsonInclude
 @EqualsAndHashCode
 @ToString
 @Getter
 @Setter
-@Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", refs = {
+@Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = K8S_BUILDER_PACKAGE, refs = {
         @BuildableReference(Condition.class)})
 public abstract class AbstractResourceStatus {
 

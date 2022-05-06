@@ -17,11 +17,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import static com.redhat.mercury.Constants.BUILDER_PACKAGE;
+
 @ToString
 @EqualsAndHashCode
 @Getter
 @Setter
-@Buildable(validationEnabled = true)
+@Buildable(validationEnabled = true, generateBuilderPackage = true, builderPackage = BUILDER_PACKAGE)
 @JsonInclude(Include.NON_NULL)
 @RegisterForReflection
 public abstract class StateNotification<T> {

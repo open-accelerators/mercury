@@ -14,11 +14,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import static com.redhat.mercury.Constants.BUILDER_PACKAGE;
+
 @ToString
 @EqualsAndHashCode
 @Getter
 @Setter
-@Buildable(validationEnabled = true, editableEnabled = false, refs = {@BuildableReference(StateNotification.class)})
+@Buildable(validationEnabled = true, editableEnabled = false, refs = {@BuildableReference(StateNotification.class)}, 
+        generateBuilderPackage = true, builderPackage = BUILDER_PACKAGE)
 @JsonInclude(Include.NON_NULL)
 @RegisterForReflection
 public class SDStateNotification extends StateNotification<ServiceDomainStateType> {

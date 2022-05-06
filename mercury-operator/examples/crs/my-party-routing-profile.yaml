@@ -5,7 +5,7 @@ metadata:
   labels:
     app: example
 spec:
-  businessImage: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.2-SNAPSHOT
+  businessImage: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.2
   serviceDomainInfra: my-first-sdi
   type: PartyRoutingProfile
   expose:
