@@ -21,22 +21,6 @@
             <artifactId>mercury-operator</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <!-- service domains -->
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>customer-offer-service</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>customer-credit-rating-service</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>party-routing-profile-service</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
         <!-- examples -->
         <dependency>
             <groupId>${project.groupId}</groupId>

@@ -26,20 +26,27 @@ business specific logic together with clients to integrate with other Service Do
 
 After a record is created/updated in a Service Domain the internal state might change and that change
 should be broadcasted to other service domains interested in such changes.
-This will be done through a message channel and the clients will subscribe to it.
+This will be done through the specific message channel depending on the context so that clients can subscribe to it.
 
 ## Diagram
 
 ![mercury framework](../docs/images/mercury%20framework.png)
 
-## *service-domain*-common
+## Service Domain Common library
 
-This is a common library used by client, events and service libraries. Includes the `.proto` files
-and the generated Java model for this specific service domain
+This is a common library that contains the generated gRPC services/clients generated from the `.proto` files
+and the event model for a given Service Domain.
 
 It also includes the Notification APIs and ServiceDomain-related constants.
 
-## *service-domain*-client
+```xml
+<dependency>
+  <groupId>com.redhat.mercury</groupId>
+  <artifactId>customer-offer-common</artifactId>
+</dependency>
+```
+
+## Service Domain Clients
 
 Client library to be used for gRPC communication with the _Service Domain_. Use this library to your
 project if you need to communicate with a specific service domain through gRPC. e.g.
@@ -52,7 +59,8 @@ project if you need to communicate with a specific service domain through gRPC. 
 ```
 
 After adding this dependency, you can inject the `CustomerOfferClient` service that includes a set of
-`grpcClient` to talk to the different interfaces available in the `CustomerOffer` service domain.
+`grpcClient` to talk to the Control Record and the different Behavior Qualifiers available in the
+`CustomerOffer` service domain.
 
 ```java
 import java.util.concurrent.CompletableFuture;
@@ -71,76 +79,106 @@ public class MyService {
         // Process the response message asynchronously
     }
 }
-```
-## *service-domain*-events
 
-Client library to be used only when need for subscription to the _service-domain_ events. It 
-contains tools to automatically subscribe to a messaging channel.
-
-```xml
-<dependency>
-    <groupId>com.redhat.mercury</groupId>
-    <artifactId>customer-offer-events</artifactId>
-</dependency>
 ```
-Extend the abstract class `CustomerOfferNotificationService` for handling each specific event
+## State change notification
+
+For messaging we rely on [Quarkus Kafka Reactive Messaging](https://quarkus.io/guides/kafka-reactive-getting-started).
+
+There are two type of State Change notification events that can be emitted.
+
+### SDStateNotification
+
+For ServiceDomain state transitions there are a related to Reporting and Operation.
+The messaging channel will only receive the event containing the new state. No other information is needed.
+
+### CRStateNotification
+
+For ControlRecord and Behavior Qualifier state transitions related to Instantiation and Invocation.
+The messaging channel specific to the type must have a context so that we know where the message belongs to.
+
+The context will have the `referenceId` of the Control Record and then one or many `sub-referenceId` for the
+qualifier and sub-qualifiers the event might have.
+
+### Sending a state change notification
+
+The `@Channel` value must have the target message channel the event is targeted.
+The `@Broadcast` annotation means the message can be consumed by multiple recipients.
 
 ```java
-public class MyCustomerOfferNotificationServiceImpl extends CustomerOfferNotificationService {
-    
+    @Channel(CustomerOffer.CHANNEL_CR_CUSTOMER_OFFER_PROCEDURE)
+    @Broadcast
+    MutinyEmitter<CRStateNotification> emitter;
+
+    public Uni<Void> send(CRStateNotification notification) {
+        return emitter.send(notification);
+    }
+```
+
+### Receiving a state change notification
+
+Implement the `CRNotificationSink` or the `SDNotificationSink` interface depending on the scope we're interested in.
+
+Then implement the `onReceive` method and don't forget the `@Incoming` annotation with the name of the Channel
+we want to subscribe to.
+
+```java
+@ApplicationScoped
+public class CustomerOfferProcedureSink implements CRNotificationSink {
     @Override
-    public Uni<Empty> onCustomerOfferInitiated(CustomerOfferNotification notification) {
-        Uni.createFrom()
-                .item(notification)
-                .onItem()
-                //notification asynchronous handling
-                ;
+    @Incoming(CustomerOffer.CHANNEL_CR_CUSTOMER_OFFER_PROCEDURE)
+    public void onReceive(CRStateNotification notification) {
+        switch (notification.getState()) {
+            case ControlRecordState.INITIATED:
+                svc.updatePartyRoutingState(INITIATED_STATUS, notification.getReferenceId());
+                break;
+            case ControlRecordState.COMPLETED:
+                svc.updatePartyRoutingState(COMPLETED_STATUS, notification.getReferenceId());
+                break;
+            default:
+                LOGGER.warn("Ignore unsupported status with state: {}", notification.getState());
+        }
     }
 }
 ```
 
-## *service-domain*-service
+## Service Domain Implementation
 
-Used for this specific service domain implementation. Contains the gRPC service endpoints, 
-the state change notification service and the service interfaces to be implemented following the business needs.
+It is possible to implement partially or fully each Service Domain by implementing the necessary gRPC interfaces.
+
+Add to your project the common model library for your service domain
 
 ```xml
 <dependency>
     <groupId>com.redhat.mercury</groupId>
-    <artifactId>customer-offer-service</artifactId>
+    <artifactId>customer-offer-common</artifactId>
 </dependency>
 ```
 
-In order to implement a ServiceDomain you have to implement the specific ServiceDomain resource or subresource.
-Most ServiceDomains are divided into ControlRecords and multiple Behaviour Qualifiers. This business 
-separation of concerns is available in the Mercury framework.
-
-As an example, the CustomerOffer service domain has the CustomerOfferProcedure Control Record, so, it is
-possible to just implement the CRCustomerOfferProcedureService interface, but you should also add the `@GrpcService`
-annotation to expose the service externally.
-
-After adding this dependency a Quarkus `grpcService` will be added and in your project you will 
-only have to implement the methods your business logic requires. If a given method is not implemented
-a no-op default implementation will be provided for you.
-
-The `NotificationService` can be injected and will handle all the channel subscription and metadata
-for the specific Service Domain.
+When implementing one of these interfaces you have to annotate your method with the `@GrpcService` that will
+expose your service as a gRPC service so that it can be accessed from another service.
 
 ```java
-import io.quarkus.grpc.GrpcService;
-
 @GrpcService
-public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
- 
-    @Inject
-    CustomerOfferNotificationService notificationService;
-
+public class MyPRPServiceImpl implements BQStatusService {
     @Override
-    public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
-        // my business logic here
-        return Uni.createFrom()
-                .item(request)
-                .invoke(r -> notificationService.onCustomerOfferInitiated(r));
+    public Uni<RetrieveStatusResponse> retrieveStatus(RetrieveStatusRequest request) {
+        return Uni.createFrom().item(() -> {
+            String prpId = request.getPartyroutingprofileId();
+            LOGGER.info("Retrieving party state status for {}", prpId);
+            if (prpId != null) {
+                PartyRoutingState state = svc.getState(prpId);
+                if (state == null) {
+                    return null;
+                }
+                return RetrieveStatusResponse.newBuilder()
+                        .setStatus(Status.newBuilder()
+                                .setCustomerRelationshipStatus(state.getStatus())
+                                .build())
+                        .build();
+            }
+            return null;
+        });
     }
 }
 ```

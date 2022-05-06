@@ -21,8 +21,6 @@
     steps:
       - set-body:
           simple: "{\"customercreditratingId\": \"${header.customercreditratingId}\"}"
-      - to:
-          uri: log:example?showBody=true
       - unmarshal:
           protobuf:
             instance-class: com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService$RetrieveRequest
