@@ -244,12 +244,12 @@ public enum ServiceDomain {
     TRUST_SERVICES("TrustServices"),
     UNDERWRITING("Underwriting"),
     UNIT_TRUST_ADMINISTRATION("UnitTrustAdministration"),
-    VIRTUAL_ACCOUNT("VirtualAccoun");
+    VIRTUAL_ACCOUNT("VirtualAccount");
     
-    public final String name;
+    public final String value;
 
-    ServiceDomain(String name) {
-        this.name = name;
+    ServiceDomain(String value) {
+        this.value = value;
     }
 
 }

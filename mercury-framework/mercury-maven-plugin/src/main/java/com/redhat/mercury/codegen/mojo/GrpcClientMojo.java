@@ -36,6 +36,9 @@ public class GrpcClientMojo extends AbstractMercuryMojo {
     @Parameter(property = "port", required = true, defaultValue = "${mercury.grpc.port}")
     String port;
 
+    @Parameter(property = "apiDir", required = true, defaultValue = "${project.parent.basedir}/${project.parent.artifactId}-common/src/main/proto/${mercury.proto.version}/api")
+    File apiDir;
+    
     @Override
     public void execute() throws MojoExecutionException {
         String underscoreServiceDomain = sdName.replace("-", "_");

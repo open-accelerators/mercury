@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package com.redhat.mercury.exampledomain.v10.api.exampleservice;
+
+import "google/protobuf/empty.proto";
+
+service ExampleService {
+  rpc DoSomething (ExampleRequest) returns (ExampleResponse);
+
+}
+
+message ExampleRequest {
+  string hello = 1;
+}
+
+
+message ExampleResponse {
+  string code = 1;
+}
+

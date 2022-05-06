@@ -13,6 +13,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 import com.redhat.mercury.codegen.model.MessagingService;
 
@@ -32,6 +33,9 @@ public class CommonModelMojo extends AbstractMercuryMojo {
 
     private final Log log = getLog();
 
+    @Parameter(property = "apiDir", required = true, defaultValue = "src/main/proto/${mercury.proto.version}/api")
+    File apiDir;
+    
     @Override
     public void execute() throws MojoExecutionException {
         String sdNameCamel = toCamelCase(sdName.replace("-", " "));

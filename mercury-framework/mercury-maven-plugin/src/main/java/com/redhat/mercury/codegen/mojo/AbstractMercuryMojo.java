@@ -24,9 +24,6 @@ public abstract class AbstractMercuryMojo extends AbstractMojo {
     @Parameter(property = "outputDir", defaultValue = "${project.build.directory}/generated-sources/mercury", required = true)
     File outputDir;
 
-    @Parameter(property = "apiDir", required = true, defaultValue = "${project.parent.basedir}/${project.parent.artifactId}-common/src/main/proto/${mercury.proto.version}/api")
-    File apiDir;
-
     protected Template getTemplate(Configuration config, String fileName) throws MojoExecutionException {
         try {
             return config.getTemplate(fileName);
