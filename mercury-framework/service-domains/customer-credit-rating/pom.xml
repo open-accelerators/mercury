@@ -11,8 +11,6 @@
 
     <modules>
         <module>customer-credit-rating-common</module>
-        <module>customer-credit-rating-service</module>
         <module>customer-credit-rating-client</module>
-        <module>customer-credit-rating-events</module>
     </modules>
 </project>

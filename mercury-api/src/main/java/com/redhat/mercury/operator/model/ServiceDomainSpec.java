@@ -12,6 +12,8 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
+import static com.redhat.mercury.operator.model.MercuryConstants.K8S_BUILDER_PACKAGE;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize
 @ToString
@@ -19,7 +21,7 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @Accessors(chain = true)
-@Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
+@Buildable(editableEnabled = false, lazyCollectionInitEnabled = false, builderPackage = K8S_BUILDER_PACKAGE)
 public class ServiceDomainSpec implements Serializable {
     public enum Type {
         CustomerOffer(),

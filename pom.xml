@@ -11,23 +11,26 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <container-image.tag>1.0.2</container-image.tag>
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <jandex-maven-plugin.version>1.2.2</jandex-maven-plugin.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven-archetype-plugin.version>3.2.0</maven-archetype-plugin.version>
+        <!-- depends on quarkus-operator-sdk -->
         <quarkus.platform.version>2.6.3.Final</quarkus.platform.version>
-        <quarkus.camel.version>2.6.3.Final</quarkus.camel.version>
-        <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-        <testcontainers.version>1.6.0</testcontainers.version>
-        <lombok.version>1.18.16</lombok.version>
-        <builder-annotations.version>0.50.3</builder-annotations.version>
-        <operator-sdk.version>3.0.3</operator-sdk.version>
+        <quarkus.camel.version>${quarkus.platform.version}</quarkus.camel.version>
+        <!-- override quarkus dependency on 5.12.x because Kafka.spec is not serialized properly -->
+        <testcontainers.version>1.16.3</testcontainers.version>
+        <lombok.version>1.18.22</lombok.version>
+        <builder-annotations.version>0.90.4</builder-annotations.version>
+        <operator-sdk.version>3.0.2</operator-sdk.version>
         <strimzi-api.version>0.28.0</strimzi-api.version>
-        <archetype.version>3.2.0</archetype.version>
+        <!-- Container images -->
+        <container-image.tag>1.0.2</container-image.tag>
         <!-- CheckStyle -->
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
         <checkstyle.version>10.0</checkstyle.version>
@@ -61,9 +64,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <groupId>io.quarkiverse.operatorsdk</groupId>
+                <artifactId>quarkus-operator-sdk-bom</artifactId>
+                <version>${operator-sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -73,12 +76,6 @@
                 <version>${quarkus.camel.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>io.cloudevents</groupId>
-                <artifactId>cloudevents-protobuf</artifactId>
-                <version>${cloudevents.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
@@ -124,7 +121,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler-plugin.version}</version>
+                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <parameters>${maven.compiler.parameters}</parameters>
                         <forceJavacCompilerUse>true</forceJavacCompilerUse>
@@ -132,7 +129,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${surefire-plugin.version}</version>
+                    <version>${maven-surefire-plugin.version}</version>
                     <configuration>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -147,7 +144,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${surefire-plugin.version}</version>
+                    <version>${maven-surefire-plugin.version}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -169,7 +166,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-archetype-plugin</artifactId>
-                    <version>${archetype.version}</version>
+                    <version>${maven-archetype-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>

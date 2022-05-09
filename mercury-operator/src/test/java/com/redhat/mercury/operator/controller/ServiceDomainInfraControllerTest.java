@@ -248,7 +248,7 @@ public class ServiceDomainInfraControllerTest extends AbstractTest {
                         .withName("my-sdi")
                         .withNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE)
                         .build())
-                .withSpec(new ServiceDomainInfraSpecBuilder()
+                .withNewSpec()
                         .withNewKafka()
                         .withReplicas(3)
                         .withNewStorage()
@@ -256,7 +256,8 @@ public class ServiceDomainInfraControllerTest extends AbstractTest {
                         .withSize("1Gi")
                         .endStorage()
                         .endKafka()
-                        .build())
+                .endSpec()
+                .withNewStatus().endStatus()
                 .build();
         UpdateControl<ServiceDomainInfra> update = serviceDomainInfraController.reconcile(sdi, null);
 
@@ -320,7 +321,8 @@ public class ServiceDomainInfraControllerTest extends AbstractTest {
                         .withName("my-sdi")
                         .withNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE)
                         .build())
-                .withSpec(new ServiceDomainInfraSpecBuilder().build())
+                .withNewSpec().endSpec()
+                .withNewStatus().endStatus()
                 .build();
     }
 

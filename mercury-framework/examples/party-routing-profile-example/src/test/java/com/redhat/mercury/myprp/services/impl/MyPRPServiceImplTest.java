@@ -9,6 +9,9 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
+import com.redhat.mercury.model.ServiceDomain;
+import com.redhat.mercury.model.state.CRStateNotification;
+import com.redhat.mercury.myprp.notification.CustomerOfferProcedureSink;
 import com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
 import com.redhat.mercury.partyroutingprofile.v10.StatusOuterClass.Status;
 import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
@@ -25,12 +28,20 @@ class MyPRPServiceImplTest {
     PartyRoutingProfileClient client;
 
     @Inject
-    CustomerOfferEventHandler eventHandler;
+    CustomerOfferProcedureSink sink;
 
     @Test
     void testRetrievePartyStateStatus() throws ExecutionException, InterruptedException, TimeoutException {
         String prpId = "1";
-        eventHandler.onCustomerOfferCompleted(prpId).await().indefinitely();
+
+        sink.onReceive(CRStateNotification
+                .builder(ServiceDomain.PARTY_ROUTING_PROFILE)
+                .withReference(prpId)
+                .invocation()
+                .workPerformance()
+                .completed()
+                .build());
+
         CompletableFuture<RetrieveStatusResponse> message = new CompletableFuture<>();
         client.getBqStatusService().retrieveStatus(
                 RetrieveStatusRequest.newBuilder()

@@ -9,10 +9,7 @@ import javax.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Empty;
 import com.redhat.mercury.myprp.model.PartyRoutingState;
-
-import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class PartyRoutingService {
@@ -31,17 +28,12 @@ public class PartyRoutingService {
         return partyRoutings.getOrDefault(id, null);
     }
 
-    public Uni<Empty> updatePartyRoutingState(String status, String processId) {
-        return Uni.createFrom().item(() -> {
-            LOGGER.info("Updating PartyRoutingState ProcessId: {} - Status: {}", processId, status);
-
-            PartyRoutingState currentState = partyRoutings.get(processId);
-            if (currentState == null || (COMPLETED_STATUS.equals(status) && INITIATED_STATUS.equals(currentState.getStatus()))) {
-                partyRoutings.put(processId, new PartyRoutingState().setProcessId(processId).setStatus(status));
-            }
-            return Empty.getDefaultInstance();
-        });
-
+    public void updatePartyRoutingState(String status, String processId) {
+        LOGGER.info("Updating PartyRoutingState ProcessId: {} - Status: {}", processId, status);
+        PartyRoutingState currentState = partyRoutings.get(processId);
+        if (currentState == null || (COMPLETED_STATUS.equals(status) && INITIATED_STATUS.equals(currentState.getStatus()))) {
+            partyRoutings.put(processId, new PartyRoutingState().setProcessId(processId).setStatus(status));
+        }
     }
 
 }

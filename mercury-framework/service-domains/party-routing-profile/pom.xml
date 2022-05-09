@@ -13,8 +13,6 @@
 
     <modules>
         <module>party-routing-profile-common</module>
-        <module>party-routing-profile-service</module>
         <module>party-routing-profile-client</module>
-        <module>party-routing-profile-events</module>
     </modules>
 </project>

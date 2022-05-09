@@ -12,8 +12,6 @@
 
     <modules>
         <module>customer-offer-common</module>
-        <module>customer-offer-service</module>
         <module>customer-offer-client</module>
-        <module>customer-offer-events</module>
     </modules>
 </project>

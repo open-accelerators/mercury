@@ -19,6 +19,7 @@
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <maven-plugin-plugin.version>3.6.0</maven-plugin-plugin.version>
         <freemarker.version>2.3.31</freemarker.version>
+        <logmanager.version>2.1.18.Final</logmanager.version>
     </properties>
 
     <dependencies>
@@ -45,8 +46,18 @@
             <artifactId>freemarker</artifactId>
             <version>${freemarker.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager</artifactId>
+            <version>${logmanager.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
 
     <build>
         <pluginManagement>
@@ -70,7 +81,7 @@
             </plugin>
         </plugins>
     </build>
-    
+
     <reporting>
         <plugins>
             <plugin>

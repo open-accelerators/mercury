@@ -41,11 +41,4 @@ and `<ServiceDomain>NotificationService` abstract classes.
 * `<service-domain>-client`: Library used by any service domain willing to communicate to this `service-domain`
 using the Binding Service. The `<ServiceDomain>Client` class must implement all the methods from
 `<ServiceDomain>Service` and convert each request into a CloudEvent to send it to the Binding Service
-through the `outboundBindingService` gRPC client.
-* `<service-domain>-events`: Define classes that implements `BianNotificationHandler`. 
-E.g. `CustomerOfferCompletedHandler`. These classes will be used by Service Domains interested in
-notifications emited by this `<service-domain>`.
-* `<service-domain>-service`: Finally this library is the one that has to be used when implementing
-this `<service-domain>`. The `<ServiceDomain>InboundServiceImpl` includes mappings from REST requests
-to CloudEvent types and Data type conversions. Additionally, it includes the logic for generating 
-event notifications in the `<ServiceDomain>NotificationServiceImpl`
+through the `outboundBindingService` gRPC client

@@ -82,24 +82,6 @@ be part of a BIAN ecosystem.
 
 ### Common
 
-Create the following configuration resources that will be used by the operator (make sure
-they are created in the same namespace as the operator):
-
-- A ConfigMap per service domain that exposes a http route
-  (with the name integration-<service-domain-name>-http e.g. integration-customer-offer-http)
-  containing definitions of camel routes(e.g. directs.yaml)
-
-```shell
-kubectl apply -f ../deploy/config/integrations
-```
-
-- A ConfigMap per service domain that defines the OpenApi used to map REST requests to the
-  _directs_ routes
-
-```shell
-kubectl apply -f ../deploy/config/openapi
-```
-
 The following resources must be created where the integrations are going to be built.
 
 - A configMap containing a Maven settings, before doing so, export the user/token
@@ -158,5 +140,5 @@ We have created a Catalog containing the Mercury Operator. You can install this 
 Operator Lifecycle Manager and then just create a Subscription via the user interface.
 
 ```shell
-kubectl apply -n olm -f ../deploy/olm-catalog/1.0.1/catalog-source.yaml
+kubectl apply -n olm -f ../deploy/olm-catalog/1.0.2/catalog-source.yaml
 ```

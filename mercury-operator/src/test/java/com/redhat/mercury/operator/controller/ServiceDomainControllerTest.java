@@ -30,9 +30,6 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaTopic;
-import io.strimzi.api.kafka.model.status.ConditionBuilder;
-import io.strimzi.api.kafka.model.status.KafkaTopicStatusBuilder;
 
 import static com.redhat.mercury.operator.controller.ServiceDomainController.INTEGRATION_SUFFIX;
 import static com.redhat.mercury.operator.controller.ServiceDomainController.OPENAPI_CM_SUFFIX;
@@ -43,7 +40,6 @@ import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_FA
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.STATUS_TRUE;
 import static com.redhat.mercury.operator.model.HttpExposeType.DEFAULT_API_VERSION;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_INTEGRATION_READY;
-import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_KAFKA_TOPIC_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.CONDITION_SERVICE_DOMAIN_INFRA_READY;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_FOUND;
 import static com.redhat.mercury.operator.model.ServiceDomainStatus.MESSAGE_SDI_NOT_READY;
@@ -69,7 +65,6 @@ public class ServiceDomainControllerTest extends AbstractTest {
 
         deleteDeployment();
         deleteService();
-        deleteKafkaTopic();
         deleteDirectConfigMap();
         deleteOpenAPIConfigMap();
         deleteIntegration();
@@ -85,7 +80,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
         final String sdName = sd.getMetadata().getName();
         final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().toString());
         final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
-        final String directConfigMapName =  sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
+        final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
@@ -121,24 +116,9 @@ public class ServiceDomainControllerTest extends AbstractTest {
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertThat(kafkaTopic).isNotNull();
-        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         //Test deployment data
@@ -176,7 +156,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
         final String sdName = sd.getMetadata().getName();
         final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().toString());
         final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
-        final String directConfigMapName =  sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
+        final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         mockServer.expect().get()
@@ -212,24 +192,9 @@ public class ServiceDomainControllerTest extends AbstractTest {
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertThat(kafkaTopic).isNotNull();
-        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         //Test deployment data
@@ -357,24 +322,9 @@ public class ServiceDomainControllerTest extends AbstractTest {
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertThat(kafkaTopic).isNotNull();
-        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         //Test deployment data
@@ -394,7 +344,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
 
         update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition).isNull();
 
@@ -443,24 +393,9 @@ public class ServiceDomainControllerTest extends AbstractTest {
         client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
         update = serviceDomainController.reconcile(update.getResource(), null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertThat(kafkaTopic).isNotNull();
-        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-        update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
         //Test deployment data
@@ -480,7 +415,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
 
         update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition).isNull();
 
@@ -536,14 +471,12 @@ public class ServiceDomainControllerTest extends AbstractTest {
                 .always();
 
         UpdateControl<ServiceDomain> update = serviceDomainController.reconcile(sd, null);
-        assertThatIsWaiting(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+        assertThatIsReady(update);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
         Condition condition = update.getResource().getStatus().getCondition(CONDITION_SERVICE_DOMAIN_INFRA_READY);
         assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
         condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
         assertThat(condition).isNull();
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
 
         //Test deployment data
         final Deployment deployment = client.apps().deployments().inNamespace(sdNamespace).withName(sdName).get();
@@ -567,18 +500,9 @@ public class ServiceDomainControllerTest extends AbstractTest {
         final GenericKubernetesResource integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertThat(integration).isNull();
 
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertThat(kafkaTopic).isNotNull();
-        assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
         update = serviceDomainController.reconcile(update.getResource(), null);
         assertThatIsReady(update);
-        assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
-        condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-        assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
+        assertThat(update.getResource().getStatus().getConditions()).hasSize(2);
     }
 
     @Test
@@ -625,24 +549,9 @@ public class ServiceDomainControllerTest extends AbstractTest {
             client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).replace(integration);
 
             update = serviceDomainController.reconcile(update.getResource(), null);
-            assertThatIsWaiting(update);
-            assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-            condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
-            assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
-            condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
-            assertThat(condition.getStatus()).isEqualTo(STATUS_FALSE);
-
-            KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-            assertThat(kafkaTopic).isNotNull();
-            assertOwnerReference(sd, kafkaTopic.getMetadata().getOwnerReferences());
-
-            kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-            client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
-            update = serviceDomainController.reconcile(update.getResource(), null);
             assertThatIsReady(update);
-            assertThat(update.getResource().getStatus().getConditions()).hasSize(4);
-            condition = update.getResource().getStatus().getCondition(CONDITION_KAFKA_TOPIC_READY);
+            assertThat(update.getResource().getStatus().getConditions()).hasSize(3);
+            condition = update.getResource().getStatus().getCondition(CONDITION_INTEGRATION_READY);
             assertThat(condition.getStatus()).isEqualTo(STATUS_TRUE);
 
             //Test deployment data
@@ -686,11 +595,6 @@ public class ServiceDomainControllerTest extends AbstractTest {
 
         update = serviceDomainController.reconcile(update.getResource(), null);
 
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-
-        kafkaTopic.setStatus(new KafkaTopicStatusBuilder().withConditions(new ConditionBuilder().withType(CONDITION_READY).withStatus("True").build()).build());
-        client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").replace(kafkaTopic);
-
         serviceDomainController.reconcile(update.getResource(), null);
 
         Boolean deleted = client.apps().deployments().inNamespace(sdNamespace).withName(SERVICE_DOMAIN_NAME).delete();
@@ -710,12 +614,6 @@ public class ServiceDomainControllerTest extends AbstractTest {
 
         integration = client.genericKubernetesResources(resourceDefinitionContext).inNamespace(sdNamespace).withName(integrationName).get();
         assertThat(integration).isNull();
-
-        deleted = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").delete();
-        assertThat(deleted).isTrue();
-
-        kafkaTopic = client.resources(KafkaTopic.class).inNamespace(sdNamespace).withName(sdName + "-topic").get();
-        assertThat(kafkaTopic).isNull();
     }
 
     private void assertOwnerReference(ServiceDomain sd, List<OwnerReference> ownerReferences) {
@@ -805,17 +703,8 @@ public class ServiceDomainControllerTest extends AbstractTest {
         final NamespacedKubernetesClient client = mockServer.getClient();
 
         final Resource<ConfigMap> configMapResource = client.configMaps().inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName("customer-offer-openapi-v10");
-        if(configMapResource != null) {
-           configMapResource.delete();
-        }
-    }
-
-    private void deleteKafkaTopic() {
-        final NamespacedKubernetesClient client = mockServer.getClient();
-
-        KafkaTopic kafkaTopic = client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).withName(SERVICE_DOMAIN_NAME + "-topic").get();
-        if (kafkaTopic != null) {
-            client.resources(KafkaTopic.class).inNamespace(SERVICE_DOMAIN_INFRA_NAMESPACE).delete(kafkaTopic);
+        if (configMapResource != null) {
+            configMapResource.delete();
         }
     }
 
