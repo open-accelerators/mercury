@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: mercury-operator.1.0.2
+  name: mercury-operator.v1.0.2
   namespace: placeholder
   annotations:
     containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.2
