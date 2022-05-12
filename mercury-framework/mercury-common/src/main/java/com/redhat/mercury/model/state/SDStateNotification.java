@@ -16,8 +16,8 @@ import lombok.ToString;
 
 import static com.redhat.mercury.Constants.BUILDER_PACKAGE;
 
-@ToString
-@EqualsAndHashCode
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @Buildable(validationEnabled = true, editableEnabled = false, refs = {@BuildableReference(StateNotification.class)}, 

@@ -1,5 +1,7 @@
 package com.redhat.mercury.myccr.services.impl;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +25,11 @@ import io.smallrye.mutiny.Uni;
 public class MyCCRServiceImpl implements CRCustomerCreditRatingStateService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCCRServiceImpl.class);
-    private static final String FIXED_RATING = "802";
+    private static final Map<String, Integer> RATINGS = Map.of(
+            "bob", 600,
+            "jane", 802,
+            "anna", 760,
+            "frank", 500);
 
     @Override
     public Uni<ExecuteCustomerCreditRatingStateResponse> execute(ExecuteRequest request) {
@@ -43,11 +49,16 @@ public class MyCCRServiceImpl implements CRCustomerCreditRatingStateService {
     @Override
     public Uni<RetrieveCustomerCreditRatingStateResponse> retrieve(RetrieveRequest request) {
         LOGGER.info("Retrieve received");
-        return Uni.createFrom().item(() -> RetrieveCustomerCreditRatingStateResponse.newBuilder()
-                .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
-                        .setCreditRatingAssessmentResult(FIXED_RATING)
-                        .build())
-                .build()
-        );
+        return Uni.createFrom().item(request).onItem()
+                .transform(r -> RATINGS.get(r.getCustomercreditratingId()))
+                .onItem()
+                .ifNull()
+                .failWith(() -> new StatusRuntimeException(Status.NOT_FOUND))
+                .onItem()
+                .transform(rating -> RetrieveCustomerCreditRatingStateResponse.newBuilder()
+                        .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
+                                .setCreditRatingAssessmentResult(rating.toString())
+                                .build())
+                        .build());
     }
 }

@@ -10,8 +10,13 @@
     <name>Examples :: Customer Offer</name>
     <dependencies>
         <dependency>
-            <groupId>io.github.open-accelerators</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>customer-offer-common</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>customer-credit-rating-client</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

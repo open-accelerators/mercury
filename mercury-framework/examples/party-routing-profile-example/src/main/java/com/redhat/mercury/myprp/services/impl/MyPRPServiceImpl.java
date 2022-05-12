@@ -19,6 +19,8 @@ import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 
+import static io.grpc.Status.NOT_FOUND;
+
 @GrpcService
 public class MyPRPServiceImpl implements BQStatusService {
 
@@ -29,22 +31,27 @@ public class MyPRPServiceImpl implements BQStatusService {
 
     @Override
     public Uni<RetrieveStatusResponse> retrieveStatus(RetrieveStatusRequest request) {
-        return Uni.createFrom().item(() -> {
-            String prpId = request.getPartyroutingprofileId();
-            LOGGER.info("Retrieving party state status for {}", prpId);
-            if (prpId != null) {
-                PartyRoutingState state = svc.getState(prpId);
-                if (state == null) {
+        return Uni.createFrom().item(request)
+                .onItem()
+                .transform(item -> {
+                    String prpId = request.getPartyroutingprofileId();
+                    LOGGER.info("Retrieving party state status for {}", prpId);
+                    if (prpId != null) {
+                        PartyRoutingState state = svc.getState(prpId);
+                        if (state == null) {
+                            return null;
+                        }
+                        return RetrieveStatusResponse.newBuilder()
+                                .setStatus(Status.newBuilder()
+                                        .setCustomerRelationshipStatus(state.getStatus())
+                                        .build())
+                                .build();
+                    }
                     return null;
-                }
-                return RetrieveStatusResponse.newBuilder()
-                        .setStatus(Status.newBuilder()
-                                .setCustomerRelationshipStatus(state.getStatus())
-                                .build())
-                        .build();
-            }
-            return null;
-        });
+                })
+                .onItem()
+                .ifNull()
+                .failWith(new StatusRuntimeException(NOT_FOUND));
     }
 
     @Override

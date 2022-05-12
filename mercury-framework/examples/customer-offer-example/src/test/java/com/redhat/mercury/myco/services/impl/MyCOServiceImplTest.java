@@ -17,7 +17,6 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.JsonFormat;
 import com.redhat.mercury.customeroffer.CustomerOffer;
-import com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.ExecuteCustomerOfferProcedureResponseOuterClass.ExecuteCustomerOfferProcedureResponse;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureRequestCustomerOfferProcedureOuterClass.InitiateCustomerOfferProcedureRequestCustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureRequestOuterClass.InitiateCustomerOfferProcedureRequest;
@@ -31,7 +30,8 @@ import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.
 import com.redhat.mercury.customeroffer.v10.client.CustomerOfferClient;
 import com.redhat.mercury.model.ServiceDomain;
 import com.redhat.mercury.model.state.CRStateNotification;
-import com.redhat.mercury.myco.model.CustomerOfferState;
+import com.redhat.mercury.model.state.ControlRecordState;
+import com.redhat.mercury.myco.model.CustomerOfferProcedure;
 import com.redhat.mercury.myco.services.messaging.KafkaTestResourceLifecycleManager;
 
 import io.grpc.Status;
@@ -43,12 +43,10 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.providers.connectors.InMemoryConnector;
 import io.smallrye.reactive.messaging.providers.connectors.InMemorySink;
 
-import static com.redhat.mercury.myco.services.impl.CustomerOfferService.COMPLETED_STATUS;
-import static com.redhat.mercury.myco.services.impl.CustomerOfferService.INITIATED_STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @QuarkusTest
@@ -74,9 +72,9 @@ class MyCOServiceImplTest {
 
     @Test
     void testSerializeCustomerOfferInitiateRequest() throws Exception {
-        CustomerOfferState expected = CustomerOfferState.builder().id(1)
+        CustomerOfferProcedure expected = CustomerOfferProcedure.builder().id(1)
                 .customerReference(CUSTOMER_REF)
-                .status(INITIATED_STATUS)
+                .status(ControlRecordState.INITIATED)
                 .build();
         when(mockSvc.initiateProcedure(CUSTOMER_REF)).thenReturn(Uni.createFrom().item(expected));
         CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
@@ -111,9 +109,9 @@ class MyCOServiceImplTest {
 
     @Test
     void testInitiateCustomerOfferProcedure() throws ExecutionException, InterruptedException, TimeoutException {
-        CustomerOfferState expected = CustomerOfferState.builder().id(1)
+        CustomerOfferProcedure expected = CustomerOfferProcedure.builder().id(1)
                 .customerReference(CUSTOMER_REF)
-                .status(INITIATED_STATUS)
+                .status(ControlRecordState.INITIATED)
                 .build();
         when(mockSvc.initiateProcedure(CUSTOMER_REF)).thenReturn(Uni.createFrom().item(expected));
         CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
@@ -144,45 +142,35 @@ class MyCOServiceImplTest {
 
     @Test
     void testUpdateCustomerOfferProcedure() throws ExecutionException, InterruptedException, TimeoutException {
-        CustomerOfferState expected = CustomerOfferState.builder().id(1)
+        CustomerOfferProcedure expected = CustomerOfferProcedure.builder().id(1)
                 .customerReference(CUSTOMER_REF)
-                .status(COMPLETED_STATUS)
+                .status(ControlRecordState.COMPLETED)
                 .build();
-        when(mockSvc.updateProcedure(expected.getId())).thenReturn(Uni.createFrom().item(expected));
-        CRStateNotification expectedNotification = CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
-                .withReference(expected.getId().toString())
-                .invocation()
-                .workPerformance()
-                .completed()
-                .build();
+        when(mockSvc.updateProcedure(any())).thenReturn(Uni.createFrom().item(expected));
 
         UpdateRequest updatedProcedure = UpdateRequest.newBuilder().setCustomerofferId(expected.getId().toString())
-                .setCustomerOfferProcedure(CustomerOfferProcedure.newBuilder()
+                .setCustomerOfferProcedure(com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure.newBuilder()
                         .setCustomerReference(Any.newBuilder().setValue(ByteString.copyFromUtf8(CUSTOMER_REF)).build())
+                        .setCustomerOfferProcessingTaskResult(ControlRecordState.COMPLETED)
                         .build())
                 .build();
-        CompletableFuture<CustomerOfferProcedure> updatedMessage = new CompletableFuture<>();
+        CompletableFuture<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> updatedMessage = new CompletableFuture<>();
         client.getCrCustomerOfferProcedureService().update(updatedProcedure).subscribe().with(updatedMessage::complete);
         assertThat(updatedMessage.get(5, TimeUnit.SECONDS).getCustomerOfferProcessingTask()).isEqualTo(expected.getId().toString());
         assertThat(updatedMessage.get(5, TimeUnit.SECONDS).getCustomerOfferProcessingTaskResult()).isEqualTo(expected.getStatus());
-
-        InMemorySink<CRStateNotification> sink = connector.sink(CustomerOffer.CHANNEL_CR_CUSTOMER_OFFER_PROCEDURE);
-        await().atMost(5, TimeUnit.SECONDS)
-                .<List<? extends Message<CRStateNotification>>>until(sink::received, t -> t.size() == 1);
-        assertThat(sink.received().get(0).getPayload()).isEqualTo(expectedNotification);
     }
 
     @Test
     void testUpdateNullCustomerOfferProcedure() {
-        when(mockSvc.updateProcedure(anyInt())).thenReturn(Uni.createFrom().failure(new StatusRuntimeException(Status.NOT_FOUND)));
+        when(mockSvc.updateProcedure(any(CustomerOfferProcedure.class))).thenReturn(Uni.createFrom().failure(new StatusRuntimeException(Status.NOT_FOUND)));
 
         UpdateRequest updatedProcedure = UpdateRequest.newBuilder().setCustomerofferId("x")
-                .setCustomerOfferProcedure(CustomerOfferProcedure.newBuilder()
+                .setCustomerOfferProcedure(com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure.newBuilder()
                         .setCustomerReference(Any.newBuilder().setValue(ByteString.copyFromUtf8(CUSTOMER_REF)).build())
                         .build())
                 .build();
 
-        CompletableFuture<CustomerOfferProcedure> updatedMessage = new CompletableFuture<>();
+        CompletableFuture<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> updatedMessage = new CompletableFuture<>();
         client.getCrCustomerOfferProcedureService().update(updatedProcedure)
                 .subscribe()
                 .with(updatedMessage::complete, updatedMessage::completeExceptionally);
@@ -226,7 +214,7 @@ class MyCOServiceImplTest {
 
     @Test
     void testRetrieve() {
-        CompletableFuture<CustomerOfferProcedure> message = new CompletableFuture<>();
+        CompletableFuture<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> message = new CompletableFuture<>();
         client.getCrCustomerOfferProcedureService()
                 .retrieve(RetrieveRequest.getDefaultInstance())
                 .subscribe()

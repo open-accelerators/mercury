@@ -1,38 +1,39 @@
 package com.redhat.mercury.myprp.services.impl;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
 
 import javax.enterprise.context.ApplicationScoped;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.redhat.mercury.model.state.ControlRecordState;
 import com.redhat.mercury.myprp.model.PartyRoutingState;
 
 @ApplicationScoped
 public class PartyRoutingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyRoutingService.class);
-    private static final Map<String, PartyRoutingState> partyRoutings = new ConcurrentHashMap<>();
-
-    public static final String INITIATED_STATUS = "0";
-    public static final String COMPLETED_STATUS = "1";
-
+    private static final Collection<String> activeStatuses = new HashSet<>();
+    
     public Collection<String> getAll() {
-        return partyRoutings.keySet();
+        return activeStatuses;
     }
 
-    public PartyRoutingState getState(String id) {
-        return partyRoutings.getOrDefault(id, null);
+    public PartyRoutingState getState(String referenceId) {
+        if (activeStatuses.contains(referenceId)) {
+            return new PartyRoutingState().setReferenceId(referenceId).setStatus(ControlRecordState.PROCESSING);
+        }
+        return null;
     }
 
-    public void updatePartyRoutingState(String status, String processId) {
-        LOGGER.info("Updating PartyRoutingState ProcessId: {} - Status: {}", processId, status);
-        PartyRoutingState currentState = partyRoutings.get(processId);
-        if (currentState == null || (COMPLETED_STATUS.equals(status) && INITIATED_STATUS.equals(currentState.getStatus()))) {
-            partyRoutings.put(processId, new PartyRoutingState().setProcessId(processId).setStatus(status));
+    public void updatePartyRoutingState(String referenceId, String status) {
+        LOGGER.info("Updating PartyRoutingState ProcessId: {} - Status: {}", referenceId, status);
+        if (ControlRecordState.PROCESSING.equals(status)) {
+            activeStatuses.add(referenceId);
+        } else {
+            activeStatuses.remove(referenceId);
         }
     }
 

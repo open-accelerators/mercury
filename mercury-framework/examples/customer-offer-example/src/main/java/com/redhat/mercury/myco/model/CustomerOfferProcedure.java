@@ -14,7 +14,7 @@ import lombok.ToString;
 @ToString
 @Builder
 @RegisterForReflection
-public class CustomerOfferState {
+public class CustomerOfferProcedure {
 
     Integer id;
     String customerReference;

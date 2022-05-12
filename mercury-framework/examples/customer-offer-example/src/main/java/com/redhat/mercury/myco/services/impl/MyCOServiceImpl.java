@@ -5,7 +5,6 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.ExecuteCustomerOfferProcedureResponseOuterClass.ExecuteCustomerOfferProcedureResponse;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureResponseCustomerOfferProcedureOuterClass.InitiateCustomerOfferProcedureResponseCustomerOfferProcedure;
 import com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureResponseOuterClass.InitiateCustomerOfferProcedureResponse;
@@ -16,9 +15,7 @@ import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RequestRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.RetrieveRequest;
 import com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService.UpdateRequest;
-import com.redhat.mercury.model.ServiceDomain;
-import com.redhat.mercury.model.state.CRStateNotification;
-import com.redhat.mercury.myco.services.messaging.CustomerOfferProcedureNotificationService;
+import com.redhat.mercury.myco.model.CustomerOfferProcedure;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -33,9 +30,6 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     @Inject
     CustomerOfferService svc;
 
-    @Inject
-    CustomerOfferProcedureNotificationService notificationService;
-
     @Override
     public Uni<InitiateCustomerOfferProcedureResponse> initiate(InitiateRequest request) {
         String customerReference = request
@@ -45,12 +39,6 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
 
         LOGGER.info("Initiate received for {}", customerReference);
         return svc.initiateProcedure(customerReference)
-                .call(state -> notificationService.send(CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
-                        .withReference(state.getId().toString())
-                        .invocation()
-                        .workPerformance()
-                        .initiated()
-                        .build()))
                 .onItem()
                 .transform(state -> InitiateCustomerOfferProcedureResponse.newBuilder()
                         .setCustomerOfferProcedure(InitiateCustomerOfferProcedureResponseCustomerOfferProcedure.newBuilder()
@@ -62,25 +50,14 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     }
 
     @Override
-    public Uni<CustomerOfferProcedure> update(UpdateRequest request) {
-        Integer id = Integer.valueOf(request.getCustomerofferId());
-        LOGGER.info("Update received for {}", id);
-        return svc.updateProcedure(id)
+    public Uni<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> update(UpdateRequest request) {
+        LOGGER.info("Update received for {}", request.getCustomerofferId());
+        return svc.updateProcedure(toCustomerOfferState(request))
                 .onItem()
-                .ifNotNull()
-                .transform(state -> CustomerOfferProcedure.newBuilder()
-                        .setCustomerOfferProcessingTask(id.toString())
+                .transform(state -> com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure.newBuilder()
+                        .setCustomerOfferProcessingTask(state.getId().toString())
                         .setCustomerOfferProcessingTaskResult(state.getStatus())
-                        .build())
-                .call(customerOfferProcedure -> notificationService.send(CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
-                        .withReference(id.toString())
-                        .invocation()
-                        .workPerformance()
-                        .completed()
-                        .build()))
-                .onItem()
-                .ifNull()
-                .failWith(new StatusRuntimeException(Status.NOT_FOUND));
+                        .build());
     }
 
     @Override
@@ -89,13 +66,20 @@ public class MyCOServiceImpl implements CRCustomerOfferProcedureService {
     }
 
     @Override
-    public Uni<CustomerOfferProcedure> retrieve(RetrieveRequest request) {
+    public Uni<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> retrieve(RetrieveRequest request) {
         return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Override
     public Uni<ExecuteCustomerOfferProcedureResponse> execute(ExecuteRequest request) {
         return Uni.createFrom().failure(new StatusRuntimeException(Status.UNIMPLEMENTED));
+    }
+
+    private CustomerOfferProcedure toCustomerOfferState(UpdateRequest request) {
+        return CustomerOfferProcedure.builder().id(Integer.valueOf(request.getCustomerofferId()))
+                .customerReference(request.getCustomerOfferProcedure().getCustomerOfferProcessingTask())
+                .status(request.getCustomerOfferProcedure().getCustomerOfferProcessingTaskResult())
+                .build();
     }
 
 }

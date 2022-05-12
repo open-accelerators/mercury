@@ -19,13 +19,13 @@ import lombok.ToString;
 
 import static com.redhat.mercury.Constants.BUILDER_PACKAGE;
 
-@ToString
-@EqualsAndHashCode
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @JsonInclude(Include.NON_NULL)
 @RegisterForReflection
-@Buildable(validationEnabled = true, editableEnabled = false, refs = {@BuildableReference(StateNotification.class)},
+@Buildable(validationEnabled = true, refs = {@BuildableReference(StateNotification.class)},
         generateBuilderPackage = true, builderPackage = BUILDER_PACKAGE)
 public class CRStateNotification extends StateNotification<ControlRecordStateType> {
 
