@@ -35,11 +35,61 @@ metadata:
           "spec": {
             "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.2",
             "serviceDomainInfra": "my-example-sdi",
-            "type": "CustomerCreditRating",
-            "expose": ["http"]
+            "type": "CUSTOMER_CREDIT_RATING",
+            "expose": {
+              "http": {
+                "api-version": "v1"
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-customer-offer",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/customer-offer-example:1.0.2",
+            "serviceDomainInfra": "my-example-sdi",
+            "type": "CUSTOMER_OFFER",
+            "expose": {
+              "http": {
+                "api-version": "v1"
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-party-routing-profile",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/party-routing-profile-example:1.0.2",
+            "serviceDomainInfra": "my-example-sdi",
+            "type": "PARTY_ROUTING_PROFILE",
+            "expose": {
+              "http": {
+                "api-version": "v1"
+              }
+            }
           }
         }
       ]
+    alm-examples-metadata: "{\n  \"my-example-sdi\": {\n    \"description\": \"Example
+      Service Domain Infrastructure\"\n},\n{\n \"example-customer-credit-rating\":
+      {\n   \"description\": \"Example Customer Credit Rating Service Domain\"\n},
+      \     \n{\n \"example-customer-offer\": {\n   \"description\": \"Example Customer
+      Offer Service Domain\"\n},\n{\n \"example-party-routing-profile\": {\n   \"description\":
+      \"Example Party Routing Profile Service Domain\"\n}"
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
@@ -62,6 +112,23 @@ spec:
       - kind: Kafka
         name: ""
         version: kafka.strimzi.io/v1beta2
+      specDescriptors:
+      - description: Number of Kafka Replicas
+        displayName: Kafka Replicas
+        path: kafka.replicas
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Kafka Storage Type
+        displayName: Kafka Storage Type
+        path: kafka.storage.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
+        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+      - description: Kafka Storage Size
+        displayName: Kafka Storage Size
+        path: kafka.storage.size
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       version: v1alpha1
     - description: |-
         A Service Domain is a standalone service representing one of the BIAN defined Service Domains.
@@ -88,6 +155,22 @@ spec:
       - kind: ConfigMap
         name: ""
         version: v1
+      specDescriptors:
+      - description: Business Container Image
+        displayName: Business Image
+        path: businessImage
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Service Domain Infrastructure
+        displayName: Service Domain Infra
+        path: serviceDomainInfra
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Service Domain Type
+        displayName: Service Domain
+        path: type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       version: v1alpha1
     required:
     - kind: Kafka
@@ -136,6 +219,7 @@ spec:
           - integrations
           - services
           - deployments
+          - configmaps
           verbs:
           - get
           - list

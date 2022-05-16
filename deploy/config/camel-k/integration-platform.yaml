@@ -5,8 +5,6 @@ metadata:
 spec:
   build:
     maven:
-      properties:
-        repo.url: https://maven.pkg.github.com/open-accelerators/mercury
       settings:
         configMapKeyRef:
           key: settings.xml

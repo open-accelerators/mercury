@@ -27,6 +27,9 @@ spec:
                     properties:
                       size:
                         type: string
+                        enum:
+                          - ephemeral
+                          - persistent-claim
                       type:
                         type: string
                     type: object
@@ -49,10 +52,6 @@ spec:
                       type: number
                     type:
                       type: string
-                    additionalProperties:
-                      additionalProperties:
-                        type: string
-                      type: object
                     message:
                       type: string
                   type: object
@@ -72,4 +71,3 @@ spec:
         jsonPath: .status.conditions[?(@.type=='KafkaBrokerReady')].status
         name: Kafka
         type: string
-

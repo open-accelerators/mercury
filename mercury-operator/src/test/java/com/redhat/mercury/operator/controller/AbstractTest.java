@@ -1,5 +1,8 @@
 package com.redhat.mercury.operator.controller;
 
+import java.util.List;
+import java.util.UUID;
+
 import javax.inject.Inject;
 
 import com.redhat.mercury.operator.model.AbstractResourceStatus;
@@ -9,7 +12,6 @@ import com.redhat.mercury.operator.model.ServiceDomain;
 import com.redhat.mercury.operator.model.ServiceDomainInfra;
 import com.redhat.mercury.operator.model.ServiceDomainInfraSpecBuilder;
 import com.redhat.mercury.operator.model.ServiceDomainInfraStatusBuilder;
-import com.redhat.mercury.operator.model.ServiceDomainSpec;
 import com.redhat.mercury.operator.model.ServiceDomainSpecBuilder;
 
 import io.fabric8.kubernetes.api.model.Condition;
@@ -24,9 +26,6 @@ import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
-
-import java.util.List;
-import java.util.UUID;
 
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.CONDITION_READY;
 import static com.redhat.mercury.operator.model.AbstractResourceStatus.MESSAGE_WAITING;
@@ -125,17 +124,17 @@ public abstract class AbstractTest {
             sd.setSpec(new ServiceDomainSpecBuilder()
                     .withBusinessImage("testImage")
                     .withServiceDomainInfra(SERVICE_DOMAIN_INFRA_NAME)
-                    .withType(ServiceDomainSpec.Type.CustomerOffer)
+                    .withType(com.redhat.mercury.model.ServiceDomain.CUSTOMER_OFFER)
                     .withExpose(new ExposeSpecBuilder().withHttp(new HttpExposeTypeBuilder()
-                                                                .withApiVersion("v1")
-                                                                .build())
-                                .build())
+                                    .withApiVersion("v1")
+                                    .build())
+                            .build())
                     .build());
         } else {
             sd.setSpec(new ServiceDomainSpecBuilder()
                     .withBusinessImage("testImage")
                     .withServiceDomainInfra(SERVICE_DOMAIN_INFRA_NAME)
-                    .withType(ServiceDomainSpec.Type.CustomerOffer)
+                    .withType(com.redhat.mercury.model.ServiceDomain.CUSTOMER_OFFER)
                     .build());
         }
         return sd;

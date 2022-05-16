@@ -6,4 +6,39 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: service-domain-infra-operator
 data:
-  directs.yaml: "# camel-k: language=yaml\n# camel-k: dependency=camel-quarkus-protobuf\n# camel-k: dependency=mvn:com.redhat.mercury:customer-offer-common:${version}\n\n- from:\n    uri: direct:Initiate\n    steps:\n      - set-body:\n          simple: \"{\\\"initiateCustomerOfferProcedureRequest\\\": ${body}}\"\n      - unmarshal:\n          protobuf:\n            instance-class: com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService$InitiateRequest\n            content-type-format: json\n      - to:\n          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService?synchronous=true&method=Initiate\n      - marshal:\n          protobuf:\n            instance-class: com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureResponseOuterClass$InitiateCustomerOfferProcedureResponse\n            content-type-format: json\n\n- from:\n    uri: direct:Update\n    steps:\n      - set-body:\n          simple: \"{\\\"customerofferId\\\": \\\"${header.customerofferId}\\\", \\\"customerOfferProcedure\\\": ${body}}\"\n      - unmarshal:\n          protobuf:\n            instance-class: com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService$UpdateRequest\n            content-type-format: json\n      - to:\n          uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService?synchronous=true&method=Update\n      - marshal:\n          protobuf:\n            instance-class: com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass$CustomerOfferProcedure\n            content-type-format: json\n"
+  directs.yaml: |
+    # camel-k: language=yaml
+    # camel-k: dependency=camel-quarkus-protobuf
+    # camel-k: dependency=mvn:io.github.open-accelerators:customer-offer-common:1.0.2-SNAPSHOT
+
+    - from:
+        uri: direct:Initiate
+        steps:
+          - set-body:
+              simple: "{\"initiateCustomerOfferProcedureRequest\": ${body}}"
+          - unmarshal:
+              protobuf:
+                instance-class: com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService$InitiateRequest
+                content-type-format: json
+          - to:
+              uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService?synchronous=true&method=Initiate
+          - marshal:
+              protobuf:
+                instance-class: com.redhat.mercury.customeroffer.v10.InitiateCustomerOfferProcedureResponseOuterClass$InitiateCustomerOfferProcedureResponse
+                content-type-format: json
+
+    - from:
+        uri: direct:Update
+        steps:
+          - set-body:
+              simple: "{\"customerofferId\": \"${header.customerofferId}\", \"customerOfferProcedure\": ${body}}"
+          - unmarshal:
+              protobuf:
+                instance-class: com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CrCustomerOfferProcedureService$UpdateRequest
+                content-type-format: json
+          - to:
+              uri: grpc://{{mercury.binding.service.host}}:{{mercury.binding.service.port}}/com.redhat.mercury.customeroffer.v10.api.crcustomerofferprocedureservice.CRCustomerOfferProcedureService?synchronous=true&method=Update
+          - marshal:
+              protobuf:
+                instance-class: com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass$CustomerOfferProcedure
+                content-type-format: json

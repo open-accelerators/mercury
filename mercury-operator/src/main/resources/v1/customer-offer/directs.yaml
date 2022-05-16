@@ -1,6 +1,6 @@
 # camel-k: language=yaml
 # camel-k: dependency=camel-quarkus-protobuf
-# camel-k: dependency=mvn:com.redhat.mercury:customer-offer-common:${version}
+# camel-k: dependency=mvn:io.github.open-accelerators:customer-offer-common:${version}
 
 - from:
     uri: direct:Initiate

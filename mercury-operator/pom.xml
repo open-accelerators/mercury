@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.redhat.mercury</groupId>
+        <groupId>io.github.open-accelerators</groupId>
         <artifactId>mercury-parent</artifactId>
         <version>1.0.2-SNAPSHOT</version>
     </parent>
@@ -11,22 +11,13 @@
     <name>Mercury Operator</name>
     <dependencies>
         <dependency>
-            <groupId>com.redhat.mercury</groupId>
-            <artifactId>mercury-api</artifactId>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>mercury-common</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.operatorsdk</groupId>
             <artifactId>quarkus-operator-sdk</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.operatorsdk</groupId>
-            <artifactId>quarkus-operator-sdk-csv-generator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.operatorsdk</groupId>
-            <artifactId>quarkus-operator-sdk-csv-generator-deployment</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -39,6 +30,11 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.sundr</groupId>
+            <artifactId>builder-annotations</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.strimzi</groupId>
@@ -63,27 +59,26 @@
     </dependencies>
     <profiles>
         <profile>
-            <id>container-build</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-        <profile>
             <id>native</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>container-build</name>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.container-build>true</quarkus.native.container-build>
+            </properties>
+        </profile>
+        <profile>
+            <id>container-build</id>
+            <activation>
+                <property>
+                    <name>container-build</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.container-image.build>true</quarkus.container-image.build>
             </properties>
         </profile>
         <profile>
@@ -95,19 +90,7 @@
             </activation>
             <properties>
                 <quarkus.operator-sdk.crd.generate>true</quarkus.operator-sdk.crd.generate>
-                <quarkus.operator-sdk.generate-csv>true</quarkus.operator-sdk.generate-csv>
             </properties>
-        </profile>
-        <profile>
-            <id>coverage</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
     <build>

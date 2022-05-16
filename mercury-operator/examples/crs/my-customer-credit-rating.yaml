@@ -7,7 +7,7 @@ metadata:
 spec:
   businessImage: quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.2
   serviceDomainInfra: my-first-sdi
-  type: CustomerCreditRating
+  type: CUSTOMER_CREDIT_RATING
   expose:
     http:
       api-version: v1

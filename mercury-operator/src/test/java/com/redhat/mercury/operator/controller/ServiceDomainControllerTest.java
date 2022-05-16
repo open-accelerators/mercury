@@ -78,7 +78,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
-        final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().toString());
+        final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().value);
         final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
         final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
         final NamespacedKubernetesClient client = mockServer.getClient();
@@ -154,7 +154,7 @@ public class ServiceDomainControllerTest extends AbstractTest {
         ServiceDomain sd = createServiceDomain();
         final String sdNamespace = sd.getMetadata().getNamespace();
         final String sdName = sd.getMetadata().getName();
-        final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().toString());
+        final String sdTypeAsString = toLowerHyphen(sd.getSpec().getType().value);
         final String openApiConfigMapName = sdTypeAsString + OPENAPI_CM_SUFFIX + "-" + OPEN_API_CONFIG_MAP_VERSION;
         final String directConfigMapName = sdTypeAsString + "-rest-" + DEFAULT_API_VERSION;
         final NamespacedKubernetesClient client = mockServer.getClient();

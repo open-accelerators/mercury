@@ -29,6 +29,27 @@ The Mercury Operator manages the deployment of the Service Domain Infras by crea
 
 This component is the starting point for cluster administrators wishing to deploy an ecosystem of Service Domains on their application cluster.
 
+## Build
+
+Prerequisites: 
+
+* Maven 3.8.4
+* Java 11
+* Docker or Podman for container images
+
+### Profiles
+
+In the Maven pom there are defined a list of profiles.
+
+* `native` It will trigger the Quarkus Native builds for the operator and the examples
+* `container-build` Creates the container images using the native builds. Use the `container-build` property to activate
+both profiles at once. e.g. `mvn package -Dcontainer-build`
+* `coverage` Execute code coverage analysis.
+* `podman` Specific in case you need to use `test-containers` and don't have Docker.
+* `platform-release` GPG sign the generated artifacts
+* `checkstyle` Run the checkstyle plugin. Active by default
+* `crd` Generate CRDs
+
 ## Get involved with the community
 __(Under construction)__
 
