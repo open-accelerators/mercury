@@ -5,7 +5,6 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.mercury.myprp.model.PartyRoutingState;
 import com.redhat.mercury.partyroutingprofile.v10.CaptureStatusResponseOuterClass.CaptureStatusResponse;
 import com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
 import com.redhat.mercury.partyroutingprofile.v10.StatusOuterClass.Status;
@@ -33,25 +32,16 @@ public class MyPRPServiceImpl implements BQStatusService {
     public Uni<RetrieveStatusResponse> retrieveStatus(RetrieveStatusRequest request) {
         return Uni.createFrom().item(request)
                 .onItem()
-                .transform(item -> {
-                    String prpId = request.getPartyroutingprofileId();
-                    LOGGER.info("Retrieving party state status for {}", prpId);
-                    if (prpId != null) {
-                        PartyRoutingState state = svc.getState(prpId);
-                        if (state == null) {
-                            return null;
-                        }
-                        return RetrieveStatusResponse.newBuilder()
-                                .setStatus(Status.newBuilder()
-                                        .setCustomerRelationshipStatus(state.getStatus())
-                                        .build())
-                                .build();
-                    }
-                    return null;
-                })
+                .transform(item -> svc.getState(item.getPartyroutingprofileId()))
                 .onItem()
                 .ifNull()
-                .failWith(new StatusRuntimeException(NOT_FOUND));
+                .failWith(new StatusRuntimeException(NOT_FOUND))
+                .onItem()
+                .transform(item -> RetrieveStatusResponse.newBuilder()
+                        .setStatus(Status.newBuilder()
+                                .setCustomerRelationshipStatus(item.getStatus())
+                                .build())
+                        .build());
     }
 
     @Override

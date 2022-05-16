@@ -39,9 +39,9 @@ public class MyPRPReportingResource {
         return Uni.createFrom()
                 .item(referenceId)
                 .onItem()
-                .ifNull()
-                .failWith(new StatusRuntimeException(Status.NOT_FOUND))
+                .transform(i -> svc.getState(i))
                 .onItem()
-                .transform(i -> svc.getState(i));
+                .ifNull()
+                .failWith(new StatusRuntimeException(Status.NOT_FOUND));
     }
 }

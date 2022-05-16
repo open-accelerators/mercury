@@ -19,10 +19,11 @@ import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingsta
 import com.redhat.mercury.customercreditrating.v10.api.crcustomercreditratingstateservice.CrCustomerCreditRatingStateService.RetrieveRequest;
 import com.redhat.mercury.customercreditrating.v10.client.CustomerCreditRatingClient;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.test.junit.QuarkusTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
 class MyCCRServiceImplTest {
@@ -35,7 +36,7 @@ class MyCCRServiceImplTest {
         assertThat(client).isNotNull();
         CompletableFuture<RetrieveCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
         client.getCrCustomerCreditRatingStateService().retrieve(
-                RetrieveRequest.newBuilder().setCustomercreditratingId("some-ccr").build()
+                RetrieveRequest.newBuilder().setCustomercreditratingId("jane").build()
         ).subscribe().with(message::complete);
 
         assertThat(message.get(5, TimeUnit.SECONDS)
@@ -45,18 +46,27 @@ class MyCCRServiceImplTest {
     }
 
     @Test
+    void testRetrieveCustomerCreditRatingStateNotFound() throws ExecutionException, InterruptedException, TimeoutException {
+        assertThat(client).isNotNull();
+        CompletableFuture<RetrieveCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
+        client.getCrCustomerCreditRatingStateService().retrieve(
+                RetrieveRequest.newBuilder().setCustomercreditratingId("not-found").build()
+        ).subscribe().with(message::complete, message::completeExceptionally);
+        assertThat(message).failsWithin(5, TimeUnit.SECONDS)
+                .withThrowableOfType(ExecutionException.class)
+                .withCause(new StatusRuntimeException(Status.NOT_FOUND));
+    }
+
+    @Test
     void testExecute() {
         CompletableFuture<ExecuteCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
         client.getCrCustomerCreditRatingStateService()
                 .execute(ExecuteRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
-        try {
-            message.get(5, TimeUnit.SECONDS);
-            fail("Expected exception");
-        } catch (Exception e) {
-            assertThat(message).isCompletedExceptionally();
-        }
+        assertThat(message).failsWithin(5, TimeUnit.SECONDS)
+                .withThrowableOfType(ExecutionException.class)
+                .withCause(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Test
@@ -66,12 +76,9 @@ class MyCCRServiceImplTest {
                 .request(RequestRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
-        try {
-            message.get(5, TimeUnit.SECONDS);
-            fail("Expected exception");
-        } catch (Exception e) {
-            assertThat(message).isCompletedExceptionally();
-        }
+        assertThat(message).failsWithin(5, TimeUnit.SECONDS)
+                .withThrowableOfType(ExecutionException.class)
+                .withCause(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Test
@@ -81,11 +88,8 @@ class MyCCRServiceImplTest {
                 .initiate(InitiateRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
-        try {
-            message.get(5, TimeUnit.SECONDS);
-            fail("Expected exception");
-        } catch (Exception e) {
-            assertThat(message).isCompletedExceptionally();
-        }
+        assertThat(message).failsWithin(5, TimeUnit.SECONDS)
+                .withThrowableOfType(ExecutionException.class)
+                .withCause(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 }
