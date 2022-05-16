@@ -46,7 +46,7 @@ In the Maven pom there are defined a list of profiles.
 both profiles at once. e.g. `mvn package -Dcontainer-build`
 * `coverage` Execute code coverage analysis.
 * `podman` Specific in case you need to use `test-containers` and don't have Docker.
-* `platform-release` GPG sign the generated artifacts
+* `release` Generate Docs, sources and GPG sign the generated artifacts
 * `checkstyle` Run the checkstyle plugin. Active by default
 * `crd` Generate CRDs
 
