@@ -1,26 +1,17 @@
 version: 2.1
 
 jobs:
-  build:
-    machine:
-      image: ubuntu-2004:202111-02
+  sonar:
+    docker:
+      - image: 'circleci/openjdk:11-jdk'
     steps:
       - checkout
       - run:
           name: Analyze on SonarCloud
           command: mvn install sonar:sonar -Pcoverage -Dsonar.projectKey=open-accelerators_mercury
-  checkstyle:
-    machine:
-      image: ubuntu-2004:202111-02
-    steps:
-      - checkout
-      - run:
-          name: Check style
-          command: mvn install -Pcheckstyle
 
 workflows:
   main:
     jobs:
-      - build:
+      - sonar:
           context: SonarCloud
-      - checkstyle

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.open-accelerators</groupId>
+        <artifactId>example-domain</artifactId>
+        <version>@project.version@</version>
+    </parent>
+    <artifactId>example-domain-common</artifactId>
+    <name>Example Domain :: Common</name>
+    
+    <dependencies>
+        <dependency>
+            <groupId>io.github.open-accelerators</groupId>
+            <artifactId>mercury-common</artifactId>
+            <version>@project.version@</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.github.open-accelerators</groupId>
+                <artifactId>mercury-maven-plugin</artifactId>
+                <version>@project.version@</version>
+                <configuration>
+                    <sdName>example-domain</sdName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>CommonModel</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

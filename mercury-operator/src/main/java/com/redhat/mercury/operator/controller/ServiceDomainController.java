@@ -183,8 +183,8 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
             if (sd.getSpec().getExpose() != null && sd.getSpec().getExpose().getHttp() != null) {
                 final HttpExposeType httpExposeType = sd.getSpec().getExpose().getHttp();
-                final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-                final String sdTypeAsString = toLowerHyphen(sdType.toString());
+                final com.redhat.mercury.model.ServiceDomain sdType = sd.getSpec().getType();
+                final String sdTypeAsString = toLowerHyphen(sdType.value);
                 final String apiVersion = httpExposeType.getApiVersion();
 
                 if (DEFAULT_API_VERSION.equals(apiVersion)) {
@@ -351,8 +351,8 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
     }
 
     private String mergeCamelYamls(ServiceDomain sd, String integrationName, String sdCamelRouteYaml) {
-        final ServiceDomainSpec.Type sdType = sd.getSpec().getType();
-        final String sdTypeAsString = toLowerHyphen(sdType.toString());
+        final com.redhat.mercury.model.ServiceDomain sdType = sd.getSpec().getType();
+        final String sdTypeAsString = toLowerHyphen(sdType.value);
 
         sdCamelRouteYaml = sdCamelRouteYaml.replaceAll(COMMENT_LINE_REGEX, "").trim();
 
@@ -381,7 +381,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
                                 )
                         ),
                         "dependencies",
-                        List.of("mvn:com.redhat.mercury:" + sdTypeAsString + "-common:" + version,
+                        List.of("mvn:io.github.open-accelerators:" + sdTypeAsString + "-common:" + version,
                                 "camel:protobuf"),
                         "flows", yaml.load(sdCamelRouteYaml)));
         data.put("spec", specMap);
@@ -442,7 +442,7 @@ public class ServiceDomainController extends AbstractController<ServiceDomainSpe
 
     private void createOrUpdateService(ServiceDomain sd) {
         String sdNS = sd.getMetadata().getNamespace();
-        String svcName = ResourceUtils.toLowerHyphen(sd.getSpec().getType().toString());
+        String svcName = ResourceUtils.toLowerHyphen(sd.getSpec().getType().value);
 
         Service desiredService = new ServiceBuilder()
                 .withApiVersion("v1")

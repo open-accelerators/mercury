@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.redhat.mercury</groupId>
+        <groupId>io.github.open-accelerators</groupId>
         <artifactId>mercury-parent</artifactId>
         <version>1.0.2-SNAPSHOT</version>
     </parent>
@@ -21,6 +21,21 @@
             <artifactId>mercury-operator</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mercury-common</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mercury-sd-archetype</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mercury-maven-plugin</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
         <!-- examples -->
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -36,23 +51,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>party-routing-profile-example</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mercury-maven-plugin</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.shared</groupId>
-            <artifactId>maven-verifier</artifactId>
-            <version>${maven-verifier.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -78,5 +76,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

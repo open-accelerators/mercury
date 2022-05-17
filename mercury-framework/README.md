@@ -41,7 +41,7 @@ It also includes the Notification APIs and ServiceDomain-related constants.
 
 ```xml
 <dependency>
-  <groupId>com.redhat.mercury</groupId>
+  <groupId>io.github.open-accelerators</groupId>
   <artifactId>customer-offer-common</artifactId>
 </dependency>
 ```
@@ -53,7 +53,7 @@ project if you need to communicate with a specific service domain through gRPC. 
 
 ```xml
 <dependency>
-  <groupId>com.redhat.mercury</groupId>
+  <groupId>io.github.open-accelerators</groupId>
   <artifactId>customer-offer-client</artifactId>
 </dependency>
 ```
@@ -150,7 +150,7 @@ Add to your project the common model library for your service domain
 
 ```xml
 <dependency>
-    <groupId>com.redhat.mercury</groupId>
+    <groupId>io.github.open-accelerators</groupId>
     <artifactId>customer-offer-common</artifactId>
 </dependency>
 ```

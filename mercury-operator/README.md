@@ -51,7 +51,7 @@ metadata:
 spec:
   businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.1-SNAPSHOT
   serviceDomainInfra: example-service-domain-infra
-  type: CustomerOffer
+  type: CUSTOMER_OFFER
   expose:
     - http
 ```
