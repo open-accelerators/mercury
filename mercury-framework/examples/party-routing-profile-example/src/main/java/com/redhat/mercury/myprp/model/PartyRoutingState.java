@@ -3,7 +3,7 @@ package com.redhat.mercury.myprp.model;
 public class PartyRoutingState {
 
     String status;
-    String processId;
+    String referenceId;
 
     public String getStatus() {
         return status;
@@ -14,12 +14,12 @@ public class PartyRoutingState {
         return this;
     }
 
-    public String getProcessId() {
-        return processId;
+    public String getReferenceId() {
+        return referenceId;
     }
 
-    public PartyRoutingState setProcessId(String processId) {
-        this.processId = processId;
+    public PartyRoutingState setReferenceId(String referenceId) {
+        this.referenceId = referenceId;
         return this;
     }
 }

@@ -84,12 +84,23 @@ metadata:
           }
         }
       ]
-    alm-examples-metadata: "{\n  \"my-example-sdi\": {\n    \"description\": \"Example
-      Service Domain Infrastructure\"\n},\n{\n \"example-customer-credit-rating\":
-      {\n   \"description\": \"Example Customer Credit Rating Service Domain\"\n},
-      \     \n{\n \"example-customer-offer\": {\n   \"description\": \"Example Customer
-      Offer Service Domain\"\n},\n{\n \"example-party-routing-profile\": {\n   \"description\":
-      \"Example Party Routing Profile Service Domain\"\n}"
+    alm-examples-metadata: |-
+      {
+        "my-example-sdi": {
+          "description": "Example Service Domain Infrastructure"
+      },
+      {
+       "example-customer-credit-rating": {
+         "description": "Example Customer Credit Rating Service Domain"
+      },
+      {
+       "example-customer-offer": {
+         "description": "Example Customer Offer Service Domain"
+      },
+      {
+       "example-party-routing-profile": {
+         "description": "Example Party Routing Profile Service Domain"
+      }
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"

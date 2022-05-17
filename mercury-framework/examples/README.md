@@ -4,25 +4,30 @@ The provided set of examples describe the following participants:
 
 * Customer Offer: Management of any type of product offers for customers.
 * Party Routing Profile: Data directory containing the Profile information for different parties
-* Customer Credit Rating: Provides information about Credit Ratings
+* Customer Credit Rating: Provides information about Credit Score Ratings
 
 ## Initiate Customer Offer
 
-1. The Customer Offer Service Domain receives a request to initiate a `CustomerOffer` for a given customer.
+1. _Customer Offer_ receives a request to initiate a `CustomerOffer` for a given customer.
 2. The `CustomerOfferInitiated` event is emitted
-3. The _Party Routing Profile_ receives the `CustomerOfferInitiated` and updates its internal state.
-4. The _Party Routing Profile_ can be queried to retrieve the current profile
-
-## Complete Customer Offer
-
-5. The existing Customer Offer is completed for the same customer
-6. The `CustomerOfferCompleted` event is emitted
-7. The _Party Routing Profile_ receives the event and updates its internal state
-8. The _Party Routing Profile_ can be queried to retrieve the current profile
+3. _Customer Offer_ retrieves the Score Rating from the _Customer Credit Rating_ Service Domain.
+   1. If the retrieved score is over 700 the `CustomerOfferProcedure` will transition to `processing`
+   2. If is lower, it will transition to `incomplete`
+4. An event is emitted regarding the new state transition
+5. The _Party Routing Profile_ receives the events and updates its internal state.
+6. The _Party Routing Provile_ shows only active procedures.
+7. The _Party Routing Profile_ can be queried to retrieve the current profile
 
 ## Retrieve Customer Credit Rating
 
-The customer credit rating service domain always returns the same value for any request.
+The customer credit rating service domain always returns the same value for a given set of customerReferences.
+
+|customerReference|score|
+|-----|----|
+|bob|600|
+|anna|802|
+|jane|760|
+|frank|500|
 
 ## How to use the examples
 
@@ -69,7 +74,7 @@ kubectl create -f deploy/party-routing-profile-reporting.yaml
 $ curl -vH "Content-Type: application/json" `minikube service -n mercury customer-offer-camelk-rest --url=true`/CustomerOffer/Initiate -d '          
 {
   "CustomerOfferProcedure": {
-    "CustomerReference": "my-customer-reference"
+    "CustomerReference": "anna"
   }
 }'
 
@@ -77,7 +82,7 @@ $ curl -vH "Content-Type: application/json" `minikube service -n mercury custome
 {
   "CustomerOfferProcedure": {
     "CustomerOfferProcessingTask": "1", ## This is the Customer Offer Reference
-    "CustomerOfferProcessingTaskResult": "INITIATED"
+    "CustomerOfferProcessingTaskResult": "processing"
   }
 } 
 ```
@@ -87,10 +92,10 @@ $ curl -vH "Content-Type: application/json" `minikube service -n mercury custome
     * For specific Customer Offer Reference status (CUSTOMER_OFFER_REFERENCE)
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service -n mercury party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
+$ curl -H "Content-Type: application/json" `minikube service -n mercury party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/anna/Retrieve
 {
   "Status": {
-    "CustomerRelationshipStatus": "0"
+    "CustomerRelationshipStatus": "Processing"
   }
 }
 ```
@@ -98,42 +103,13 @@ $ curl -H "Content-Type: application/json" `minikube service -n mercury party-ro
 3. Retrieve a report of all the Customer Offer Procedure References
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-reporting --url=true`/party-routing-profile/reports/ids
+$ curl -H "Content-Type: application/json" `minikube service party-routing-profile-reporting --url=true`/party-routing-profile/
 [
-   "1",
-   "2",
-   "3"
+    {
+        "referenceId": "anna",
+        "status": "Processing"
+    }
 ]
-```
-
-4. Complete the Customer Offer Procedure
-
-```shell
-$ curl -XPUT -vH "Content-Type: application/json" `minikube service example-customer-offer-camelk-rest --url=true`/CustomerOffer/1/Update -d '          
-{
-  "CustomerOfferProcedure": {
-    "CustomerReference": "my-customer-reference"
-  }
-}'
-
-# Response
-{
-  "CustomerOfferProcedure": {
-    "CustomerOfferProcessingTask": "1",
-    "CustomerOfferProcessingTaskResult": "COMPLETED"
-  }
-} 
-```
-
-5. Confirm the Party Routing Profile has been updated
-
-```shell
-$ curl -H "Content-Type: application/json" `minikube service example-party-routing-profile-camelk-rest --url=true`/PartyRoutingProfile/1/Retrieve
-{
-  "Status": {
-    "CustomerRelationshipStatus": "1"
-  }
-}
 ```
 
 ### Customer Credit Rating
@@ -141,7 +117,7 @@ $ curl -H "Content-Type: application/json" `minikube service example-party-routi
 The Customer Credit Rating example always provide the same result for any input.
 
 ```shell
-$ curl -H "Content-Type: application/json" `minikube service example-customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/${customercreditratingId}/Retrieve
+$ curl -H "Content-Type: application/json" `minikube service example-customer-credit-rating-camelk-rest --url=true`/CustomerCreditRating/anna/Retrieve
 {
   "CustomerCreditRatingState": {
     "CreditRatingAssessmentResult": "802"
