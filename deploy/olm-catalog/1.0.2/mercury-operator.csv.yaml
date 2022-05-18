@@ -4,7 +4,7 @@ metadata:
   name: mercury-operator.v1.0.2
   namespace: placeholder
   annotations:
-    containerImage: quay.io/ecosystem-appeng/mercury-operator:1.0.2
+    containerImage: quay.io/ecosystem-appeng/mercury-operator:v1.0.2
     repository: https://github.com/open-accelerators/mercury
     capabilities: Basic Install
     categories: Integration & Delivery
@@ -70,6 +70,7 @@ spec:
     - name: GitHub Repository
       url: https://github.com/open-accelerators/mercury
   version: 1.0.2
+  minKubeVersion: 1.19.0
   apiservicedefinitions: { }
   customresourcedefinitions:
     owned:
@@ -114,15 +115,19 @@ spec:
       - name: kafkas.kafka.strimzi.io
         version: v1beta2
         kind: Kafka
+        description: Represents a Kafka cluster
       - name: kafkatopics.kafka.strimzi.io
         version: v1beta2
         kind: KafkaTopic
+        description: Represents a topic inside a Kafka cluster
       - name: kafkausers.kafka.strimzi.io
         version: v1beta2
         kind: KafkaUser
+        description: Represents a user inside a Kafka cluster
       - name: integrations.camel.apache.org
         version: v1
         kind: Integration
+        description: Integration is the Schema for the Camel K integrations API
   installModes:
     - supported: true
       type: OwnNamespace
