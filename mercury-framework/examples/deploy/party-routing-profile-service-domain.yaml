@@ -5,8 +5,7 @@ metadata:
   labels:
     service-domain: party-routing-profile
 spec:
-  businessImage: quay.io/ecosystem-appeng/party-routing-profile-example:1.0.2-SNAPSHOT
+  businessImage: quay.io/ecosystem-appeng/party-routing-profile-example:v1.0.2
   serviceDomainInfra: service-domain-infra
-  type: PartyRoutingProfile
-  expose:
-    - http
+  type: PARTY_ROUTING_PROFILE
+  

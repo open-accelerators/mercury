@@ -22,10 +22,16 @@ jobs:
       - name: Install xmllint
         run: |
           sudo apt-get install libxml2-utils
-      - name: Publish to GitHub Packages Apache Maven
-        run: mvn deploy -Pcontainer-build -Pnative -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+      - name: Publish to Maven Central
+        run: mvn deploy -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} -Prelease -Dcontainer-build -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
       - name: Set Mercury Version
         run: |
           echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="properties"]/*[local-name()="container-image.tag"]/text()' pom.xml)" >> $GITHUB_ENV

@@ -5,8 +5,6 @@ metadata:
   labels:
     service-domain: customer-offer
 spec:
-  businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.2-SNAPSHOT
+  businessImage: quay.io/ecosystem-appeng/customer-offer-example:v1.0.2
   serviceDomainInfra: service-domain-infra
-  type: CustomerOffer
-  expose:
-    - http
+  type: CUSTOMER_OFFER

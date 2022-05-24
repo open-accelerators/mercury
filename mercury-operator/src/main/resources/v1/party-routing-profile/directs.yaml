@@ -1,6 +1,6 @@
 # camel-k: language=yaml
 # camel-k: dependency=camel-quarkus-protobuf
-# camel-k: dependency=mvn:com.redhat.mercury:party-routing-profile-common:${version}
+# camel-k: dependency=mvn:io.github.open-accelerators:party-routing-profile-common:${version}
 
 - from:
     uri: direct:Retrieve

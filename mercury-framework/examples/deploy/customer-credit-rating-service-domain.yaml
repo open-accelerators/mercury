@@ -5,8 +5,6 @@ metadata:
   labels:
     service-domain: customer-credit-rating
 spec:
-  businessImage: quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.2-SNAPSHOT
+  businessImage: quay.io/ecosystem-appeng/customer-credit-rating-example:v1.0.2
   serviceDomainInfra: service-domain-infra
-  type: CustomerCreditRating
-  expose:
-    - http
+  type: CUSTOMER_CREDIT_RATING

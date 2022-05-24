@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.redhat.mercury</groupId>
+        <groupId>io.github.open-accelerators</groupId>
         <artifactId>mercury-framework-parent</artifactId>
         <version>1.0.2-SNAPSHOT</version>
     </parent>

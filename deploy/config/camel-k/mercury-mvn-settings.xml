@@ -22,24 +22,17 @@
                 </repository>
                 <repository>
                     <id>github</id>
-                    <url>${repo.url}</url>
+                    <url>https://s01.oss.sonatype.org</url>
                     <snapshots>
                         <enabled>true</enabled>
-                        <checksumPolicy>fail</checksumPolicy>
+                        <checksumPolicy>ignore</checksumPolicy>
                     </snapshots>
                     <releases>
-                        <enabled>true</enabled>
+                        <enabled>false</enabled>
                         <checksumPolicy>fail</checksumPolicy>
                     </releases>
                 </repository>
             </repositories>
         </profile>
     </profiles>
-    <servers>
-        <server>
-            <id>github</id>
-            <username>github_user</username>
-            <password>github_password</password>
-        </server>
-    </servers>
 </settings>

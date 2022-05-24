@@ -10,6 +10,23 @@ metadata:
     categories: Integration & Delivery
     certified: "false"
     description: Deploys and manages BIAN Service Domains with the Mercury framework
+    alm-examples-metadata: |-
+      {
+        "my-example-sdi": {
+          "description": "Example Service Domain Infrastructure"
+      },
+      {
+       "example-customer-credit-rating": {
+         "description": "Example Customer Credit Rating Service Domain"
+      },
+      {
+       "example-customer-offer": {
+         "description": "Example Customer Offer Service Domain"
+      },
+      {
+       "example-party-routing-profile": {
+         "description": "Example Party Routing Profile Service Domain"
+      }
     alm-examples: |-
       [
         {
@@ -41,10 +58,54 @@ metadata:
             }
           },
           "spec": {
-            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:1.0.2",
+            "businessImage": "quay.io/ecosystem-appeng/customer-credit-rating-example:v1.0.2",
             "serviceDomainInfra": "my-example-sdi",
-            "type": "CustomerCreditRating",
-            "expose": ["http"]
+            "type": "CUSTOMER_CREDIT_RATING",
+            "expose": {
+              "http": {
+                "api-version": "v1"
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-customer-offer",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/customer-offer-example:v1.0.2",
+            "serviceDomainInfra": "my-example-sdi",
+            "type": "CUSTOMER_OFFER",
+            "expose": {
+              "http": {
+                "api-version": "v1"
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "mercury.redhat.io/v1alpha1",
+          "kind": "ServiceDomain",
+          "metadata": {
+            "name": "example-party-routing-profile",
+            "labels": {
+              "app": "example"
+            }
+          },
+          "spec": {
+            "businessImage": "quay.io/ecosystem-appeng/party-routing-profile-example:v1.0.2",
+            "serviceDomainInfra": "my-example-sdi",
+            "type": "PARTY_ROUTING_PROFILE",
+            "expose": {
+              "http": {
+                "api-version": "v1"
+              }
+            }
           }
         }
       ]
@@ -85,6 +146,23 @@ spec:
           - kind: Kafka
             name: ""
             version: kafka.strimzi.io/v1beta2
+        specDescriptors:
+          - description: Number of Kafka Replicas
+            displayName: Kafka Replicas
+            path: kafka.replicas
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:text
+          - description: Kafka Storage Type
+            displayName: Kafka Storage Type
+            path: kafka.storage.type
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
+              - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+          - description: Kafka Storage Size
+            displayName: Kafka Storage Size
+            path: kafka.storage.size
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:text
       - kind: ServiceDomain
         name: servicedomains.mercury.redhat.io
         displayName: Service Domain
@@ -111,6 +189,22 @@ spec:
           - kind: ConfigMap
             name: ""
             version: v1
+        specDescriptors:
+          - description: Business Container Image
+            displayName: Business Image
+            path: businessImage
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:text
+          - description: Service Domain Infrastructure
+            displayName: Service Domain Infra
+            path: serviceDomainInfra
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:text
+          - description: Service Domain Type
+            displayName: Service Domain
+            path: type
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:text
     required:
       - name: kafkas.kafka.strimzi.io
         version: v1beta2

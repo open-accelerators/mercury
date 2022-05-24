@@ -1,15 +1,64 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.redhat.mercury</groupId>
+    <groupId>io.github.open-accelerators</groupId>
     <artifactId>mercury-parent</artifactId>
     <version>1.0.2-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <name>Mercury Parent</name>
+    <description>
+        Project Mercury aims at developing a solution approach for the modernization of core banking systems,
+        exploring new technologies and ways of operating in an open hybrid cloud.
+    </description>
+    <url>https://github.com/open-accelerators/mercury</url>
+
     <scm>
+        <connection>scm:git:ssh://git@github.com/open-accelerators/mercury.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/open-accelerators/mercury.git</developerConnection>
-        <tag>HEAD</tag>
+        <url>https://github.com/open-accelerators/mercury/tree/main</url>
     </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Ruben Romero Montes</name>
+            <email>rromerom@redhat.co</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>https://www.redhat.com/</organizationUrl>
+        </developer>
+        <developer>
+            <name>Theodor Mihalache</name>
+            <email>tmihalac@redhat.co</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>https://www.redhat.com/</organizationUrl>
+        </developer>
+        <developer>
+            <name>Ilona Shishov</name>
+            <email>ishishov@redhat.co</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>https://www.redhat.com/</organizationUrl>
+        </developer>
+    </developers>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -20,17 +69,21 @@
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <jandex-maven-plugin.version>1.2.2</jandex-maven-plugin.version>
         <maven-archetype-plugin.version>3.2.0</maven-archetype-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
+        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+
+        <operator-sdk.version>3.0.2</operator-sdk.version>
         <!-- depends on quarkus-operator-sdk -->
         <quarkus.platform.version>2.6.3.Final</quarkus.platform.version>
         <quarkus.camel.version>${quarkus.platform.version}</quarkus.camel.version>
+
         <!-- override quarkus dependency on 5.12.x because Kafka.spec is not serialized properly -->
         <testcontainers.version>1.16.3</testcontainers.version>
         <lombok.version>1.18.22</lombok.version>
         <builder-annotations.version>0.90.4</builder-annotations.version>
-        <operator-sdk.version>3.0.2</operator-sdk.version>
         <strimzi-api.version>0.28.0</strimzi-api.version>
-        <!-- Container images -->
-        <container-image.tag>v1.0.2</container-image.tag>
         <!-- CheckStyle -->
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
         <checkstyle.version>10.0</checkstyle.version>
@@ -41,25 +94,24 @@
         <!-- Sonar Cloud -->
         <sonar.organization>rh-open-accelerators</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
+        <!-- Container images -->
+        <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
+        <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
+        <quarkus.container-image.tag>v1.0.2</quarkus.container-image.tag>
+        <quarkus.operator-sdk.crd.generate>false</quarkus.operator-sdk.crd.generate>
+
         <!-- Mercury Codegen -->
         <mercury.grpc.port>9000</mercury.grpc.port>
         <mercury.proto.version>v10</mercury.proto.version>
     </properties>
 
     <modules>
-        <module>mercury-api</module>
         <module>mercury-framework</module>
         <module>mercury-operator</module>
+        <module>integration-tests</module>
         <module>coverage</module>
     </modules>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Mercury Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/open-accelerators/mercury</url>
-        </repository>
-    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
@@ -215,19 +267,77 @@
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <profiles>
         <profile>
-            <id>container-build</id>
-            <properties>
-                <!-- Image build properties -->
-                <quarkus.native.container-build>true</quarkus.native.container-build>
-                <quarkus.container-image.build>true</quarkus.container-image.build>
-                <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
-                <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
-                <quarkus.container-image.tag>${container-image.tag}</quarkus.container-image.tag>
-            </properties>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven-source-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>podman</id>
@@ -267,6 +377,9 @@
         </profile>
         <profile>
             <id>checkstyle</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <plugins>
                     <plugin>

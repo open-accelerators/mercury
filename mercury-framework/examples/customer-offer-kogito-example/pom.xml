@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.redhat.mercury</groupId>
+        <groupId>io.github.open-accelerators</groupId>
         <artifactId>mercury-framework-examples</artifactId>
         <version>1.0.1-SNAPSHOT</version>
     </parent>
@@ -13,12 +13,12 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>com.redhat.mercury</groupId>
+            <groupId>io.github.open-accelerators</groupId>
             <artifactId>customer-offer-service</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.redhat.mercury</groupId>
+            <groupId>io.github.open-accelerators</groupId>
             <artifactId>customer-credit-rating-client</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -55,36 +55,10 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.redhat.mercury</groupId>
+            <groupId>io.github.open-accelerators</groupId>
             <artifactId>customer-offer-client</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <profiles>
-        <profile>
-            <id>container-build</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-        <profile>
-            <id>native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-            <properties>
-                <quarkus.package.type>native</quarkus.package.type>
-            </properties>
-        </profile>
-    </profiles>
 </project>

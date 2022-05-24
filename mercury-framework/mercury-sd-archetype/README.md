@@ -20,12 +20,12 @@ and cleaned up after running the archetype.
 ## Usage
 
 ```shell
-mvn archetype:generate -DarchetypeGroupId=com.redhat.mercury \
+mvn archetype:generate -DarchetypeGroupId=io.github.open-accelerators \
   -DarchetypeArtifactId=mercury-sd-archetype \
   -DarchetypeVersion=1.0.2-SNAPSHOT \
   -DartifactId=account-recovery \
   -DsdName=AccountRecovery \
-  -DgroupId=com.redhat.mercury \
+  -DgroupId=io.github.open-accelerators \
   -Dversion=1.0.2-SNAPSHOT
 ```
 

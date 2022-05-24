@@ -5,9 +5,9 @@ metadata:
   labels:
     app: example
 spec:
-  businessImage: quay.io/ecosystem-appeng/customer-offer-example:1.0.2
+  businessImage: quay.io/ecosystem-appeng/customer-offer-example:v1.0.2
   serviceDomainInfra: my-first-sdi
-  type: CustomerOffer
+  type: CUSTOMER_OFFER
   expose:
     http:
       api-version: v1

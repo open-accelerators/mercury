@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.mercury.model.ServiceDomain;
 import com.redhat.mercury.model.state.CRStateNotification;
+import com.redhat.mercury.myco.model.InitiateRequest;
 import com.redhat.mercury.myco.services.impl.CustomerOfferService;
 import com.redhat.mercury.myco.services.messaging.CustomerOfferProcedureNotificationService;
 
@@ -21,8 +22,6 @@ public class CustomerOfferResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomerOfferResource.class);
 
-    Long id = 1L;
-
     @Inject
     CustomerOfferService svc;
 
@@ -32,18 +31,9 @@ public class CustomerOfferResource {
     @POST
     @Path("/procedures")
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<Void> initiate() {
-        Long nextId = this.id++;
-        String customerReference = nextId.toString();
-
-        LOGGER.info("Initiate received for {}", customerReference);
-        return svc.initiateProcedure(customerReference)
-                .call(state -> notificationService.send(CRStateNotification.builder(ServiceDomain.CUSTOMER_OFFER)
-                        .withReference(state.getId().toString())
-                        .invocation()
-                        .workPerformance()
-                        .initiated()
-                        .build()))
+    public Uni<Void> initiate(InitiateRequest request) {
+        LOGGER.info("Initiate received for {}", request);
+        return svc.initiateProcedure(request.getCustomerReference())
                 .onItem()
                 .transform(state -> null);
     }

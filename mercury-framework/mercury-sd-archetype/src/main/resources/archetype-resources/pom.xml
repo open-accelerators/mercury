@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.redhat.mercury</groupId>
+        <groupId>io.github.open-accelerators</groupId>
         <artifactId>service-domain-parent</artifactId>
         <version>${version}</version>
     </parent>
