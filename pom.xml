@@ -73,7 +73,8 @@
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
         <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
-
+        <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
+        
         <operator-sdk.version>3.0.2</operator-sdk.version>
         <!-- depends on quarkus-operator-sdk -->
         <quarkus.platform.version>2.6.3.Final</quarkus.platform.version>
@@ -98,7 +99,6 @@
         <!-- Container images -->
         <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
         <quarkus.container-image.group>ecosystem-appeng</quarkus.container-image.group>
-        <quarkus.container-image.tag>1.0.2</quarkus.container-image.tag>
         <quarkus.operator-sdk.crd.generate>false</quarkus.operator-sdk.crd.generate>
         
         <!-- Mercury Codegen -->
@@ -288,6 +288,26 @@
                     <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>regex-property</id>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>quarkus.container-image.tag</name>
+                            <value>${project.version}</value>
+                            <regex>^([0-9]+\.[0-9]+\.[0-9]+)(-SNAPSHOT)?$</regex>
+                            <replacement>v$1</replacement>
+                            <failIfNoMatch>true</failIfNoMatch>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

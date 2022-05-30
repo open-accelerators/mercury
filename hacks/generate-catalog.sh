@@ -99,7 +99,7 @@ schema: olm.channel
 package: mercury-operator
 name: dev
 entries:
-  - name: mercury-operator.$DEV_VERSION
+  - name: mercury-operator.v$DEV_VERSION
 EOF
 opm validate ./deploy/olm-catalog/catalog
 
