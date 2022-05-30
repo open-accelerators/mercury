@@ -21,7 +21,7 @@ jobs:
       - name: Set Mercury Version
         run: |
           MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)
-          echo "MERCURY_VERSION=v${MERCURY_VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
+          echo "MERCURY_VERSION=${MERCURY_VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
       - name: Install OPM
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz
