@@ -13,37 +13,57 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v2.4.0
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2.5.0
-        with:
-          java-version: '11'
-          distribution: 'adopt'
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
       - name: Install xmllint
         run: |
           sudo apt-get update
           sudo apt-get install libxml2-utils
-      - id: install-secret-key
-        name: Install gpg secret key
-        env:
-          OSSRH_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-        run: |
-          cat <(echo -e "${{ env.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
-          gpg --list-secret-keys --keyid-format LONG
-      - name: Publish to Maven Central
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          OSSRH_GPG_SECRET_KEY_PASSWORD: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
-        run: mvn deploy -Dgpg.passphrase=${{ env.OSSRH_GPG_SECRET_KEY_PASSWORD }} -Prelease -Dcontainer-build -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
       - name: Set Mercury Version
         run: |
           MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)
-          echo "v${MERCURY_VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
+          echo "MERCURY_VERSION=v${MERCURY_VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
+      - name: Set up Apache Maven Central
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'openjdk'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_CENTRAL_TOKEN
+          gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Publish to Maven Central
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.OSSRH_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+        run: mvn deploy -Prelease -Dcontainer-build -DskipTests
       - name: Push operator to quay.io
-        id: push-to-quay
+        id: push-op-to-quay
         uses: redhat-actions/push-to-registry@v2.5.1
         with:
           tags: quay.io/ecosystem-appeng/mercury-operator:${{ env.MERCURY_VERSION }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Push party-routing-profile-example to quay.io
+        id: push-prp-to-quay
+        uses: redhat-actions/push-to-registry@v2.5.1
+        with:
+          tags: quay.io/ecosystem-appeng/party-routing-profile-example:${{ env.MERCURY_VERSION }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Push customer-offer-example to quay.io
+        id: push-co-to-quay
+        uses: redhat-actions/push-to-registry@v2.5.1
+        with:
+          tags: quay.io/ecosystem-appeng/customer-offer-example:${{ env.MERCURY_VERSION }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Push customer-credit-rating-example to quay.io
+        id: push-crc-to-quay
+        uses: redhat-actions/push-to-registry@v2.5.1
+        with:
+          tags: quay.io/ecosystem-appeng/customer-credit-rating-example:${{ env.MERCURY_VERSION }}
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
