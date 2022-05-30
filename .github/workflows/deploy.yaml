@@ -34,7 +34,8 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
       - name: Set Mercury Version
         run: |
-          echo "MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="properties"]/*[local-name()="container-image.tag"]/text()' pom.xml)" >> $GITHUB_ENV
+          MERCURY_VERSION=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)
+          echo "v${MERCURY_VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
       - name: Push operator to quay.io
         id: push-to-quay
         uses: redhat-actions/push-to-registry@v2.5.1
