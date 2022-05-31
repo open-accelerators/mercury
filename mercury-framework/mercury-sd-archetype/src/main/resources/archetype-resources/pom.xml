@@ -9,7 +9,7 @@
         <version>${version}</version>
     </parent>
     <artifactId>${artifactId}</artifactId>
-    <name>Service Domains :: ${sdName}</name>
+    <name>Service Domains :: ${serviceDomainName}</name>
     <packaging>pom</packaging>
 
     <modules>

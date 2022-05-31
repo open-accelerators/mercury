@@ -1,0 +1,16 @@
+.openapi-generator-ignore
+README.md
+api/bq_debt_instrumentproperty_service.proto
+api/bq_equity_instrumentproperty_service.proto
+api/bq_futures_instrumentproperty_service.proto
+api/bq_option_instrumentproperty_service.proto
+api/bq_warrant_instrumentproperty_service.proto
+api/cr_financial_instrument_directory_entry_service.proto
+model/debt_instrumentproperty.proto
+model/equity_instrumentproperty.proto
+model/financial_instrument_directory_entry.proto
+model/financial_instrument_reference_data_management_outcome.proto
+model/futures_instrumentproperty.proto
+model/http_error.proto
+model/option_instrumentproperty.proto
+model/warrant_instrumentproperty.proto

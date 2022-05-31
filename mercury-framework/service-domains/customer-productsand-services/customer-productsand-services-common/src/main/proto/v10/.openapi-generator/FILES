@@ -1,0 +1,10 @@
+.openapi-generator-ignore
+README.md
+api/bqin_force_productproperty_service.proto
+api/bqin_force_serviceproperty_service.proto
+api/cr_customer_products_and_services_directory_entry_service.proto
+model/customer_products_and_services_directory_entry.proto
+model/customer_productsand_services_outcome.proto
+model/http_error.proto
+model/in_force_productproperty.proto
+model/in_force_serviceproperty.proto

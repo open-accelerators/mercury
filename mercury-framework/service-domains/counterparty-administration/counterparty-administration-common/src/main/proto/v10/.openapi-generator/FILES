@@ -1,0 +1,10 @@
+.openapi-generator-ignore
+README.md
+api/bq_counterparty_entity_referenceproperty_service.proto
+api/bq_counterparty_permitted_transactionproperty_service.proto
+api/cr_counterparty_directory_entry_service.proto
+model/counterparty_administration_outcome.proto
+model/counterparty_directory_entry.proto
+model/counterparty_entity_referenceproperty.proto
+model/counterparty_permitted_transactionproperty.proto
+model/http_error.proto

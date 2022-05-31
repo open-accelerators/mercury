@@ -1,0 +1,11 @@
+.openapi-generator-ignore
+README.md
+api/bq_card_transaction_event_service.proto
+api/cr_credit_card_position_log_service.proto
+model/capture_card_transaction_event_request.proto
+model/capture_card_transaction_event_request_card_transaction_event.proto
+model/capture_card_transaction_event_response.proto
+model/card_transaction_event.proto
+model/credit_card_position_keeping_outcome.proto
+model/credit_card_position_log.proto
+model/http_error.proto

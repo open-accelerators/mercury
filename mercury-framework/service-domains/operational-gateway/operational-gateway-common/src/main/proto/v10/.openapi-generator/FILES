@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_inbound_message_function_service.proto
+api/bq_outbound_message_function_service.proto
+api/bq_outbound_with_response_function_service.proto
+api/cr_operational_gateway_operating_session_service.proto
+model/http_error.proto
+model/inbound_message_function.proto
+model/operational_gateway_operating_session.proto
+model/operational_gateway_outcome.proto
+model/outbound_message_function.proto
+model/outbound_with_response_function.proto

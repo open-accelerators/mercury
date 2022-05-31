@@ -76,7 +76,7 @@ public class CustomerOfferService {
     }
 
     private Uni<CustomerOfferProcedure> updateStateWithScore(CustomerOfferProcedure state) {
-        return client.getCrCustomerCreditRatingStateService()
+        return client.getCRCustomerCreditRatingStateService()
                 .retrieve(RetrieveRequest.newBuilder().setCustomercreditratingId(state.getCustomerReference()).build())
                 .onItem()
                 .ifNotNull()

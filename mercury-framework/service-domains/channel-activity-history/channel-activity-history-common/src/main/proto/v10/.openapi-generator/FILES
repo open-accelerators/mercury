@@ -1,0 +1,15 @@
+.openapi-generator-ignore
+README.md
+api/bq_event_service.proto
+api/cr_channel_activity_log_service.proto
+model/capture_event_request.proto
+model/channel_activity_log.proto
+model/event.proto
+model/http_error.proto
+model/initiate_channel_activity_log_response.proto
+model/initiate_channel_activity_log_response_channel_activity_log.proto
+model/retrieve_event_response.proto
+model/retrieve_event_response_channel_activity_log.proto
+model/update_event_request.proto
+model/update_event_request_event.proto
+model/update_event_response.proto

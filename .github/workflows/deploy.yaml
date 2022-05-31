@@ -38,7 +38,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.OSSRH_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
-        run: mvn deploy -Prelease -Dcontainer-build -DskipTests
+        run: mvn deploy -Prelease -Dcontainer-build -DskipTests -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=150
       - name: Push operator to quay.io
         id: push-op-to-quay
         uses: redhat-actions/push-to-registry@v2.5.1

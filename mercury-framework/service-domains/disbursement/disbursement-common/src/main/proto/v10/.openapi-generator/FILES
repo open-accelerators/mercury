@@ -1,0 +1,7 @@
+.openapi-generator-ignore
+README.md
+api/cr_disbursement_transaction_service.proto
+model/disbursement_transaction.proto
+model/http_error.proto
+model/initiate_disbursement_transaction_response.proto
+model/initiate_disbursement_transaction_response_disbursement_transaction.proto

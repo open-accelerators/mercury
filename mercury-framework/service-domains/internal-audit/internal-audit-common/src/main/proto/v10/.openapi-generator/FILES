@@ -1,0 +1,15 @@
+.openapi-generator-ignore
+README.md
+api/bq_audit_service.proto
+api/cr_internal_audit_assessment_service.proto
+model/audit.proto
+model/exchange_internal_audit_assessment_response.proto
+model/exchange_internal_audit_assessment_response_internal_audit_assessment.proto
+model/execute_internal_audit_assessment_response.proto
+model/grant_internal_audit_assessment_response.proto
+model/http_error.proto
+model/initiate_internal_audit_assessment_response.proto
+model/internal_audit_assessment.proto
+model/internal_audit_outcome.proto
+model/request_internal_audit_assessment_response.proto
+model/update_internal_audit_assessment_response.proto

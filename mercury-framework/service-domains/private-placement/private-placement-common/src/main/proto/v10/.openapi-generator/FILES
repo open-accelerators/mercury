@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_private_placement_fulfillment_service.proto
+api/bq_private_placement_instrument_maintenance_fulfillment_service.proto
+api/bq_private_placement_instrument_specification_fulfillment_service.proto
+api/cr_private_placement_facility_service.proto
+model/http_error.proto
+model/private_placement_facility.proto
+model/private_placement_fulfillment.proto
+model/private_placement_instrument_maintenance_fulfillment.proto
+model/private_placement_instrument_specification_fulfillment.proto
+model/private_placement_outcome.proto

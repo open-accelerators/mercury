@@ -35,7 +35,7 @@ class MyCCRServiceImplTest {
     void testRetrieveCustomerCreditRatingState() throws ExecutionException, InterruptedException, TimeoutException {
         assertThat(client).isNotNull();
         CompletableFuture<RetrieveCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
-        client.getCrCustomerCreditRatingStateService().retrieve(
+        client.getCRCustomerCreditRatingStateService().retrieve(
                 RetrieveRequest.newBuilder().setCustomercreditratingId("jane").build()
         ).subscribe().with(message::complete);
 
@@ -49,7 +49,7 @@ class MyCCRServiceImplTest {
     void testRetrieveCustomerCreditRatingStateNotFound() throws ExecutionException, InterruptedException, TimeoutException {
         assertThat(client).isNotNull();
         CompletableFuture<RetrieveCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
-        client.getCrCustomerCreditRatingStateService().retrieve(
+        client.getCRCustomerCreditRatingStateService().retrieve(
                 RetrieveRequest.newBuilder().setCustomercreditratingId("not-found").build()
         ).subscribe().with(message::complete, message::completeExceptionally);
         assertThat(message).failsWithin(5, TimeUnit.SECONDS)
@@ -60,7 +60,7 @@ class MyCCRServiceImplTest {
     @Test
     void testExecute() {
         CompletableFuture<ExecuteCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
-        client.getCrCustomerCreditRatingStateService()
+        client.getCRCustomerCreditRatingStateService()
                 .execute(ExecuteRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
@@ -72,7 +72,7 @@ class MyCCRServiceImplTest {
     @Test
     void testRequest() {
         CompletableFuture<RequestCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
-        client.getCrCustomerCreditRatingStateService()
+        client.getCRCustomerCreditRatingStateService()
                 .request(RequestRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
@@ -84,7 +84,7 @@ class MyCCRServiceImplTest {
     @Test
     void testInitiate() {
         CompletableFuture<InitiateCustomerCreditRatingStateResponse> message = new CompletableFuture<>();
-        client.getCrCustomerCreditRatingStateService()
+        client.getCRCustomerCreditRatingStateService()
                 .initiate(InitiateRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);

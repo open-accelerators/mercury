@@ -6,7 +6,6 @@ import static com.redhat.mercury.codegen.utils.NamingUtils.toCamelCase;
 import static com.redhat.mercury.codegen.utils.NamingUtils.toChannelId;
 import static com.redhat.mercury.codegen.utils.NamingUtils.toChannelName;
 import static com.redhat.mercury.codegen.utils.NamingUtils.toGrpcClient;
-import static com.redhat.mercury.codegen.utils.NamingUtils.toGrpcServiceName;
 import static com.redhat.mercury.codegen.utils.NamingUtils.toPackageName;
 import static com.redhat.mercury.codegen.utils.NamingUtils.toUpperCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,13 +44,6 @@ class NamingUtilsTest {
     void testToGrpcClientName() {
         assertEquals("service-domain-abc", toGrpcClient("service-domain", "abc"));
         assertEquals("service-domain-abc-def", toGrpcClient("service-domain", "abc_def_service"));
-    }
-
-    @Test
-    void testToGrpcServiceName() {
-        assertEquals("SOmeService", toGrpcServiceName("some_service"));
-        assertEquals("BQAuditService", toGrpcServiceName("bq_audit_service"));
-        assertEquals("CRCustomerOfferProcedureService", toGrpcServiceName("cr_customer_offer_procedure_service"));
     }
 
     @Test

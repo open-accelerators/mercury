@@ -1,1 +1,1 @@
-install -Ppodman
+install

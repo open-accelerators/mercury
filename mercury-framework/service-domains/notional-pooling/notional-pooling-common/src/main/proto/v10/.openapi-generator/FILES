@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_notional_account_arrangement_fulfillment_service.proto
+api/bq_notional_account_consolidated_position_fulfillment_service.proto
+api/bq_notional_account_interest_allocation_fulfillment_service.proto
+api/cr_notional_pooling_facility_service.proto
+model/http_error.proto
+model/notional_account_arrangement_fulfillment.proto
+model/notional_account_consolidated_position_fulfillment.proto
+model/notional_account_interest_allocation_fulfillment.proto
+model/notional_pooling_facility.proto
+model/notional_pooling_outcome.proto

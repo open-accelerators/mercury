@@ -1,0 +1,13 @@
+.openapi-generator-ignore
+README.md
+api/bq_models_service.proto
+api/bq_rule_setsand_decision_trees_service.proto
+api/cr_fraud_evaluation_assessment_service.proto
+model/evaluate_fraud_evaluation_assessment_request.proto
+model/evaluate_fraud_evaluation_assessment_request_fraud_evaluation_assessment.proto
+model/evaluate_fraud_evaluation_assessment_response.proto
+model/evaluate_fraud_evaluation_assessment_response_fraud_evaluation_assessment.proto
+model/fraud_evaluation_assessment.proto
+model/http_error.proto
+model/models.proto
+model/rule_setsand_decision_trees.proto

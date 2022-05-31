@@ -15,6 +15,7 @@ import com.redhat.mercury.model.state.ControlRecordState;
 import com.redhat.mercury.myprp.notification.CustomerOfferProcedureSink;
 import com.redhat.mercury.partyroutingprofile.v10.RetrieveStatusResponseOuterClass.RetrieveStatusResponse;
 import com.redhat.mercury.partyroutingprofile.v10.StatusOuterClass.Status;
+import com.redhat.mercury.partyroutingprofile.v10.UpdateStatusRequestStatusOuterClass.UpdateStatusRequestStatus;
 import com.redhat.mercury.partyroutingprofile.v10.api.bqstatusservice.BqStatusService.RetrieveStatusRequest;
 import com.redhat.mercury.partyroutingprofile.v10.client.PartyRoutingProfileClient;
 
@@ -46,17 +47,16 @@ class MyPRPServiceImplTest {
                 .build());
 
         CompletableFuture<RetrieveStatusResponse> message = new CompletableFuture<>();
-        client.getBqStatusService().retrieveStatus(
+        client.getBQStatusService().retrieveStatus(
                 RetrieveStatusRequest.newBuilder()
                         .setPartyroutingprofileId(customerRef)
                         .build()
         ).subscribe().with(message::complete, message::completeExceptionally);
 
         RetrieveStatusResponse expected = RetrieveStatusResponse.newBuilder()
-                .setStatus(Status.newBuilder()
-                        .setCustomerRelationshipStatus(ControlRecordState.PROCESSING)
-                        .build())
-                .build();
+                .setStatus(UpdateStatusRequestStatus.newBuilder()
+                        .setCustomerRelationshipStatusNarrative(ControlRecordState.PROCESSING)
+                        .build()).build();
         assertThat(message.get(5, TimeUnit.SECONDS)).isEqualTo(expected);
     }
 
@@ -73,7 +73,7 @@ class MyPRPServiceImplTest {
                 .build());
 
         CompletableFuture<RetrieveStatusResponse> message = new CompletableFuture<>();
-        client.getBqStatusService().retrieveStatus(
+        client.getBQStatusService().retrieveStatus(
                 RetrieveStatusRequest.newBuilder()
                         .setPartyroutingprofileId(customerRef)
                         .build()
@@ -98,17 +98,17 @@ class MyPRPServiceImplTest {
                 .build());
 
         CompletableFuture<RetrieveStatusResponse> message = new CompletableFuture<>();
-        client.getBqStatusService().retrieveStatus(
+        client.getBQStatusService().retrieveStatus(
                 RetrieveStatusRequest.newBuilder()
                         .setPartyroutingprofileId(customerRef)
                         .build()
         ).subscribe().with(message::complete, message::completeExceptionally);
 
         RetrieveStatusResponse expected = RetrieveStatusResponse.newBuilder()
-                .setStatus(Status.newBuilder()
-                        .setCustomerRelationshipStatus(ControlRecordState.PROCESSING)
-                        .build())
-                .build();
+                .setStatus(UpdateStatusRequestStatus.newBuilder()
+                        .setCustomerRelationshipStatusNarrative(ControlRecordState.PROCESSING)
+                        .build()).build();
+        
         assertThat(message.get(5, TimeUnit.SECONDS)).isEqualTo(expected);
 
         sink.onReceive(CRStateNotification
@@ -120,7 +120,7 @@ class MyPRPServiceImplTest {
                 .build());
 
         message = new CompletableFuture<>();
-        client.getBqStatusService().retrieveStatus(
+        client.getBQStatusService().retrieveStatus(
                 RetrieveStatusRequest.newBuilder()
                         .setPartyroutingprofileId(customerRef)
                         .build()

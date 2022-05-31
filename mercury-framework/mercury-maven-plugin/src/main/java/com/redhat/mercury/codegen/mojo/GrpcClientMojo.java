@@ -16,6 +16,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import com.redhat.mercury.codegen.model.GrpcService;
+import com.redhat.mercury.codegen.utils.ApiFileUtils;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -38,7 +39,7 @@ public class GrpcClientMojo extends AbstractMercuryMojo {
 
     @Parameter(property = "apiDir", required = true, defaultValue = "${project.parent.basedir}/${project.parent.artifactId}-common/src/main/proto/${mercury.proto.version}/api")
     File apiDir;
-    
+
     @Override
     public void execute() throws MojoExecutionException {
         String underscoreServiceDomain = sdName.replace("-", "_");
@@ -56,7 +57,12 @@ public class GrpcClientMojo extends AbstractMercuryMojo {
 
         // Create object from each api with all naming formats
         for (String file : apiFiles) {
-            services.add(new GrpcService(file.split("\\.")[0], sdName, version));
+            try {
+                services.add(ApiFileUtils.readApiFile(apiDir, file, sdName));
+            } catch (IOException e) {
+                log.error("Unable to read api file " + file, e);
+                throw new MojoExecutionException("Unable to read api file " + file);
+            }
         }
 
         Configuration config = new Configuration(Configuration.VERSION_2_3_31);

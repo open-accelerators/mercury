@@ -12,10 +12,10 @@ syntax = "proto3";
 
 package com.redhat.mercury.partyroutingprofile.v10;
 
-import public "v10/model/status.proto";
+import public "v10/model/update_status_request_status.proto";
 
 message CaptureStatusRequest {
 
-  Status Status = 198001649;
+  UpdateStatusRequestStatus Status = 198001649;
 
 }

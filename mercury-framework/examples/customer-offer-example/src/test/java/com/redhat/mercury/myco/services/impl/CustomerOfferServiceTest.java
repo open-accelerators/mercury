@@ -67,8 +67,8 @@ class CustomerOfferServiceTest {
                 .thenReturn(Uni.createFrom()
                         .item(expected));
         CRCustomerCreditRatingStateServiceClient ccrStateClientMock = mock(CRCustomerCreditRatingStateServiceClient.class);
-        when(ccrClient.getCrCustomerCreditRatingStateService()).thenReturn(ccrStateClientMock);
-        when(ccrClient.getCrCustomerCreditRatingStateService().retrieve(any()))
+        when(ccrClient.getCRCustomerCreditRatingStateService()).thenReturn(ccrStateClientMock);
+        when(ccrClient.getCRCustomerCreditRatingStateService().retrieve(any()))
                 .thenReturn(Uni.createFrom().item(RetrieveCustomerCreditRatingStateResponse.newBuilder()
                         .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
                                 .setCreditRatingAssessmentResult("802")
@@ -111,8 +111,8 @@ class CustomerOfferServiceTest {
                 .thenReturn(Uni.createFrom()
                         .item(expected));
         CRCustomerCreditRatingStateServiceClient ccrStateClientMock = mock(CRCustomerCreditRatingStateServiceClient.class);
-        when(ccrClient.getCrCustomerCreditRatingStateService()).thenReturn(ccrStateClientMock);
-        when(ccrClient.getCrCustomerCreditRatingStateService().retrieve(any()))
+        when(ccrClient.getCRCustomerCreditRatingStateService()).thenReturn(ccrStateClientMock);
+        when(ccrClient.getCRCustomerCreditRatingStateService().retrieve(any()))
                 .thenReturn(Uni.createFrom().item(RetrieveCustomerCreditRatingStateResponse.newBuilder()
                         .setCustomerCreditRatingState(RetrieveCustomerCreditRatingStateResponseCustomerCreditRatingState.newBuilder()
                                 .setCreditRatingAssessmentResult("699")
