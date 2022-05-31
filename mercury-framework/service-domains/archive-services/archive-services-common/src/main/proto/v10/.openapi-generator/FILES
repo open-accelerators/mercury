@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_document_capture_function_service.proto
+api/bq_document_maintenance_function_service.proto
+api/bq_document_retrieval_function_service.proto
+api/cr_archive_operating_session_service.proto
+model/archive_operating_session.proto
+model/archive_services_outcome.proto
+model/document_capture_function.proto
+model/document_maintenance_function.proto
+model/document_retrieval_function.proto
+model/http_error.proto

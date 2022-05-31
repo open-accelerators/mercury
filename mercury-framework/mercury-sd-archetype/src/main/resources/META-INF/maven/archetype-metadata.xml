@@ -5,73 +5,28 @@
         <requiredProperty key="sdArtifactId">
             <defaultValue>${artifactId}</defaultValue>
         </requiredProperty>
-        <requiredProperty key="sdName"/>
         <requiredProperty key="sdNameLowerCase">
             <defaultValue>${sdArtifactId.replace("-","")}</defaultValue>
         </requiredProperty>
-
+        <requiredProperty key="serviceDomainName"/>
     </requiredProperties>
     <modules>
         <module dir="__rootArtifactId__-common" id="${rootArtifactId}-common" name="${rootArtifactId}-common">
             <fileSets>
-                <fileSet filtered="true" packaged="true" encoding="UTF-8">
-                    <directory>src/main/java</directory>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                </fileSet>
-                <fileSet filtered="true" encoding="UTF-8">
-                    <directory>src/main/proto</directory>
-                    <includes>
-                        <include>**/*.proto</include>
-                    </includes>
-                </fileSet>
                 <fileSet filtered="true" encoding="UTF-8">
                     <directory>src/main/resources</directory>
                     <includes>
                         <include>**/*.xml</include>
-                        <include>**/*.properties</include>
-                    </includes>
-                </fileSet>
-                <fileSet filtered="true" packaged="true" encoding="UTF-8">
-                    <directory>src/test/java</directory>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                </fileSet>
-                <fileSet filtered="true" encoding="UTF-8">
-                    <directory>src/test/resources</directory>
-                    <includes>
-                        <include>**/*.properties</include>
                     </includes>
                 </fileSet>
             </fileSets>
         </module>
         <module dir="__rootArtifactId__-client" id="${rootArtifactId}-client" name="${rootArtifactId}-client">
             <fileSets>
-                <fileSet filtered="true" packaged="true" encoding="UTF-8">
-                    <directory>src/main/java</directory>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                </fileSet>
                 <fileSet filtered="true" encoding="UTF-8">
                     <directory>src/main/resources</directory>
                     <includes>
                         <include>**/*.xml</include>
-                        <include>**/*.properties</include>
-                    </includes>
-                </fileSet>
-                <fileSet filtered="true" packaged="true" encoding="UTF-8">
-                    <directory>src/test/java</directory>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                </fileSet>
-                <fileSet filtered="true" encoding="UTF-8">
-                    <directory>src/test/resources</directory>
-                    <includes>
-                        <include>**/*.properties</include>
                     </includes>
                 </fileSet>
             </fileSets>

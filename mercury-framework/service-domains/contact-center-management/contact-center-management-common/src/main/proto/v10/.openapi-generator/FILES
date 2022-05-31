@@ -1,0 +1,9 @@
+.openapi-generator-ignore
+README.md
+api/bq_performance_service.proto
+api/bq_troubleshooting_service.proto
+api/cr_contact_center_management_plan_service.proto
+model/contact_center_management_plan.proto
+model/http_error.proto
+model/performance.proto
+model/troubleshooting.proto

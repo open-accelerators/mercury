@@ -9,12 +9,11 @@ public class GrpcService {
     private final String className;
     private final String clientName;
 
-    public GrpcService(String serviceName, String sd, String version) {
-        this.fieldName = NamingUtils.toFieldName(serviceName);
-        this.className = NamingUtils.toGrpcServiceName(serviceName);
-        this.clientName = NamingUtils.toGrpcClient(sd, serviceName);
-        this.importName = String.format("com.redhat.mercury.%s.%s.api.%s.%s",
-                sd.toLowerCase().replace("-", ""), version, NamingUtils.toPackageName(serviceName), this.className);
+    public GrpcService(String svc, String pkg, String fileName, String sd) {
+        this.fieldName = NamingUtils.toFieldName(svc);
+        this.className = svc;
+        this.clientName = NamingUtils.toGrpcClient(sd, fileName);
+        this.importName = String.format("%s.%s", pkg, this.className);
     }
 
     public String getFieldName() {

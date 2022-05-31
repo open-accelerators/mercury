@@ -9,7 +9,7 @@
         <version>${version}</version>
     </parent>
     <artifactId>${artifactId}</artifactId>
-    <name>Service Domains :: ${sdName} :: Common</name>
+    <name>Service Domains :: ${serviceDomainName} :: Common</name>
     <dependencies>
         <dependency>
             <groupId>io.github.open-accelerators</groupId>

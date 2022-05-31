@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.open-accelerators</groupId>
@@ -8,10 +9,7 @@
         <version>1.0.2-SNAPSHOT</version>
     </parent>
     <artifactId>customer-credit-rating-client</artifactId>
-    <name>Service Domains :: Customer Credit Rating :: Client</name>
-    <properties>
-        <quarkus.generate-code.grpc.scan-for-imports>all</quarkus.generate-code.grpc.scan-for-imports>
-    </properties>
+    <name>Service Domains :: CustomerCreditRating :: Client</name>
     <dependencies>
         <dependency>
             <groupId>io.github.open-accelerators</groupId>

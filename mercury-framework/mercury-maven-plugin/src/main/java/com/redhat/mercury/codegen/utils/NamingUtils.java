@@ -29,17 +29,6 @@ public class NamingUtils {
                         .replace("-service", "");
     }
 
-    public static String toGrpcServiceName(String serviceName) {
-        String sn = toCamelCase(serviceName);
-        if (sn == null) {
-            return null;
-        }
-        char[] chars = sn.toCharArray();
-        chars[0] = Character.toUpperCase(chars[0]);
-        chars[1] = Character.toUpperCase(chars[1]);
-        return new String(chars);
-    }
-
     public static String toPackageName(String str) {
         if (str == null) {
             return null;

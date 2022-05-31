@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_market_making_buyand_sell_order_fulfillment_service.proto
+api/bq_market_making_quote_fulfillment_service.proto
+api/bq_market_making_security_traded_position_fulfillment_service.proto
+api/cr_market_making_facility_service.proto
+model/http_error.proto
+model/market_making_buyand_sell_order_fulfillment.proto
+model/market_making_facility.proto
+model/market_making_outcome.proto
+model/market_making_quote_fulfillment.proto
+model/market_making_security_traded_position_fulfillment.proto

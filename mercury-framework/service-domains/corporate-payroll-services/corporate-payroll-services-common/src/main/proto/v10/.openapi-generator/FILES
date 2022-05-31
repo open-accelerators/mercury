@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_corporate_payroll_payments_fulfillment_service.proto
+api/bq_employee_payroll_details_maintenance_fulfillment_service.proto
+api/bq_production_service_reporting_fulfillment_service.proto
+api/cr_employee_payment_services_facility_service.proto
+model/corporate_payroll_payments_fulfillment.proto
+model/corporate_payroll_services_outcome.proto
+model/employee_payment_services_facility.proto
+model/employee_payroll_details_maintenance_fulfillment.proto
+model/http_error.proto
+model/production_service_reporting_fulfillment.proto

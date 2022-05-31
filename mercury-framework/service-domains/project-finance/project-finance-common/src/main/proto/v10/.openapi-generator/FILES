@@ -1,0 +1,14 @@
+.openapi-generator-ignore
+README.md
+api/bq_project_finance_arrangement_fulfillment_service.proto
+api/bq_project_finance_placement_fulfillment_service.proto
+api/bq_project_finance_repayment_fulfillment_service.proto
+api/bq_project_finance_spv_fulfillment_service.proto
+api/cr_project_finance_facility_service.proto
+model/http_error.proto
+model/project_finance_arrangement_fulfillment.proto
+model/project_finance_facility.proto
+model/project_finance_outcome.proto
+model/project_finance_placement_fulfillment.proto
+model/project_finance_repayment_fulfillment.proto
+model/project_finance_spv_fulfillment.proto

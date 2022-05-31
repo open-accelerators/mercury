@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_legal_term_service.proto
+api/bq_policy_term_service.proto
+api/bq_regulatory_term_service.proto
+api/cr_supplier_agreement_service.proto
+model/contractorand_supplier_agreement_outcome.proto
+model/http_error.proto
+model/legal_term.proto
+model/policy_term.proto
+model/regulatory_term.proto
+model/supplier_agreement.proto

@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_program_trade_execution_function_service.proto
+api/bq_program_traded_portfolio_algorithm_function_service.proto
+api/bq_program_traded_portfolio_maintenance_function_service.proto
+api/cr_program_trading_operating_session_service.proto
+model/http_error.proto
+model/program_trade_execution_function.proto
+model/program_traded_portfolio_algorithm_function.proto
+model/program_traded_portfolio_maintenance_function.proto
+model/program_trading_operating_session.proto
+model/program_trading_outcome.proto

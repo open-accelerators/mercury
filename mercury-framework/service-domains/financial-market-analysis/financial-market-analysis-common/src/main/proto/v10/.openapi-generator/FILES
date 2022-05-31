@@ -1,0 +1,13 @@
+.openapi-generator-ignore
+README.md
+api/bq_financial_market_insight_service.proto
+api/cr_financial_market_analysis_service.proto
+model/execute_financial_market_analysis_response.proto
+model/execute_financial_market_analysis_response_financial_market_analysis.proto
+model/financial_market_analysis.proto
+model/financial_market_analysis_outcome.proto
+model/financial_market_insight.proto
+model/http_error.proto
+model/initiate_financial_market_analysis_response.proto
+model/request_financial_market_analysis_response.proto
+model/update_financial_market_analysis_response.proto

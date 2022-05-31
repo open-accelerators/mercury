@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_check_clearingand_settlement_fulfillment_service.proto
+api/bq_lock_box_reportingand_issue_resolution_fulfillment_service.proto
+api/bq_paper_check_processing_fulfillment_service.proto
+api/cr_lock_box_facility_service.proto
+model/check_clearingand_settlement_fulfillment.proto
+model/cheque_lock_box_outcome.proto
+model/http_error.proto
+model/lock_box_facility.proto
+model/lock_box_reportingand_issue_resolution_fulfillment.proto
+model/paper_check_processing_fulfillment.proto

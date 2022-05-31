@@ -1,0 +1,10 @@
+.openapi-generator-ignore
+README.md
+api/bq_cash_concentration_service_configuration_fulfillment_service.proto
+api/bq_cash_position_monitoringand_transfer_fulfillment_service.proto
+api/cr_account_balance_sweeping_facility_service.proto
+model/account_balance_sweeping_facility.proto
+model/cash_concentration_outcome.proto
+model/cash_concentration_service_configuration_fulfillment.proto
+model/cash_position_monitoringand_transfer_fulfillment.proto
+model/http_error.proto

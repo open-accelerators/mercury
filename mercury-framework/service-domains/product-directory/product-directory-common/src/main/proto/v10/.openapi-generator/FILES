@@ -1,0 +1,13 @@
+.openapi-generator-ignore
+README.md
+api/bq_operations_service.proto
+api/bq_production_service.proto
+api/bq_salesand_marketing_service.proto
+api/bq_servicing_service.proto
+api/cr_product_directory_entry_service.proto
+model/http_error.proto
+model/operations.proto
+model/product_directory_entry.proto
+model/production.proto
+model/salesand_marketing.proto
+model/servicing.proto

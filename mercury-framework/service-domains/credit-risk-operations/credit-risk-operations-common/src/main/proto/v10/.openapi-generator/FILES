@@ -1,0 +1,8 @@
+.openapi-generator-ignore
+README.md
+api/bq_trading_counterparty_credit_limit_indicator_service.proto
+api/cr_trading_credit_position_measurement_service.proto
+model/credit_risk_operations_outcome.proto
+model/http_error.proto
+model/trading_counterparty_credit_limit_indicator.proto
+model/trading_credit_position_measurement.proto

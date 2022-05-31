@@ -1,0 +1,12 @@
+.openapi-generator-ignore
+README.md
+api/bq_dealer_desk_consolidated_position_tracking_function_service.proto
+api/bq_dealer_desk_trading_assignmentand_limits_function_service.proto
+api/bq_information_feed_administration_function_service.proto
+api/cr_dealer_desk_operating_session_service.proto
+model/dealer_desk_consolidated_position_tracking_function.proto
+model/dealer_desk_operating_session.proto
+model/dealer_desk_outcome.proto
+model/dealer_desk_trading_assignmentand_limits_function.proto
+model/http_error.proto
+model/information_feed_administration_function.proto

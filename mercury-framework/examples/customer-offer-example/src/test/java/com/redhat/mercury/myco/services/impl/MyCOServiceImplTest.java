@@ -70,7 +70,7 @@ class MyCOServiceImplTest {
         InitiateRequest.Builder builder = InitiateRequest.newBuilder();
         JsonFormat.parser().merge(jsonReq, builder);
         CompletableFuture<InitiateCustomerOfferProcedureResponse> message = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService()
+        client.getCRCustomerOfferProcedureService()
                 .initiate(builder.build())
                 .subscribe().with(message::complete);
         InitiateCustomerOfferProcedureResponse response = message.get(5, TimeUnit.SECONDS);
@@ -94,7 +94,7 @@ class MyCOServiceImplTest {
                 .build();
 
         CompletableFuture<InitiateCustomerOfferProcedureResponse> message = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService().initiate(procedure).subscribe().with(message::complete, message::completeExceptionally);
+        client.getCRCustomerOfferProcedureService().initiate(procedure).subscribe().with(message::complete, message::completeExceptionally);
         InitiateCustomerOfferProcedureResponse response = message.get(5, TimeUnit.SECONDS);
         assertThat(response.getCustomerOfferProcedure().getCustomerOfferProcessingTask()).isEqualTo(expected.getId().toString());
         assertThat(response.getCustomerOfferProcedure().getCustomerOfferProcessingTaskResult()).isEqualTo(expected.getStatus());
@@ -115,7 +115,7 @@ class MyCOServiceImplTest {
                         .build())
                 .build();
         CompletableFuture<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> updatedMessage = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService().update(updatedProcedure).subscribe().with(updatedMessage::complete, updatedMessage::completeExceptionally);
+        client.getCRCustomerOfferProcedureService().update(updatedProcedure).subscribe().with(updatedMessage::complete, updatedMessage::completeExceptionally);
 
         CustomerOfferProcedureOuterClass.CustomerOfferProcedure customerOfferProcedure = updatedMessage.get(5, TimeUnit.SECONDS);
         assertThat(customerOfferProcedure.getCustomerOfferProcessingTask()).isEqualTo(expected.getId().toString());
@@ -133,7 +133,7 @@ class MyCOServiceImplTest {
                 .build();
 
         CompletableFuture<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> updatedMessage = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService().update(updatedProcedure)
+        client.getCRCustomerOfferProcedureService().update(updatedProcedure)
                 .subscribe()
                 .with(updatedMessage::complete, updatedMessage::completeExceptionally);
 
@@ -145,7 +145,7 @@ class MyCOServiceImplTest {
     @Test
     void testExecute() {
         CompletableFuture<ExecuteCustomerOfferProcedureResponse> message = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService()
+        client.getCRCustomerOfferProcedureService()
                 .execute(ExecuteRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
@@ -157,7 +157,7 @@ class MyCOServiceImplTest {
     @Test
     void testRequest() {
         CompletableFuture<RequestCustomerOfferProcedureResponse> message = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService()
+        client.getCRCustomerOfferProcedureService()
                 .request(RequestRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);
@@ -169,7 +169,7 @@ class MyCOServiceImplTest {
     @Test
     void testRetrieve() {
         CompletableFuture<com.redhat.mercury.customeroffer.v10.CustomerOfferProcedureOuterClass.CustomerOfferProcedure> message = new CompletableFuture<>();
-        client.getCrCustomerOfferProcedureService()
+        client.getCRCustomerOfferProcedureService()
                 .retrieve(RetrieveRequest.getDefaultInstance())
                 .subscribe()
                 .with(message::complete, message::completeExceptionally);

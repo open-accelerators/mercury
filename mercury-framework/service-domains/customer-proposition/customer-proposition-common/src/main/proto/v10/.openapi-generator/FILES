@@ -1,0 +1,10 @@
+.openapi-generator-ignore
+README.md
+api/bq_bank_defined_productand_service_term_service.proto
+api/bq_customer_defined_productand_service_term_service.proto
+api/cr_customer_proposition_agreement_service.proto
+model/bank_defined_productand_service_term.proto
+model/customer_defined_productand_service_term.proto
+model/customer_proposition_agreement.proto
+model/customer_proposition_outcome.proto
+model/http_error.proto
