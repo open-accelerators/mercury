@@ -38,7 +38,7 @@ on their application cluster.
 We welcome contributions! Here's how you can contribute:
 
 * _Browse issues_ or _file an issue_
-* Reach out to our Google Group at [open-accelerators-mercury@redhat.com](open-accelerators-mercury@redhat.com)
+* Reach out to our Google Group at [open-accelerators-mercury@redhat.com](mailto:open-accelerators-mercury@redhat.com)
 * Contribute:
    * Read the _contributing guide_ before starting work on an issue
    * Try to fix _good first issues_
