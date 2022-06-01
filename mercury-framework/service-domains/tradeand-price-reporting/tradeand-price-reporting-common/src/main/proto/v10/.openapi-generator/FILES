@@ -1,8 +1,0 @@
-.openapi-generator-ignore
-README.md
-api/bq_transaction_reporting_function_service.proto
-api/cr_market_trade_reporting_operating_session_service.proto
-model/http_error.proto
-model/market_trade_reporting_operating_session.proto
-model/tradeand_price_reporting_outcome.proto
-model/transaction_reporting_function.proto
