@@ -1,9 +1,0 @@
-.openapi-generator-ignore
-README.md
-api/bq_performance_service.proto
-api/bq_rules_service.proto
-api/cr_customer_case_management_plan_service.proto
-model/customer_case_management_plan.proto
-model/http_error.proto
-model/performance.proto
-model/rules.proto

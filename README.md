@@ -13,50 +13,32 @@ We invite the collaboration of technology experts and experienced business pract
 
 ## Components
 
-### [Integrations](integrations/README.md)
+### [Mercury Framework](https://github.com/open-accelerators/mercury-framework)
 
-The Integrations component generates routes between the different components of each Service Domain in order to promote the free flow of data across the system.
-
-### [Mercury Framework](mercury-framework/README.md)
-
-The Mercury Framework contains the core structure of all Service Domains and their implementations of behavior as well as a collection of libraries and tools to facilitate the integration between them.
+The Mercury Framework contains the core structure of all Service Domains and their implementations of behavior as 
+well as a collection of libraries and tools to facilitate the integration between them.
 
 This component is the starting point for developers wishing to implement any given Service Domain.
 
-### [Mercury Operator](mercury-operator/README.md)
+### [Mercury Framework Examples](https://github.com/open-accelerators/mercury-framework-examples)
 
-The Mercury Operator manages the deployment of the Service Domain Infras by creating infrastructure components essential for service domains to function and communicate.
+Examples implementing service domains using the Mercury Framework. These examples can be built and deployed
+using the Mercury Operator on a Kubernetes environment.
 
-This component is the starting point for cluster administrators wishing to deploy an ecosystem of Service Domains on their application cluster.
+### [Mercury Operator](https://github.com/open-accelerators/mercury-operator)
 
-## Build
+The Mercury Operator manages the deployment of the Service Domain Infras by creating infrastructure components 
+essential for service domains to function and communicate.
 
-Prerequisites: 
-
-* Maven 3.8.4
-* Java 11
-* Docker or Podman for container images
-
-### Profiles
-
-In the Maven pom there are defined a list of profiles.
-
-* `native` It will trigger the Quarkus Native builds for the operator and the examples
-* `container-build` Creates the container images using the native builds. Use the `container-build` property to activate
-both profiles at once. e.g. `mvn package -Dcontainer-build`
-* `coverage` Execute code coverage analysis.
-* `podman` Specific in case you need to use `test-containers` and don't have Docker.
-* `release` Generate Docs, sources and GPG sign the generated artifacts
-* `checkstyle` Run the checkstyle plugin. Active by default
-* `crd` Generate CRDs
+This component is the starting point for cluster administrators wishing to deploy an ecosystem of Service Domains 
+on their application cluster.
 
 ## Get involved with the community
-__(Under construction)__
 
 We welcome contributions! Here's how you can contribute:
 
 * _Browse issues_ or _file an issue_
-* Chat with us on [ZulipChat](https://mercury.zulipchat.com/)
+* Reach out to our Google Group at [open-accelerators-mercury@redhat.com](open-accelerators-mercury@redhat.com)
 * Contribute:
    * Read the _contributing guide_ before starting work on an issue
    * Try to fix _good first issues_

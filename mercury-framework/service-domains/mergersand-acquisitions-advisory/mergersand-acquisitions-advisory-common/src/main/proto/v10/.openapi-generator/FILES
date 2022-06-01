@@ -1,8 +1,0 @@
-.openapi-generator-ignore
-README.md
-api/bq_mand_a_candidate_selectionand_evaluation_topic_service.proto
-api/cr_mergers_and_acquisition_advice_service.proto
-model/http_error.proto
-model/mand_a_candidate_selectionand_evaluation_topic.proto
-model/mergers_and_acquisition_advice.proto
-model/mergersand_acquisitions_advisory_outcome.proto
